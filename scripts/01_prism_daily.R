@@ -14,7 +14,9 @@
 # (future multisession via furrr, one variable per worker, file paths in, list out).
 #
 # Output: <data_root>/<run_name>/prism_daily/<var>/prism_<var>_<year>.tif
-#   one band per day, band names = ISO dates, FLT4S, DEFLATE + float predictor, tiled.
+#   one band per day, band names = ISO dates, DEFLATE, tiled. Storage per variable from
+#   config prism$scale: listed variables -> INT2S with a GDAL scale factor (terra returns
+#   physical units on read); others -> FLT4S. Every file is QA'd band-by-band vs the source.
 
 suppressPackageStartupMessages({
   library(future)
@@ -104,6 +106,7 @@ for (yr in cfg$years) {
   # 2. Parallel conversion: one variable per worker; pass paths and plain values only.
   jobs <- lapply(ready, function(v) list(
     var = v,
+    scale = prism_scale(cfg, v),
     tifs = prism_day_file(prism_raw_dir(cfg, v, yr), v, dates),
     out_file = prism_out_file(cfg, v, yr)
   ))
@@ -112,7 +115,7 @@ for (yr in cfg$years) {
   bbox <- cfg$bbox; memfrac <- cfg$memfrac
   results <- future_map(
     jobs,
-    function(j) prism_convert_year(j$tifs, dates, j$out_file, bbox, memfrac),
+    function(j) prism_convert_year(j$tifs, dates, j$out_file, bbox, memfrac, j$scale),
     .options = furrr_options(seed = NULL, packages = "terra")
   )
 
@@ -122,9 +125,9 @@ for (yr in cfg$years) {
     if (isTRUE(r$ok)) {
       ok_txt <- c(ok_txt, sprintf("%s %.0f MB", v, r$mb))
       n_done <- n_done + 1L
-      log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %.1f MB | crs %s | day1 range %.2f..%.2f",
-                      v, yr, basename(r$out_file), r$nlyr, r$nrow, r$ncol, r$res[1], r$mb,
-                      r$crs, r$range[1], r$range[2]))
+      log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %s | %.1f MB | crs %s | QA max err %.4f | day1 range %.2f..%.2f",
+                      v, yr, basename(r$out_file), r$nlyr, r$nrow, r$ncol, r$res[1],
+                      r$datatype, r$mb, r$crs, r$max_err, r$range[1], r$range[2]))
       if (isTRUE(cfg$prism$drop_raw)) {
         unlink(prism_raw_dir(cfg, v, yr), recursive = TRUE)
       }

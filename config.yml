@@ -32,6 +32,13 @@ default:
     timeout_sec: 180
     retry_wait_sec: 60    # one retry per day on network/HTTP errors; never on server refusals
     max_days_per_year: null   # only for the quick `test` profile
+    # Storage: variables listed here are written as INT2S with this GDAL scale factor
+    # (0.01 -> 0.01 degC / 0.01 hPa steps, max error 0.005). terra applies it on read.
+    # ppt stays float32 (compresses well; INT2S x0.01 would cap daily totals at 327 mm).
+    scale:
+      tmin: 0.01
+      tmax: 0.01
+      vpdmax: 0.01
     drop_raw: true        # delete daily raw tifs once the variable-year file is written and checked
     user_agent: "gsi-pheno-regions (University of Arizona Cooperative Extension; R httr2)"
   # ntfy push notifications. Topic comes from the GSI_NTFY_TOPIC env variable (not here,
@@ -69,13 +76,15 @@ test:
     vars: [ppt, tmax]
     max_days_per_year: 5
 
-# P720 production: CONUS, full period, many workers.
-# years: PLACEHOLDER. Study period is an open item (plan doc); 1981-2025 is not a decision.
+# P720 production: CONUS, many workers.
+# years: download order, not the study period (still open in the plan doc). 2001 is the
+# first full MODIS year, so 2001-2025 is needed for any Cut A vs Cut B comparison. To extend
+# back later, lower `start` and rerun; finished years are skipped.
 full:
   run_name: full
   bbox: null
   years:
-    start: 1981
+    start: 2001
     end: 2025
   workers: 8
   memfrac: 0.08

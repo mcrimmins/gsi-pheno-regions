@@ -142,10 +142,65 @@ prism_download_var_year <- function(cfg, var, year, dates) {
   missing
 }
 
+# Write a daily stack to its final GeoTIFF: temp file, full QA against the source, then
+# rename into place. `scale` NULL -> FLT4S; a number (e.g. 0.01) -> INT2S with that GDAL
+# scale factor (terra applies it on read, so values come back in physical units).
+# QA: every band, max |written - source| <= scale/2 (0 for float) and identical NA cells.
+prism_write_stack <- function(r, out_file, dates, scale = NULL) {
+  names(r) <- format(dates, "%Y-%m-%d")
+  terra::time(r) <- dates
+  src <- r
+  if (is.null(scale)) {
+    dt <- "FLT4S"; pred <- "PREDICTOR=3"; wargs <- list()
+  } else {
+    # terra truncates toward zero when scaling to integers: round to the storage step,
+    # then nudge away from zero by a tenth of a step so truncation hits the right integer.
+    r <- round(r / scale) * scale
+    r <- r + sign(r) * (scale / 10)
+    dt <- "INT2S"; pred <- "PREDICTOR=2"; wargs <- list(scale = scale, offset = 0)
+  }
+  tmp_dir <- file.path(dirname(out_file), ".tmp")
+  dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+  tmp <- file.path(tmp_dir, basename(out_file))
+  do.call(terra::writeRaster, c(list(
+    x = r, filename = tmp, overwrite = TRUE, datatype = dt,
+    gdal = c("COMPRESS=DEFLATE", pred, "ZLEVEL=6", "TILED=YES", "INTERLEAVE=BAND",
+             "BIGTIFF=IF_SAFER")), wargs))
+
+  chk <- terra::rast(tmp)
+  stopifnot(terra::nlyr(chk) == length(dates))
+  max_err <- max(terra::global(abs(chk - src), "max", na.rm = TRUE)[, 1])
+  tol <- if (is.null(scale)) 1e-6 else scale / 2 + 1e-6
+  n_ok_src <- sum(terra::global(src, "notNA")[, 1])
+  n_ok_chk <- sum(terra::global(chk, "notNA")[, 1])
+  if (!is.finite(max_err) || max_err > tol || n_ok_src != n_ok_chk) {
+    stop(sprintf("QA failed: max error %.5f (tol %.5f), non-NA cells %d vs %d",
+                 max_err, tol, n_ok_chk, n_ok_src))
+  }
+  info <- list(nrow = terra::nrow(chk), ncol = terra::ncol(chk),
+               ext = as.vector(terra::ext(chk)),
+               crs = terra::crs(chk, describe = TRUE)$name, res = terra::res(chk),
+               datatype = terra::datatype(chk)[1], max_err = max_err,
+               range = as.vector(terra::global(chk[[1]], "range", na.rm = TRUE)[1, ]))
+  rm(chk, r, src); gc()
+
+  # Replace any existing output (and its stale .aux.xml) with the checked temp file.
+  for (suffix in c("", ".aux.xml")) unlink(paste0(out_file, suffix))
+  for (suffix in c("", ".aux.xml")) {
+    if (file.exists(paste0(tmp, suffix)) &&
+        !file.rename(paste0(tmp, suffix), paste0(out_file, suffix))) {
+      stop("could not move ", basename(tmp), suffix, " into place")
+    }
+  }
+  unlink(tmp_dir, recursive = TRUE)
+  c(list(ok = TRUE, out_file = out_file, nlyr = length(dates),
+         mb = file.size(out_file) / 1e6), info)
+}
+
 # Stack daily tifs into one cropped, compressed multi-band GeoTIFF (one band per day,
 # band names = ISO dates). Self-contained so it can run in a future worker: it gets
 # file paths and plain values only, never terra objects.
-prism_convert_year <- function(tifs, dates, out_file, bbox, memfrac) {
+prism_convert_year <- function(tifs, dates, out_file, bbox, memfrac, scale = NULL) {
   tryCatch({
     terra::terraOptions(memfrac = memfrac, progress = 0)
     r <- terra::rast(tifs)
@@ -157,32 +212,33 @@ prism_convert_year <- function(tifs, dates, out_file, bbox, memfrac) {
       }
       r <- terra::crop(r, e, snap = "out")
     }
-    names(r) <- format(dates, "%Y-%m-%d")
-    terra::time(r) <- dates
-
-    tmp_dir <- file.path(dirname(out_file), ".tmp")
-    dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
-    tmp <- file.path(tmp_dir, basename(out_file))
-    terra::writeRaster(r, tmp, overwrite = TRUE, datatype = "FLT4S",
-                       gdal = c("COMPRESS=DEFLATE", "PREDICTOR=3", "ZLEVEL=6",
-                                "TILED=YES", "INTERLEAVE=BAND", "BIGTIFF=IF_SAFER"))
-    chk <- terra::rast(tmp)
-    stopifnot(terra::nlyr(chk) == length(dates))
-    info <- list(nrow = terra::nrow(chk), ncol = terra::ncol(chk),
-                 ext = as.vector(terra::ext(chk)), crs = terra::crs(chk, describe = TRUE)$name,
-                 res = terra::res(chk),
-                 range = as.vector(terra::global(chk[[1]], "range", na.rm = TRUE)[1, ]))
-    rm(chk, r); gc()
-
-    for (suffix in c("", ".aux.xml")) {
-      if (file.exists(paste0(tmp, suffix))) {
-        if (!file.rename(paste0(tmp, suffix), paste0(out_file, suffix))) {
-          stop("could not move ", basename(tmp), suffix, " into place")
-        }
-      }
-    }
-    unlink(tmp_dir, recursive = TRUE)
-    c(list(ok = TRUE, out_file = out_file, nlyr = length(dates),
-           mb = file.size(out_file) / 1e6), info)
+    prism_write_stack(r, out_file, dates, scale)
   }, error = function(e) list(ok = FALSE, out_file = out_file, msg = conditionMessage(e)))
+}
+
+# Re-encode an existing variable-year file to the configured storage (no download).
+prism_recode_file <- function(f, scale, memfrac) {
+  tryCatch({
+    terra::terraOptions(memfrac = memfrac, progress = 0)
+    r <- terra::rast(f)
+    dates <- as.Date(names(r))
+    if (anyNA(dates)) stop("band names are not ISO dates")
+    # Read into the temp-file path from a copy so the source can be replaced afterwards.
+    src_copy <- file.path(tempdir(), paste0("src_", basename(f)))
+    file.copy(f, src_copy, overwrite = TRUE)
+    if (file.exists(paste0(f, ".aux.xml"))) file.copy(paste0(f, ".aux.xml"),
+                                                    paste0(src_copy, ".aux.xml"), overwrite = TRUE)
+    rm(r); gc()
+    r <- terra::rast(src_copy)
+    res <- prism_write_stack(r, f, dates, scale)
+    rm(r); gc()
+    unlink(c(src_copy, paste0(src_copy, ".aux.xml")))
+    res
+  }, error = function(e) list(ok = FALSE, out_file = f, msg = conditionMessage(e)))
+}
+
+# Storage scale for a variable from config (NULL = float32).
+prism_scale <- function(cfg, var) {
+  s <- cfg$prism$scale[[var]]
+  if (is.null(s)) NULL else as.numeric(s)
 }

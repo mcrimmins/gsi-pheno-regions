@@ -62,7 +62,8 @@ Then Cut B (functional PCA + mixture) and the A-to-B classifier.
 Deferred: fire data, gridMET, ERA5-Land.
 
 ## Open items: do NOT decide these; ask Mike
-- Study period for Cut A (the `full` profile years are a placeholder, 1981–2025).
+- Study period for Cut A. The `full` profile downloads 2001–2025 first (first full MODIS
+  year onward); that is download order, not a study-period decision.
 - Block 2 thresholds (rain-event size, onset rule, freeze definition).
 - Moisture-ramp choice for Block 3 (precip index vs simple Hargreaves water balance).
 - Copy vs reference `gsi.R`; P720 disk space and any existing local PRISM archive.
@@ -98,7 +99,12 @@ Deferred: fire data, gridMET, ERA5-Land.
   Pass **file paths** to workers, never terra objects (SpatRasters don't serialize).
   Set `terraOptions(memfrac)` per worker from config; single-threaded BLAS.
 - Work year by year; per-year outputs so blocks can be rerun without touching raw data.
-- Raster outputs: GeoTIFF, FLT4S, `COMPRESS=DEFLATE, PREDICTOR=3, TILED=YES, INTERLEAVE=BAND`.
+- Raster outputs: GeoTIFF, `COMPRESS=DEFLATE, TILED=YES, INTERLEAVE=BAND`. PRISM tmin, tmax,
+  vpdmax are INT2S with GDAL scale 0.01 (set in `config.yml` `prism$scale`; terra returns
+  physical units on read, max rounding error 0.005); ppt is FLT4S. Write stacks with
+  `prism_write_stack()`, which QA's every band against the source before swapping the file in.
+- Dates: use band names (ISO dates) as the date reference; `terra::time()` is not reliably
+  stored in GeoTIFF across terra versions.
 - Dependencies managed with `renv`; run `renv::snapshot()` after adding a package.
 - Line endings LF (`.gitattributes`).
 
@@ -114,6 +120,7 @@ Deferred: fire data, gridMET, ERA5-Land.
 
 ## Pipeline
 1. `scripts/01_prism_daily.R`: download + convert daily PRISM (ppt, tmin, tmax, vpdmax).
+   `scripts/01b_prism_recode.R` re-encodes existing files to the configured storage.
    **Built; dev run verified Oct 3 2026** (12 variable-years, ~3.1 s/file, ~77 min per year
    of 4 variables).
 2. Static layers, herbaceous mask. 3. Per-year features, one script per block.
