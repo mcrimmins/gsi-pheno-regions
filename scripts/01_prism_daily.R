@@ -44,7 +44,7 @@ bbox_txt <- if (is.null(cfg$bbox)) "none (full CONUS grid)" else
   paste(names(cfg$bbox), cfg$bbox, sep = "=", collapse = " ")
 log_msg("=== 01_prism_daily | profile: ", profile, " | host: ", Sys.info()[["nodename"]],
         " | ", R.version.string, " | terra ", as.character(utils::packageVersion("terra")))
-log_msg("run_dir: ", cfg$run_dir)
+log_msg("run_dir: ", cfg$run_dir, " | scratch: ", cfg$scratch_dir)
 log_msg("vars: ", paste(cfg$prism$vars, collapse = ","), " | years: ",
         min(cfg$years), "-", max(cfg$years), " | bbox: ", bbox_txt,
         " | workers: ", cfg$workers, " | memfrac: ", cfg$memfrac)

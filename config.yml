@@ -7,6 +7,8 @@
 #
 # data_root: chosen by OS. Override on any machine with the GSI_DATA_ROOT env variable.
 # Outputs go to <data_root>/<run_name>/..., so dev/test/full never overwrite each other.
+# scratch_root: temporary raw downloads (deleted after conversion). Defaults to data_root;
+# override with GSI_SCRATCH_ROOT (P720: local disk, since data_root is on the NAS).
 
 default:
   run_name: default

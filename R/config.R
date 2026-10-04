@@ -15,6 +15,13 @@ load_cfg <- function(profile = NULL) {
 
   cfg$profile <- profile
   cfg$run_dir <- file.path(cfg$data_root, cfg$run_name)
+
+  # Scratch for temporary raw downloads: GSI_SCRATCH_ROOT env > config scratch_root > run_dir.
+  # Point it at a local disk when data_root is on a network share.
+  scratch <- Sys.getenv("GSI_SCRATCH_ROOT", "")
+  if (!nzchar(scratch) && !is.null(cfg$scratch_root)) scratch <- cfg$scratch_root[[os]]
+  cfg$scratch_dir <- if (is.null(scratch) || !nzchar(scratch)) cfg$run_dir else
+    file.path(normalizePath(path.expand(scratch), winslash = "/", mustWork = FALSE), cfg$run_name)
   cfg$years <- seq(as.integer(cfg$years$start), as.integer(cfg$years$end))
 
   if (!is.null(cfg$bbox)) {
@@ -30,7 +37,7 @@ load_cfg <- function(profile = NULL) {
 prism_paths <- function(cfg) {
   list(
     out_root = file.path(cfg$run_dir, "prism_daily"),          # prism_<var>_<year>.tif
-    raw_root = file.path(cfg$run_dir, "raw", "prism_daily")    # temporary daily tifs
+    raw_root = file.path(cfg$scratch_dir, "raw", "prism_daily") # temporary daily tifs
   )
 }
 

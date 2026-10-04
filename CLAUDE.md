@@ -35,10 +35,30 @@ Never compute features from mean-year climate. Daylength from latitude.
 - Standardize, reduce within each block (e.g. PCA), weight blocks equally.
 - Precip event counts: thresholds above trace; test sensitivity (interpolation, day boundary).
 
+### Clustering and ML methods
+Judge methods by how well regions serve as domains for regional phenology models, not by
+clustering scores alone.
+- **First cut:** Cut A with k-means (baseline), Gaussian mixture (`mclust`; soft membership
+  maps transition zones) and Ward hierarchical (nested: fine for modeling, coarse for
+  operational roll-up such as the two NFDRS live classes). Spatially constrained clustering
+  (`ClustGeo`, or SKATER in `spdep`) to see what contiguity costs.
+  Cut B: functional PCA of seasonal curves (`fda`, `fdapace`) + Gaussian mixture on the scores
+  (`funFEM` as an alternative). Link A and B: cluster Cut B, then classify from Cut A
+  features with `ranger` or `xgboost`; variable importance / SHAP tests whether Blocks 2–3 matter.
+- **Worth trying:** SOMs (`kohonen`); gradient forests (`gradientForest`, maybe R-Forge) or
+  GDM (`gdm`) to transform climate space by phenology response, then cluster.
+- **Later:** autoencoders (`torch`, P720 GPU) benchmarked against the simpler methods;
+  mixtures of regressions (`flexmix`) once LFMC / NPN / iNaturalist observations are in.
+- **Evaluation for all:** bootstrap stability (`fpc::clusterboot`), adjusted Rand index between
+  partitions (A1 vs A2 vs A3 vs B), spatial block cross-validation for any classifier.
+- Ward, ClustGeo and SKATER need pairwise distances or graphs that won't fit at ~0.5 M CONUS
+  cells; run them on k-means micro-clusters or an aggregated grid (two-stage).
+
 ### First-cut deliverables
-Herbaceous mask (exclude cropland); Cut A clusters for A1–A3 (k-means; mclust on the P720)
-with spatial smoothing; stability-based k; scoreboard vs EPA ecoregions, PSAs, NFDRS climate
-classes; sampling-gap map (Globe-LFMC, NPN, iNaturalist). Then Cut B.
+Herbaceous mask (exclude cropland); Cut A clusters for A1–A3 (k-means, Gaussian mixture, Ward,
+plus a spatially constrained version) with spatial smoothing; stability-based k; scoreboard vs
+EPA ecoregions, PSAs, NFDRS climate classes; sampling-gap map (Globe-LFMC, NPN, iNaturalist).
+Then Cut B (functional PCA + mixture) and the A-to-B classifier.
 Deferred: fire data, gridMET, ERA5-Land.
 
 ## Open items: do NOT decide these; ask Mike
@@ -56,6 +76,9 @@ Deferred: fire data, gridMET, ERA5-Land.
 - Profiles: `test` (5 days, 2 vars, minutes), `dev`, `full`. Select with the first script
   argument, a `gsi_profile` variable in the global env (RStudio console / background job
   with `importEnv = TRUE`), or `R_CONFIG_ACTIVE`. Scripts must not call `quit()` when interactive. `GSI_DATA_ROOT` overrides the data root.
+- `GSI_SCRATCH_ROOT` (or `scratch_root` in config) puts temporary raw downloads on a local
+  disk. On the P720 data_root is the TrueNAS NFS share `/mnt/truenas_phenology` and scratch
+  is local; set both in `~/.Renviron` there.
 - Data never goes in git. Layout under `<data_root>/<run_name>/`:
   - `raw/prism_daily/<var>/<year>/` temporary daily tifs (deleted after conversion)
   - `prism_daily/<var>/prism_<var>_<year>.tif` one band per day, band names = ISO dates
@@ -86,6 +109,8 @@ Deferred: fire data, gridMET, ERA5-Land.
   trend analysis with these grids.
 
 ## Pipeline
-1. `scripts/01_prism_daily.R`: download + convert daily PRISM (ppt, tmin, tmax, vpdmax). **Built.**
+1. `scripts/01_prism_daily.R`: download + convert daily PRISM (ppt, tmin, tmax, vpdmax).
+   **Built; dev run verified Oct 3 2026** (12 variable-years, ~3.1 s/file, ~77 min per year
+   of 4 variables).
 2. Static layers, herbaceous mask. 3. Per-year features, one script per block.
 4. Across-year summaries. 5. Clustering. 6. Evaluation.
