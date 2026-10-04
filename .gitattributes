@@ -1,0 +1,24 @@
+# Normalize line endings: LF in the repo and in working copies on both Windows and Linux,
+# so scripts behave identically on the laptop and the P720.
+* text=auto eol=lf
+
+*.R      text eol=lf
+*.Rmd    text eol=lf
+*.qmd    text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.sh     text eol=lf
+*.Rproj  text eol=lf
+*.lock   text eol=lf
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf
+
+*.png    binary
+*.jpg    binary
+*.pdf    binary
+*.tif    binary
+*.nc     binary
+*.zip    binary
+*.rds    binary

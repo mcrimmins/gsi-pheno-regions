@@ -1,0 +1,70 @@
+# Run configuration. Select a profile with the first script argument
+#   Rscript scripts/01_prism_daily.R dev
+# or with the R_CONFIG_ACTIVE environment variable. Profiles inherit from `default`.
+#
+# All paths, extent, years and worker counts come from here so scripts are identical
+# on the Windows laptop and the Ubuntu P720.
+#
+# data_root: chosen by OS. Override on any machine with the GSI_DATA_ROOT env variable.
+# Outputs go to <data_root>/<run_name>/..., so dev/test/full never overwrite each other.
+
+default:
+  run_name: default
+  data_root:
+    windows: "C:/Users/Crimmins/data/gsi-pheno-regions"
+    linux: "~/data/gsi-pheno-regions"
+  # Bounding box in lon/lat (NAD83), or null for the full PRISM CONUS grid (no crop).
+  bbox: null
+  years:
+    start: 1981
+    end: 2025
+  workers: 1
+  # terra memory cap per worker (fraction of RAM). Keep workers * memfrac well under 1.
+  memfrac: 0.4
+  prism:
+    base_url: "https://services.nacse.org/prism/data/get"
+    region: us
+    res: 4km
+    vars: [ppt, tmin, tmax, vpdmax]
+    sleep_sec: 2          # pause after every download request (PRISM example script uses 2 s)
+    timeout_sec: 180
+    retry_wait_sec: 60    # one retry per day on network/HTTP errors; never on server refusals
+    max_days_per_year: null   # only for the quick `test` profile
+    drop_raw: true        # delete daily raw tifs once the variable-year file is written and checked
+    user_agent: "gsi-pheno-regions (University of Arizona Cooperative Extension; R httr2)"
+
+# Laptop development: small Arizona box, recent complete years, 2 workers.
+dev:
+  run_name: dev
+  bbox:
+    xmin: -115.0
+    ymin: 31.25
+    xmax: -108.95
+    ymax: 37.05
+  years:
+    start: 2023
+    end: 2025
+  workers: 2
+  memfrac: 0.3
+
+# Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).
+test:
+  inherits: dev
+  run_name: test
+  years:
+    start: 2025
+    end: 2025
+  prism:
+    vars: [ppt, tmax]
+    max_days_per_year: 5
+
+# P720 production: CONUS, full period, many workers.
+# years: PLACEHOLDER. Study period is an open item (plan doc); 1981-2025 is not a decision.
+full:
+  run_name: full
+  bbox: null
+  years:
+    start: 1981
+    end: 2025
+  workers: 8
+  memfrac: 0.08

@@ -1,0 +1,45 @@
+# ---- R / RStudio ----
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.Renviron
+*.Rcheck/
+
+# ---- logs (kept on each machine, not in git) ----
+logs/
+
+# ---- data: never in git. Data lives under data_root (config.yml), outside the repo. ----
+# These patterns are a safety net in case anything lands inside the repo by mistake.
+data/
+raw/
+outputs/
+*.tif
+*.tiff
+*.tif.aux.xml
+*.ovr
+*.nc
+*.nc4
+*.bil
+*.hdr
+*.zip
+*.gz
+*.tar
+*.rds
+*.RDS
+*.rda
+*.parquet
+*.feather
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.h5
+*.hdf
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
