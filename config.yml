@@ -34,6 +34,13 @@ default:
     max_days_per_year: null   # only for the quick `test` profile
     drop_raw: true        # delete daily raw tifs once the variable-year file is written and checked
     user_agent: "gsi-pheno-regions (University of Arizona Cooperative Extension; R httr2)"
+  # ntfy push notifications. Topic comes from the GSI_NTFY_TOPIC env variable (not here,
+  # since anyone with the topic name can read it); unset = notifications off.
+  notify:
+    enabled: true
+    server: "https://ntfy.sh"   # or a self-hosted ntfy URL; GSI_NTFY_SERVER overrides
+    download_updates: true      # one low-priority message per finished variable-year download
+    max_errors: 10              # error notifications per run before muting
 
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
@@ -50,12 +57,14 @@ dev:
   memfrac: 0.3
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).
+# Uses 2022 (outside the dev years) so smoke tests don't re-fetch files dev already
+# downloaded: PRISM refuses a third download of the same file within 24 h.
 test:
   inherits: dev
   run_name: test
   years:
-    start: 2025
-    end: 2025
+    start: 2022
+    end: 2022
   prism:
     vars: [ppt, tmax]
     max_days_per_year: 5

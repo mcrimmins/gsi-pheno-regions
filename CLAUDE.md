@@ -89,7 +89,11 @@ Deferred: fire data, gridMET, ERA5-Land.
 - Scripts in `scripts/NN_name.R`, run from the project root; shared functions in `R/`,
   sourced with `here::here()`. No package structure.
 - Resume-safe: skip existing outputs; write to a temp path and rename on success.
-- Log with `log_msg()/log_warn()/log_err()` from `R/log.R`.
+- Log with `log_msg()/log_warn()/log_err()` from `R/log.R`. `log_err()` also pushes an ntfy
+  notification (capped per run). Long scripts call `notify_init(cfg)` and send start, progress,
+  per-year summary and finish messages with `notify()` (`R/notify.R`). The topic comes from the
+  `GSI_NTFY_TOPIC` env variable only; never put it in config or git. Notification failures
+  must never stop a run.
 - Parallel: `future` + `furrr` with `plan(multisession)` only (Windows and Linux).
   Pass **file paths** to workers, never terra objects (SpatRasters don't serialize).
   Set `terraOptions(memfrac)` per worker from config; single-threaded BLAS.

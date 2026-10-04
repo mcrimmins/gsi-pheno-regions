@@ -18,4 +18,9 @@ log_msg <- function(..., level = "INFO") {
 }
 
 log_warn <- function(...) log_msg(..., level = "WARN")
-log_err  <- function(...) log_msg(..., level = "ERROR")
+# Errors also go to ntfy (capped per run) when R/notify.R is loaded.
+log_err <- function(...) {
+  line <- log_msg(..., level = "ERROR")
+  if (exists("notify_error", mode = "function")) notify_error("error", paste0(...))
+  invisible(line)
+}

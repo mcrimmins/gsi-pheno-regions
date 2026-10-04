@@ -33,6 +33,7 @@ profile <- if (length(args) >= 1) {
 source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
 source(here::here("R", "prism.R"))
+source(here::here("R", "notify.R"))
 
 cfg <- load_cfg(profile)
 log_file <- log_init("01_prism_daily", profile)
@@ -51,6 +52,22 @@ log_msg("vars: ", paste(cfg$prism$vars, collapse = ","), " | years: ",
 log_msg("source: ", cfg$prism$base_url, "/", cfg$prism$region, "/", cfg$prism$res,
         " | sleep ", cfg$prism$sleep_sec, " s between requests")
 
+notify_init(cfg)
+notify("01_prism_daily started",
+       sprintf("vars %s | years %d-%d | bbox %s | %d workers",
+               paste(cfg$prism$vars, collapse = ","), min(cfg$years), max(cfg$years),
+               if (is.null(cfg$bbox)) "CONUS" else "set", cfg$workers),
+       priority = 2, tags = "arrow_forward")
+
+# Fatal errors: notify, then let R stop as usual. Restored at the end of a normal run.
+old_error_opt <- getOption("error")
+options(error = function() {
+  notify("01_prism_daily FAILED", paste("Stopped with error:", geterrmessage()),
+         priority = 5, tags = "rotating_light")
+  options(error = old_error_opt)
+  if (!interactive()) quit(status = 1)
+})
+
 # Single-threaded BLAS/OpenMP in workers (inherited by multisession workers).
 Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", MKL_NUM_THREADS = "1")
 plan(multisession, workers = cfg$workers)
@@ -58,7 +75,10 @@ plan(multisession, workers = cfg$workers)
 t_start <- Sys.time()
 n_skip <- 0L; n_done <- 0L; n_fail <- 0L
 
+year_secs <- numeric()   # elapsed time of years that did work, for the ETA
+
 for (yr in cfg$years) {
+  t_year <- Sys.time()
   dates <- prism_days(yr, cfg$prism$max_days_per_year)
   if (!length(dates)) { log_warn(yr, ": no complete days, skipping"); next }
   if (max(dates) > Sys.Date() - 183) {
@@ -96,9 +116,11 @@ for (yr in cfg$years) {
     .options = furrr_options(seed = NULL, packages = "terra")
   )
 
+  ok_txt <- character(); bad_txt <- character()
   for (k in seq_along(jobs)) {
     r <- results[[k]]; v <- jobs[[k]]$var
     if (isTRUE(r$ok)) {
+      ok_txt <- c(ok_txt, sprintf("%s %.0f MB", v, r$mb))
       n_done <- n_done + 1L
       log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %.1f MB | crs %s | day1 range %.2f..%.2f",
                       v, yr, basename(r$out_file), r$nlyr, r$nrow, r$ncol, r$res[1], r$mb,
@@ -108,9 +130,22 @@ for (yr in cfg$years) {
       }
     } else {
       n_fail <- n_fail + 1L
+      bad_txt <- c(bad_txt, v)
       log_err(v, " ", yr, ": conversion failed: ", r$msg, " (raw kept)")
     }
   }
+
+  # Year summary + ETA from the average time of years that did work.
+  year_secs <- c(year_secs, as.numeric(difftime(Sys.time(), t_year, units = "secs")))
+  left <- sum(cfg$years > yr)
+  eta <- if (left > 0) sprintf(" | %d years left, ETA ~%s", left,
+                               fmt_dur(left * mean(year_secs))) else ""
+  notify(sprintf("%d processed", yr),
+         paste0(if (length(ok_txt)) paste("written:", paste(ok_txt, collapse = ", ")) else "",
+                if (length(bad_txt)) paste0("\nFAILED: ", paste(bad_txt, collapse = ", ")) else "",
+                "\nyear took ", fmt_dur(tail(year_secs, 1)), eta),
+         priority = if (length(bad_txt)) 4 else 3,
+         tags = if (length(bad_txt)) "warning" else "white_check_mark")
 }
 
 plan(sequential)
@@ -126,6 +161,14 @@ log_msg(sprintf("%d variable-year files in %s (%.1f MB total)", length(outs),
 for (f in outs) log_msg("  ", sub(paste0(paths$out_root, "/"), "", f, fixed = TRUE),
                         sprintf("  %.1f MB", file.size(f) / 1e6))
 log_msg("log: ", log_file)
+
+notify(if (n_fail > 0) "01_prism_daily finished WITH PROBLEMS" else "01_prism_daily finished",
+       sprintf("%.1f h | written %d, skipped %d, failed/incomplete %d\n%d files, %.1f GB in %s",
+               as.numeric(difftime(Sys.time(), t_start, units = "hours")), n_done, n_skip,
+               n_fail, length(outs), sum(file.size(outs)) / 1e9, paths$out_root),
+       priority = if (n_fail > 0) 4 else 3,
+       tags = if (n_fail > 0) "warning" else "tada")
+options(error = old_error_opt)
 if (n_fail > 0) {
   if (interactive()) warning(n_fail, " variable-year(s) failed or incomplete; see log") else quit(status = 1)
 }

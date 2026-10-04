@@ -109,6 +109,10 @@ prism_download_var_year <- function(cfg, var, year, dates) {
       if (res$status == "refused" && grepl("limit|block|exceed", res$msg, ignore.case = TRUE)) {
         log_err("Server reports a download limit; stopping this variable-year. ",
                 "Wait 24 h before rerunning these days.")
+        notify(sprintf("PRISM download limit: %s %d", var, year),
+               paste0("Server refused ", var, " ", d, ": ", res$msg,
+                      "\nStopped this variable-year. Wait 24 h before rerunning."),
+               priority = 5, tags = "rotating_light")
         break
       }
     }
@@ -120,11 +124,20 @@ prism_download_var_year <- function(cfg, var, year, dates) {
   }
   unlink(file.path(raw_dir, ".tmp"), recursive = TRUE)
   missing <- dates[!file.exists(prism_day_file(raw_dir, var, dates))]
+  el <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   if (length(missing)) {
     fail_file <- file.path(prism_paths(cfg)$raw_root, sprintf("_missing_%s_%d.txt", var, year))
     writeLines(format(missing), fail_file)
     log_warn(sprintf("%s %d: %d days still missing (listed in %s)", var, year,
                      length(missing), fail_file))
+    notify_error(sprintf("%s %d: %d days missing", var, year, length(missing)),
+                 sprintf("%d of %d days downloaded in %s. Year not converted; rerun later.\nMissing list: %s",
+                         length(dates) - length(missing), length(dates), fmt_dur(el), fail_file))
+  } else if (notify_downloads_on()) {
+    notify(sprintf("%s %d downloaded", var, year),
+           sprintf("%d new files, %.0f MB, %s (%.1f s/file)", n_ok, bytes / 1e6, fmt_dur(el),
+                   el / length(todo)),
+           priority = 2, tags = "arrow_down")
   }
   missing
 }
