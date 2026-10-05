@@ -63,8 +63,14 @@ default:
       pasture: 81
       crops: 82
       wetland_herb: 95
-    herb_classes: [grass, shrub]   # counted as herbaceous (alternative: [grass])
-    min_herb_share: 0.5            # herb share of LAND area (water excluded)
+    # Scope (decided Oct 5): regions are wall-to-wall CONUS (all PRISM land cells), so NPN
+    # and iNaturalist observations anywhere fall in a region. These layers describe and
+    # optionally weight cells; they do not define the clustering domain.
+    herb_classes: [grass, shrub]   # core herbaceous share (grassland + shrub/scrub)
+    broad_classes: [grass, shrub, pasture]   # open-herbaceous share incl. pasture/hay (East)
+    # Strict mask: cells whose satellite curves should be herbaceous-dominated (Cut B
+    # comparison and sensitivity runs), not the analysis domain.
+    min_herb_share: 0.5            # core herb share of LAND area (water excluded)
     max_crop_share: 0.25           # crop share of land area
 
 # Laptop development: small Arizona box, recent complete years, 2 workers.

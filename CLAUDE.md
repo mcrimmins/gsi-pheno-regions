@@ -54,6 +54,12 @@ clustering scores alone.
 - Ward, ClustGeo and SKATER need pairwise distances or graphs that won't fit at ~0.5 M CONUS
   cells; run them on k-means micro-clusters or an aggregated grid (two-stage).
 
+### Scope and observations
+Regions cover all of CONUS (decided Oct 5). NPN and iNaturalist phenology observations
+(CONUS-wide) are part of preliminary prototyping: assign observations to grid cells and
+regions, map sampling density per region, and use observed phenophase timing as an early,
+independent check on the regions alongside Cut B.
+
 ### First-cut deliverables
 Herbaceous mask (exclude cropland); Cut A clusters for A1–A3 (k-means, Gaussian mixture, Ward,
 plus a spatially constrained version) with spatial smoothing; stability-based k; scoreboard vs
@@ -135,5 +141,14 @@ Deferred: fire data, gridMET, ERA5-Land.
    2001/2012/2024; herb >= 50 % of land and crops < 25 %. Pasture, wetlands, water stored but
    not herb. Rule lives in `config.yml` `herb_mask:`; changing it only re-runs the cheap
    combine step. Aggregation reads each year once (no 30 m temp files).
+   CONUS run Oct 5: 155,427 mask cells (32 % of land), 34 min on the P720.
+   **Scope = wall-to-wall CONUS** (decided Oct 5): Cut A clusters ALL PRISM land cells
+   (`grid_mask.tif`) so NPN / iNaturalist observations anywhere fall in a region. The
+   herbaceous layers describe and optionally weight cells; they are NOT the domain.
+   `herb_mask.tif` (strict, 155k cells, West + Plains only) is for Cut B pixel selection
+   and sensitivity runs. `open_herb_share` (grass + shrub + pasture) covers the East, where
+   open herbaceous land is mostly pasture/hay. NLCD's grassland-vs-shrub split shows
+   state-line artifacts (e.g. WY/NE, CO/KS, NM/TX): always use combined shares; never
+   grassland-only or the grass fraction as a feature.
 4. Per-year features, one script per block. 5. Across-year summaries. 6. Clustering.
 7. Evaluation.

@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
-# Step 03: herbaceous mask from Annual NLCD (decided Oct 4: grass + shrub/scrub, years
-# 2001/2012/2024 averaged, herb >= 50 % of land area and crops < 25 %; all in config.yml).
+# Step 03: herbaceous cover layers from Annual NLCD (decided Oct 4: grass + shrub/scrub,
+# years 2001/2012/2024 averaged; strict mask herb >= 50 % of land and crops < 25 %; all in
+# config.yml). Oct 5: these describe/weight cells; the analysis domain is all land cells.
 #
 # 1. Download NLCD land cover for each configured year to <data_root>/_shared/raw/nlcd/
 #    (sequential; ~1.35 GB zip per year; only the .tif is kept).
@@ -9,9 +10,12 @@
 # 3. Average shares across years and apply the rule (rebuilt every run, so changing the
 #    rule in config only needs this step, not the downloads or shares):
 #      static/nlcd_shares.tif  one band per class, mean share of valid NLCD pixels
-#      static/herb_share.tif   herb_share and crop_share (of land area), herb_range
-#                              (max - min herb share across years: mask stability)
-#      static/herb_mask.tif    INT1U 1 = herbaceous analysis cell, NA elsewhere
+#      static/herb_share.tif   herb_share (core: grass + shrub) and crop_share of land
+#                              area, herb_range (max - min across years), open_herb_share
+#                              (broad: + pasture/hay)
+#      static/herb_mask.tif    INT1U 1 = strict herbaceous cell (Cut B / sensitivity),
+#                              NA elsewhere. NOT the analysis domain: regions are
+#                              wall-to-wall over grid_mask.tif (decided Oct 5).
 #
 # Usage: Rscript scripts/03_herb_mask.R [profile]
 #   RStudio: gsi_profile <- "dev"; source("scripts/03_herb_mask.R")
@@ -44,8 +48,9 @@ notify_init(cfg)
 hm <- cfg$herb_mask
 classes <- unlist(hm$classes)
 years <- as.integer(unlist(hm$nlcd_years))
-stopifnot(all(unlist(hm$herb_classes) %in% names(classes)), "water" %in% names(classes),
-          "crops" %in% names(classes))
+broad <- unlist(hm$broad_classes %||% hm$herb_classes)
+stopifnot(all(unlist(hm$herb_classes) %in% names(classes)), all(broad %in% names(classes)),
+          "water" %in% names(classes), "crops" %in% names(classes))
 
 sdir <- static_dir(cfg)
 mask_file <- file.path(sdir, "grid_mask.tif")
@@ -115,7 +120,9 @@ herb_yr <- terra::rast(lapply(years, function(yr) {
 }))
 herb_range <- max(herb_yr) - min(herb_yr)
 
-hs <- c(herb, crop, herb_range); names(hs) <- c("herb_share", "crop_share", "herb_range")
+open_herb <- sum(shares[[broad]]) / land
+hs <- c(herb, crop, herb_range, open_herb)
+names(hs) <- c("herb_share", "crop_share", "herb_range", "open_herb_share")
 herb_mask <- terra::ifel(herb >= hm$min_herb_share & crop < hm$max_crop_share, 1L, NA)
 herb_mask <- terra::mask(herb_mask, mask); names(herb_mask) <- "herb_mask"
 
@@ -123,7 +130,7 @@ wr <- function(x, name, dt = "FLT4S") {
   f <- file.path(sdir, name); tmp <- paste0(f, ".tmp.tif")
   terra::writeRaster(x, tmp, overwrite = TRUE, datatype = dt,
                      gdal = c("COMPRESS=DEFLATE", "TILED=YES"))
-  unlink(f); file.rename(tmp, f)
+  unlink(f); invisible(file.rename(tmp, f))
 }
 wr(shares, "nlcd_shares.tif"); wr(hs, "herb_share.tif"); wr(herb_mask, "herb_mask.tif", "INT1U")
 
@@ -140,6 +147,10 @@ for (t in c(0.25, 0.5, 0.75)) {
 for (k in seq_along(years)) {
   log_msg(sprintf("  %d alone: %d cells pass the rule", years[k],
                   n(terra::ifel(herb_yr[[k]] >= hm$min_herb_share & crop < hm$max_crop_share, 1, NA))))
+}
+for (t in c(0.25, 0.5)) {
+  log_msg(sprintf("  open herb share (%s) >= %.2f: %d cells", paste(broad, collapse = "+"), t,
+                  n(terra::ifel(open_herb >= t, 1, NA))))
 }
 mean_cls <- terra::global(terra::mask(shares, mask), "mean", na.rm = TRUE)[, 1]
 log_msg("mean class shares over land cells: ",
