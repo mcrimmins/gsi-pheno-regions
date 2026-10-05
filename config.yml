@@ -49,6 +49,24 @@ default:
     download_updates: true      # one low-priority message per finished variable-year download
     max_errors: 10              # error notifications per run before muting
 
+  # Herbaceous mask (03_herb_mask.R) from Annual NLCD land cover (30 m, CONUS Albers).
+  # Class shares are computed per 4 km cell for each year, averaged across years, and
+  # stored for every class below; the mask is a rule on those shares (decided Oct 4).
+  herb_mask:
+    nlcd_url: "https://www.mrlc.gov/downloads/sciweb1/shared/mrlc/data-bundles/Annual_NLCD_LndCov_{year}_CU_C1V2.zip"
+    nlcd_years: [2001, 2012, 2024]
+    agg_factor: 33            # 30 m -> ~1 km in Albers before averaging onto the 4 km grid
+    classes:                  # stored shares (of valid NLCD pixels): name: NLCD code
+      water: 11
+      grass: 71
+      shrub: 52
+      pasture: 81
+      crops: 82
+      wetland_herb: 95
+    herb_classes: [grass, shrub]   # counted as herbaceous (alternative: [grass])
+    min_herb_share: 0.5            # herb share of LAND area (water excluded)
+    max_crop_share: 0.25           # crop share of land area
+
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
   run_name: dev

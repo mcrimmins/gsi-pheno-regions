@@ -126,7 +126,14 @@ Deferred: fire data, gridMET, ERA5-Land.
 2. `scripts/02_static.R`: `static/grid_mask.tif` (analysis domain = PRISM land cells),
    `elev.tif` (PRISM 4 km DEM, cropped if aligned with the daily grid, else resampled and
    logged), `lat.tif`, `lon.tif`. Daylength is computed from latitude where needed, not stored.
-   Soils deferred. Grid helpers in `R/grid.R` (`to_grid()` matches any layer to the grid).
-   Next: `03_herb_mask.R` from NLCD (decided Oct 4).
-3. Per-year features, one script per block.
-4. Across-year summaries. 5. Clustering. 6. Evaluation.
+   Dev run Oct 4: DEM aligned with the daily grid (cropped, no resampling). Soils deferred.
+   Grid helpers in `R/grid.R` (`to_grid()` matches any layer to the grid).
+3. `scripts/03_herb_mask.R`: Annual NLCD C1.2 (30 m) -> per-year class shares on the grid
+   (`static/nlcd/share_<class>_<year>.tif`, cached), averaged across years
+   (`nlcd_shares.tif`), herb/crop share of land + across-year range (`herb_share.tif`), and
+   `herb_mask.tif`. Decided Oct 4: herb = grassland (71) + shrub/scrub (52); years
+   2001/2012/2024; herb >= 50 % of land and crops < 25 %. Pasture, wetlands, water stored but
+   not herb. Rule lives in `config.yml` `herb_mask:`; changing it only re-runs the cheap
+   combine step. Aggregation reads each year once (no 30 m temp files).
+4. Per-year features, one script per block. 5. Across-year summaries. 6. Clustering.
+7. Evaluation.

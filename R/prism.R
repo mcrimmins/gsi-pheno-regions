@@ -42,9 +42,17 @@ prism_download_day <- function(cfg, var, date, raw_dir) {
     httr2::req_timeout(cfg$prism$timeout_sec) |>
     httr2::req_error(is_error = function(resp) FALSE)
 
-  resp <- tryCatch(httr2::req_perform(req, path = zip), error = function(e) e)
+  # Ctrl-C during a transfer reaches us as a curl error ("aborted by an application
+  # callback"), not an interrupt; re-raise it so the run stops instead of retrying.
+  resp <- tryCatch(httr2::req_perform(req, path = zip),
+                   interrupt = function(e) stop("interrupted by user", call. = FALSE),
+                   error = function(e) e)
   if (inherits(resp, "error")) {
-    return(list(status = "error", msg = conditionMessage(resp)))
+    msg <- conditionMessage(resp)
+    if (grepl("aborted by an application callback|interrupt", msg, ignore.case = TRUE)) {
+      stop("interrupted by user", call. = FALSE)
+    }
+    return(list(status = "error", msg = msg))
   }
   code <- httr2::resp_status(resp)
   if (code != 200) {
@@ -155,8 +163,13 @@ prism_write_stack <- function(r, out_file, dates, scale = NULL) {
   } else {
     # terra truncates toward zero when scaling to integers: round to the storage step,
     # then nudge away from zero by a tenth of a step so truncation hits the right integer.
-    r <- round(r / scale) * scale
-    r <- r + sign(r) * (scale / 10)
+    # One app() pass: chained raster arithmetic would write a full temp copy per operation
+    # (~1.3 GB each for a CONUS year).
+    r <- terra::app(r, function(v) {
+      x <- round(v / scale) * scale
+      x + sign(x) * (scale / 10)
+    })
+    names(r) <- format(dates, "%Y-%m-%d")
     dt <- "INT2S"; pred <- "PREDICTOR=2"; wargs <- list(scale = scale, offset = 0)
   }
   tmp_dir <- file.path(dirname(out_file), ".tmp")
@@ -169,24 +182,31 @@ prism_write_stack <- function(r, out_file, dates, scale = NULL) {
 
   chk <- terra::rast(tmp)
   stopifnot(terra::nlyr(chk) == length(dates))
-  max_err <- max(terra::global(abs(chk - src), "max", na.rm = TRUE)[, 1])
+  # QA in one pass over written + source bands: per cell, max |difference| and the number of
+  # days where only one of them is NA. Output is 2 layers, so no large temp files.
+  k <- length(dates)
+  qa <- terra::app(c(chk, src), function(v) {
+    a <- v[seq_len(k)]; b <- v[k + seq_len(k)]
+    d <- abs(a - b)
+    c(if (all(is.na(d))) 0 else max(d, na.rm = TRUE), sum(is.na(a) != is.na(b)))
+  })
+  max_err <- terra::global(qa[[1]], "max", na.rm = TRUE)[1, 1]
+  na_mismatch <- terra::global(qa[[2]], "sum", na.rm = TRUE)[1, 1]
   # Rounding error is at most scale/2, but source values are float32: near 100 (e.g. VPD in
   # hPa) one float32 step is ~8e-6, so an exact scale/2 bound fails on legitimate values.
   # A 0.2 % margin covers that and still catches real faults (truncation errors reach a
   # full step, overflow gives NA or huge errors).
   tol <- if (is.null(scale)) 1e-4 else scale * 0.501
-  n_ok_src <- sum(terra::global(src, "notNA")[, 1])
-  n_ok_chk <- sum(terra::global(chk, "notNA")[, 1])
-  if (!is.finite(max_err) || max_err > tol || n_ok_src != n_ok_chk) {
-    stop(sprintf("QA failed: max error %.7f (tol %.7f), non-NA cells %.0f vs %.0f",
-                 max_err, tol, n_ok_chk, n_ok_src))
+  if (!is.finite(max_err) || max_err > tol || na_mismatch != 0) {
+    stop(sprintf("QA failed: max error %.7f (tol %.7f), %.0f cell-days NA in only one of written/source",
+                 max_err, tol, na_mismatch))
   }
   info <- list(nrow = terra::nrow(chk), ncol = terra::ncol(chk),
                ext = as.vector(terra::ext(chk)),
                crs = terra::crs(chk, describe = TRUE)$name, res = terra::res(chk),
                datatype = terra::datatype(chk)[1], max_err = max_err,
                range = as.vector(terra::global(chk[[1]], "range", na.rm = TRUE)[1, ]))
-  rm(chk, r, src); gc()
+  rm(chk, r, src, qa); gc()
 
   # Replace any existing output (and its stale .aux.xml) with the checked temp file.
   for (suffix in c("", ".aux.xml")) unlink(paste0(out_file, suffix))
@@ -217,7 +237,18 @@ prism_convert_year <- function(tifs, dates, out_file, bbox, memfrac, scale = NUL
       r <- terra::crop(r, e, snap = "out")
     }
     prism_write_stack(r, out_file, dates, scale)
-  }, error = function(e) list(ok = FALSE, out_file = out_file, msg = conditionMessage(e)))
+  }, error = function(e) list(ok = FALSE, out_file = out_file, msg = conditionMessage(e)),
+  finally = prism_clean_tmp())
+}
+
+# Remove this R session's terra temp files. Workers live for the whole run, so without
+# this their temp files pile up year after year. current = TRUE only: other workers'
+# files (same parent temp dir) are left alone.
+prism_clean_tmp <- function() {
+  gc()
+  try(terra::tmpFiles(current = TRUE, orphan = FALSE, old = FALSE, remove = TRUE),
+      silent = TRUE)
+  invisible(NULL)
 }
 
 # Re-encode an existing variable-year file to the configured storage (no download).
@@ -238,7 +269,8 @@ prism_recode_file <- function(f, scale, memfrac) {
     rm(r); gc()
     unlink(c(src_copy, paste0(src_copy, ".aux.xml")))
     res
-  }, error = function(e) list(ok = FALSE, out_file = f, msg = conditionMessage(e)))
+  }, error = function(e) list(ok = FALSE, out_file = f, msg = conditionMessage(e)),
+  finally = prism_clean_tmp())
 }
 
 # Storage scale for a variable from config (NULL = float32).
