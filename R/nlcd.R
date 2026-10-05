@@ -2,6 +2,37 @@
 
 nlcd_dir <- function(cfg) file.path(shared_raw_dir(cfg), "nlcd")
 
+# Large-file download: HTTP/1.1 (curl http_version = 2) because mrlc.gov drops big HTTP/2
+# transfers ("Error in the HTTP2 framing layer"); retries dropped connections and HTTP
+# errors with a growing pause. Writes to <dest>.part and renames when complete.
+download_with_retry <- function(url, dest, user_agent, tries = 4, timeout = 3600) {
+  part <- paste0(dest, ".part")
+  for (i in seq_len(tries)) {
+    res <- tryCatch({
+      resp <- httr2::request(url) |>
+        httr2::req_user_agent(user_agent) |>
+        httr2::req_options(http_version = 2L) |>
+        httr2::req_timeout(timeout) |>
+        httr2::req_error(is_error = function(resp) FALSE) |>
+        httr2::req_perform(path = part)
+      code <- httr2::resp_status(resp)
+      if (code == 200) "ok" else paste("HTTP", code)
+    }, interrupt = function(e) stop("interrupted by user", call. = FALSE),
+       error = function(e) conditionMessage(e))
+    if (identical(res, "ok")) {
+      file.rename(part, dest)
+      return(invisible(dest))
+    }
+    if (grepl("aborted by an application callback", res)) stop("interrupted by user", call. = FALSE)
+    unlink(part)
+    if (i < tries) {
+      log_warn(sprintf("download failed (%s), attempt %d/%d; retrying in %d s",
+                       res, i, tries, 30 * i))
+      Sys.sleep(30 * i)
+    } else stop("download failed after ", tries, " attempts: ", res, " (", url, ")")
+  }
+}
+
 nlcd_tif_path <- function(cfg, year) {
   file.path(nlcd_dir(cfg), sub("\\.zip$", ".tif", basename(
     gsub("{year}", year, cfg$herb_mask$nlcd_url, fixed = TRUE))))
@@ -17,12 +48,7 @@ nlcd_fetch_year <- function(cfg, year) {
   if (!file.exists(zip)) {
     log_msg("NLCD ", year, ": downloading ", url)
     t0 <- Sys.time()
-    httr2::request(url) |>
-      httr2::req_user_agent(cfg$prism$user_agent) |>
-      httr2::req_timeout(3600) |>
-      httr2::req_retry(max_tries = 3) |>
-      httr2::req_perform(path = paste0(zip, ".part"))
-    file.rename(paste0(zip, ".part"), zip)
+    download_with_retry(url, zip, cfg$prism$user_agent)
     log_msg(sprintf("NLCD %d: %.0f MB in %.1f min", year, file.size(zip) / 1e6,
                     as.numeric(difftime(Sys.time(), t0, units = "mins"))))
   }
