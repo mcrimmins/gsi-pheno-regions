@@ -125,7 +125,7 @@ for (yr in cfg$years) {
     if (isTRUE(r$ok)) {
       ok_txt <- c(ok_txt, sprintf("%s %.0f MB", v, r$mb))
       n_done <- n_done + 1L
-      log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %s | %.1f MB | crs %s | QA max err %.4f | day1 range %.2f..%.2f",
+      log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %s | %.1f MB | crs %s | QA max err %.6f | day1 range %.2f..%.2f",
                       v, yr, basename(r$out_file), r$nlyr, r$nrow, r$ncol, r$res[1],
                       r$datatype, r$mb, r$crs, r$max_err, r$range[1], r$range[2]))
       if (isTRUE(cfg$prism$drop_raw)) {

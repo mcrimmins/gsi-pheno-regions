@@ -170,11 +170,15 @@ prism_write_stack <- function(r, out_file, dates, scale = NULL) {
   chk <- terra::rast(tmp)
   stopifnot(terra::nlyr(chk) == length(dates))
   max_err <- max(terra::global(abs(chk - src), "max", na.rm = TRUE)[, 1])
-  tol <- if (is.null(scale)) 1e-6 else scale / 2 + 1e-6
+  # Rounding error is at most scale/2, but source values are float32: near 100 (e.g. VPD in
+  # hPa) one float32 step is ~8e-6, so an exact scale/2 bound fails on legitimate values.
+  # A 0.2 % margin covers that and still catches real faults (truncation errors reach a
+  # full step, overflow gives NA or huge errors).
+  tol <- if (is.null(scale)) 1e-4 else scale * 0.501
   n_ok_src <- sum(terra::global(src, "notNA")[, 1])
   n_ok_chk <- sum(terra::global(chk, "notNA")[, 1])
   if (!is.finite(max_err) || max_err > tol || n_ok_src != n_ok_chk) {
-    stop(sprintf("QA failed: max error %.5f (tol %.5f), non-NA cells %d vs %d",
+    stop(sprintf("QA failed: max error %.7f (tol %.7f), non-NA cells %.0f vs %.0f",
                  max_err, tol, n_ok_chk, n_ok_src))
   }
   info <- list(nrow = terra::nrow(chk), ncol = terra::ncol(chk),

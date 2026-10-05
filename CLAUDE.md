@@ -30,7 +30,7 @@ Never compute features from mean-year climate. Daylength from latitude.
   (reuse `gsi.R` from the existing GSI code; thresholds must be parameters); limiting-factor
   shares; onset/peak/decline dates from the 28-day smoothed index and their spread.
   No GSI-to-LFM mapping. Run with and without the VPD ramp (PRISM VPD is least reliable).
-- **Static:** elevation (PRISM DEM), latitude, soil AWC/texture if easy.
+- **Static:** elevation (PRISM DEM), latitude. Soils deferred (decided Oct 4).
 - A1 = Block 1 + static; A2 = A1 + Block 2; A3 = A2 + Block 3.
 - Standardize, reduce within each block (e.g. PCA), weight blocks equally.
 - Precip event counts: thresholds above trace; test sensitivity (interpolation, day boundary).
@@ -123,5 +123,10 @@ Deferred: fire data, gridMET, ERA5-Land.
    `scripts/01b_prism_recode.R` re-encodes existing files to the configured storage.
    **Built; dev run verified Oct 3 2026** (12 variable-years, ~3.1 s/file, ~77 min per year
    of 4 variables).
-2. Static layers, herbaceous mask. 3. Per-year features, one script per block.
+2. `scripts/02_static.R`: `static/grid_mask.tif` (analysis domain = PRISM land cells),
+   `elev.tif` (PRISM 4 km DEM, cropped if aligned with the daily grid, else resampled and
+   logged), `lat.tif`, `lon.tif`. Daylength is computed from latitude where needed, not stored.
+   Soils deferred. Grid helpers in `R/grid.R` (`to_grid()` matches any layer to the grid).
+   Next: `03_herb_mask.R` from NLCD (decided Oct 4).
+3. Per-year features, one script per block.
 4. Across-year summaries. 5. Clustering. 6. Evaluation.
