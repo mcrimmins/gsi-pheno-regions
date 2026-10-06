@@ -105,6 +105,22 @@ default:
     max_pending_tasks: 4      # AppEEARS tasks queued at once (one task = one product-year)
     poll_minutes: 5
 
+  # Cut A feature blocks. Year label Y: water year Oct(Y-1)-Sep(Y) for precipitation,
+  # temperature and aridity; calendar year Y for freeze dates and GDD (fall freezes fall
+  # in Oct-Nov). Water years start one year after the first PRISM year.
+  features:
+    chunk_rows: 60              # grid rows read per chunk (bounds memory per worker)
+    block1:                     # decided Oct 6 2026
+      seasons:                  # water-year seasons (months)
+        ond: [10, 11, 12]
+        jfm: [1, 2, 3]
+        amj: [4, 5, 6]
+        jas: [7, 8, 9]
+      warm_seasons: [amj, jas]  # for the warm-season aridity index
+      gdd_bases: [5, 10]        # deg C; daily mean = (tmin + tmax) / 2
+      freeze_thresholds: [0, -2.2]   # tmin <= threshold; 0 primary, -2.2 sensitivity
+      spring_end_doy: 181       # last spring freeze before Jul 1; first fall freeze after
+
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
   run_name: dev

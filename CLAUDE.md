@@ -160,4 +160,13 @@ Deferred: fire data, gridMET, ERA5-Land.
    login from a netrc file only (`R/appeears.R`). Indices: NDVI (greenness) + NDII7 (NIR vs
    2.1 um MIR, curing). Upgrade path: MCD43A4 (500 m daily NBAR, in AppEEARS).
    Scoping notes: project doc `claude/gsi-cutb-scope.md`.
-5. Per-year climate features, one script per block (Blocks 1-3). 6. Cut B curves and summaries. 7. Across-year summaries. 8. Clustering. 9. Evaluation.
+5. `scripts/10_block1_seasonal.R` (Block 1, decided Oct 6): per year label Y, water year
+   Oct(Y-1)-Sep(Y) for temperature / precipitation / aridity, calendar year Y for freezes
+   and GDD; seasons OND/JFM/AMJ/JAS; 21 bands (seasonal + annual T, T range, annual P,
+   seasonal P fractions, P/PET annual and AMJ+JAS with Hargreaves PET, last spring / first
+   fall freeze and freeze-free days for tmin <= 0 and <= -2.2 C, GDD base 5 and 10).
+   `features/block1/block1_<Y>.tif`, then `summaries/block1_median.tif` and `_iqr.tif`.
+   Shared helpers in `R/features.R` (row-chunked reads, Hargreaves, across-year summary);
+   block code in `R/block1.R`. Freeze definition tmin <= 0 C (-2.2 C sensitivity) is also the
+   Block 2 default. Verified against an independent per-cell calculation.
+   Blocks 2-3: one script each (11_, 12_), same pattern. 6. Cut B curves and summaries. 7. Across-year summaries. 8. Clustering. 9. Evaluation.
