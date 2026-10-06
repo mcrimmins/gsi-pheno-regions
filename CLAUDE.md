@@ -182,4 +182,6 @@ missing. Sample points for Cut B curves: config `report: sample_points`. When a 
 changes, also update the page's Decisions / Open questions / Status / Changelog sections.
 The page is public-facing: no machine names, paths, credentials or ntfy topics.
 `scripts/91_sync_from_p720.R` (laptop) pulls `*_full.png` + merged manifest (and optionally
-summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`.
+summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`. It also renders the page
+(`render`) and uploads `index.html` to S3 with the AWS CLI (`publish`, only when asked;
+`GSI_S3_DEST`, optional `GSI_AWS_PROFILE`, `GSI_CF_DIST`). Never handle AWS credentials.

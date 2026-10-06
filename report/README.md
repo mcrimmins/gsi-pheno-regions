@@ -28,8 +28,9 @@ gsi_sync <- c("figs", "summaries"); source("scripts/91_sync_from_p720.R")  # + r
 
 `91_sync_from_p720.R` uses scp with key login. One-time setup on the laptop:
 
-1. In `~/.Renviron` (`usethis::edit_r_environ()`), add `GSI_P720_HOST=user@p720-address`
-   and restart R.
+1. Open `~/.Renviron` with `file.edit("~/.Renviron")` (no package needed; on Windows R's
+   `~` is the Documents folder, which is where R looks), add
+   `GSI_P720_HOST=user@p720-address`, save and restart R.
 2. If `ssh user@p720-address` asks for a password, set up a key (PowerShell):
    ```powershell
    ssh-keygen -t ed25519            # accept defaults; skip if ~/.ssh/id_ed25519 exists
@@ -40,15 +41,32 @@ Outputs are `report/figs/<figure>_<profile>.png` plus `report/figs/manifest.csv`
 (extent, years and date of each figure). PNGs are small and go in git. The page shows the
 CONUS (`full`) version of a figure when it exists, otherwise the `dev` one.
 
-## Render
+## Sync, render and publish (laptop)
 
-In RStudio, open `report/index.qmd` and click **Render**, or from a terminal:
+`scripts/91_sync_from_p720.R` does the whole update in one step:
 
-```bash
-quarto render report/index.qmd
+```r
+source("scripts/91_sync_from_p720.R")                 # pull CONUS figures + render
+gsi_sync <- "all"; source("scripts/91_sync_from_p720.R")   # ... + upload to S3
+gsi_sync <- "render"; source("scripts/91_sync_from_p720.R")  # just render
 ```
 
-This writes `report/index.html` (ignored by git). Copy it to the website.
+Steps: `figs`, `summaries`, `logs`, `render`, `publish`, `all` (= figs + render +
+publish). Default is figs + render; nothing is uploaded unless `publish` or `all` is given.
+
+Render uses Quarto (on PATH, `QUARTO_PATH`, or RStudio's bundled copy) and writes
+`report/index.html` (git-ignored). The RStudio **Render** button works too.
+
+Publish uses the AWS CLI, already logged in (`aws configure` or `aws sso login`; check
+with `aws sts get-caller-identity`). Add to `~/.Renviron`:
+
+```
+GSI_S3_DEST=s3://your-bucket/path/      # folder (ends in /) or full key of the page
+GSI_AWS_PROFILE=your-profile            # optional
+GSI_CF_DIST=E1234567890                 # optional: CloudFront distribution to invalidate
+```
+
+The page is uploaded as `index.html` (text/html, 5-minute cache).
 
 ## When something changes
 
