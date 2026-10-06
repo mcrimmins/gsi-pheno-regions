@@ -83,11 +83,26 @@ cutb_aggregate_year <- function(raw_dir, layers, meta, value_vars, valid_rel, gr
     res$n_valid[[d]] <- to_grid4(terra::ifel(is.na(good), 0, good), "sum")
     res$snow_frac[[d]] <- to_grid4(terra::ifel(rel == 2, 1, 0), "average")
     for (nm in value_vars) {
-      x <- rd(vf[[nm]][[doys[d]]]) * scale_of(nm)
+      x <- rd(vf[[nm]][[doys[d]]])
+      # AppEEARS GeoTIFFs can already be in physical units (float data, or a GDAL scale
+      # factor that terra applies on read). Only scale raw integers without one.
+      already <- grepl("FLT", terra::datatype(x)[1]) || terra::scoff(x)[1, 1] != 1
+      if (!already) x <- x * scale_of(nm)
       x <- terra::mask(x, good, maskvalues = c(0, NA))
       res[[nm]][[d]] <- to_grid4(x, "average")
     }
   }
+  # Sanity check before writing: NDVI and reflectances must be in physical ranges.
+  chk_range <- function(nm, lo, hi) {
+    if (!nm %in% names(res)) return(invisible())
+    m <- stats::median(unlist(lapply(res[[nm]], function(r)
+      stats::median(terra::values(r), na.rm = TRUE))), na.rm = TRUE)
+    if (!is.finite(m) || m < lo || m > hi) {
+      stop(sprintf("%s median %.6g outside [%g, %g]: check scale factors", nm, m, lo, hi))
+    }
+  }
+  chk_range("ndvi", 0.01, 1)
+  for (nm in intersect(c("red", "nir", "mir"), names(res))) chk_range(nm, 0.005, 1.5)
   info <- list()
   for (nm in names(res)) {
     r <- terra::mask(terra::rast(res[[nm]]), grid)

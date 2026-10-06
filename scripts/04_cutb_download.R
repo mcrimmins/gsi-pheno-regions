@@ -22,7 +22,7 @@ args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) {
   args[1]
 } else if (exists("gsi_profile", envir = globalenv())) {
-  get("gsi_profile", envir = globalenv())
+  base::get("gsi_profile", envir = globalenv())
 } else {
   Sys.getenv("R_CONFIG_ACTIVE", "dev")
 }
@@ -70,6 +70,14 @@ for (p in products) {
 
 # ---- jobs and state -------------------------------------------------------------------
 jobs <- expand.grid(product = products, year = cfg$years, stringsAsFactors = FALSE)
+first_year <- vapply(jobs$product, function(p) {
+  fd <- cb$first_date[[p]]
+  if (is.null(fd)) NA_integer_ else as.integer(format(as.Date(fd), "%Y"))
+}, integer(1))
+skip <- !is.na(first_year) & jobs$year < first_year
+if (any(skip)) log_msg("skipping ", sum(skip), " product-year(s) before the product's first date: ",
+                       paste(paste(jobs$product, jobs$year, sep = "_")[skip], collapse = ", "))
+jobs <- jobs[!skip, , drop = FALSE]
 jobs$key <- paste(jobs$product, jobs$year, sep = "_")
 outs_done <- function(p, y) all(file.exists(vapply(out_vars,
                                                    function(v) cutb_out_file(cfg, p, v, y), "")))
@@ -82,6 +90,7 @@ st <- merge(jobs, prev[, c("key", "task_id", "status", "attempts")], by = "key",
 st <- st[order(st$year, st$product), ]
 st$status[is.na(st$status)] <- "new"; st$attempts[is.na(st$attempts)] <- 0L
 for (i in seq_len(nrow(st))) if (outs_done(st$product[i], st$year[i])) st$status[i] <- "complete"
+st$status[is.na(st$status)] <- "new"
 # A task that finished at NASA but wasn't downloaded/stacked yet is picked up again; failed
 # stacking is retried once per run (raw files were kept).
 st$status[st$status == "stack_failed"] <- "done"
@@ -129,6 +138,10 @@ if (!any(active() | todo())) {
         raw <- cutb_raw_dir(cfg, p, y); dir.create(raw, showWarnings = FALSE, recursive = TRUE)
         files <- ae_bundle_files(cfg, token, st$task_id[i])
         files <- files[grepl("\\.tif$", files$file_name), , drop = FALSE]
+        if (!nrow(files)) {
+          log_warn(st$key[i], ": AppEEARS returned no GeoTIFFs (no data for this period); marked empty")
+          st$status[i] <- "empty"; save_state(); next
+        }
         for (k in seq_len(nrow(files))) {
           dest <- file.path(raw, files$file_name[k])
           if (!file.exists(dest)) ae_download_file(cfg, token, st$task_id[i], files[k, ], dest)
@@ -173,7 +186,8 @@ if (!any(active() | todo())) {
   }
 
   ae_logout(cfg, token)
-  msg <- sprintf("%d complete, %d failed, %d total | %.1f h", sum(st$status == "complete"),
+  msg <- sprintf("%d complete, %d empty, %d failed, %d total | %.1f h", sum(st$status == "complete"),
+                 sum(st$status == "empty"),
                  sum(st$status %in% c("failed", "stack_failed")), nrow(st),
                  as.numeric(difftime(Sys.time(), t0, units = "hours")))
   log_msg("=== done | ", msg, " | state: ", state_file)

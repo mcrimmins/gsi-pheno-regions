@@ -27,7 +27,7 @@ args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) {
   args[1]
 } else if (exists("gsi_profile", envir = globalenv())) {
-  get("gsi_profile", envir = globalenv())
+  base::get("gsi_profile", envir = globalenv())
 } else {
   Sys.getenv("R_CONFIG_ACTIVE", "dev")
 }

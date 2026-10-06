@@ -82,6 +82,11 @@ default:
   cutb:
     api: "https://appeears.earthdatacloud.nasa.gov/api"
     products: ["MOD13A2.061", "MYD13A2.061"]
+    # First composite of each product: years before this are never requested
+    # (Aqua launched May 2002; its first 16-day composite is early July 2002).
+    first_date:
+      MOD13A2.061: "2000-02-18"
+      MYD13A2.061: "2002-07-04"
     # short name: regex matched against the product's AppEEARS layer names (checked at run time)
     layers:
       ndvi: "16_days_NDVI$"

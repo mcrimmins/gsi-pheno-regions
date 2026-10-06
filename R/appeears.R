@@ -114,6 +114,10 @@ ae_task_status <- function(cfg, token, task_id) {
 
 ae_bundle_files <- function(cfg, token, task_id) {
   b <- httr2::resp_body_json(httr2::req_perform(ae_req(cfg, paste0("bundle/", task_id), token)))
+  if (!length(b$files)) {
+    return(data.frame(file_id = character(), file_name = character(), file_size = numeric(),
+                      sha256 = character(), stringsAsFactors = FALSE))
+  }
   do.call(rbind, lapply(b$files, function(f) data.frame(
     file_id = f$file_id, file_name = basename(f$file_name),
     file_size = as.numeric(f$file_size %||% NA),
