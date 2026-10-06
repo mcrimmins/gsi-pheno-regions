@@ -121,6 +121,24 @@ default:
       freeze_thresholds: [0, -2.2]   # tmin <= threshold; 0 primary, -2.2 sensitivity
       spring_end_doy: 181       # last spring freeze before Jul 1; first fall freeze after
 
+  # Project page figures (scripts/90_report_figs.R -> report/figs). Sample points are
+  # illustrative grassland locations; points outside a profile's extent are skipped.
+  report:
+    extent_label: "CONUS"
+    curve_years: 3              # Cut B curves: most recent N years available
+    sample_points:
+      - {name: "SE Arizona desert grassland (Santa Rita Exp. Range)", lon: -110.88, lat: 31.80}
+      - {name: "Colorado shortgrass steppe (Central Plains Exp. Range)", lon: -104.75, lat: 40.82}
+      - {name: "Kansas tallgrass prairie (Konza Prairie)", lon: -96.56, lat: 39.09}
+      - {name: "California annual grassland (Sierra Foothills)", lon: -121.29, lat: 39.25}
+      - {name: "N Arizona grassland (Chino Valley)", lon: -112.45, lat: 34.85}
+
+  # scripts/91_sync_from_p720.R (laptop): where things live on the P720. The host itself
+  # comes from the GSI_P720_HOST environment variable (~/.Renviron), not from git.
+  sync:
+    remote_repo: "~/RProjects/gsi-pheno-regions"
+    remote_data_root: "~/data/gsi-pheno-regions"
+
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
   run_name: dev
@@ -134,6 +152,8 @@ dev:
     end: 2025
   workers: 2
   memfrac: 0.3
+  report:
+    extent_label: "Arizona test area (dev)"
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).
 # Uses 2022 (outside the dev years) so smoke tests don't re-fetch files dev already

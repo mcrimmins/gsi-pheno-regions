@@ -23,4 +23,7 @@ gsi_profile <- "test"   # or "dev"
 rstudioapi::jobRunScript("scripts/01_prism_daily.R", workingDir = getwd(), importEnv = TRUE)
 ```
 
+Project page: `report/index.qmd` (see `report/README.md`); figures from
+`scripts/90_report_figs.R`.
+
 Data: PRISM Group, Oregon State University, https://prism.oregonstate.edu.

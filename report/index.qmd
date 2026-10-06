@@ -1,0 +1,349 @@
+---
+title: "Fuel phenology regions for herbaceous fuels"
+subtitle: "A living project page: approach, analysis choices and preliminary results"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Figures come from scripts/90_report_figs.R (figs/<figure>_<profile>.png + manifest.csv).
+# The CONUS ("full") version of a figure is shown when it exists, otherwise the dev one.
+figs <- if (file.exists("figs/manifest.csv")) {
+  utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
+} else data.frame(figure = character(), profile = character())
+
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n',
+                caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s · %s · figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+```
+
+::: {.callout-important appearance="simple"}
+## Work in progress
+This page tracks an ongoing analysis and is updated as the work moves along. Results
+shown here are **preliminary** and some come from a small Arizona test area. They are
+here to show the approach and invite feedback, not for operational use. The
+[changelog](#changelog) lists what changed and when.
+:::
+
+## At a glance
+
+**The question.** Where across the contiguous U.S. do herbaceous fuels (grasses and
+forbs) share a common seasonal pattern of green-up, staying green and curing? Regions
+like that are the domains we need to build and tune **regional phenology models**
+for live fuel moisture, instead of applying one set of thresholds everywhere.
+
+**The approach.** Two independent ways of drawing regions, then compare them:
+
+- **Cut A, climate:** cluster grid cells on climate descriptors built from daily PRISM
+  data. These regions are *hypotheses about what drives* fuel phenology.
+- **Cut B, satellite curves:** cluster grid cells on the observed seasonal curves of
+  greenness and canopy water from MODIS. This is the *response* and the real test of
+  Cut A.
+- **Ground observations** from the USA National Phenology Network (NPN) and
+  iNaturalist provide an independent check, including in places where satellite
+  curves and land-cover maps are hardest to interpret.
+
+Where the climate and satellite regions agree, there is a solid basis for regional
+models. Where they disagree is where to look for what's missing.
+
+**Status (October 2026).**
+
+| Component | Status |
+|---|---|
+| Daily PRISM climate, 4 km, CONUS, 2001–2025 | Done |
+| Grid, elevation and herbaceous cover layers (Annual NLCD) | Done |
+| MODIS greenness and canopy water, CONUS, 2001–2025 | Downloading and processing |
+| Cut A, Block 1: seasonal climate features | Built and checked on Arizona; CONUS run next |
+| Cut A, Blocks 2 and 3: timing/variability and GSI features | Next (thresholds to decide) |
+| Cut A clustering, first runs | Next |
+| Cut B curve processing and clustering | Planned |
+| NPN and iNaturalist observations | Planned (data inventory needed) |
+
+: Pipeline status {.striped}
+
+## Why regions?
+
+The Growing Season Index (GSI; Jolly et al. 2005) in the National Fire Danger Rating
+System turns daily minimum temperature, vapor pressure deficit and day length into an
+index of plant activity, which is then mapped to live fuel moisture. The same
+thresholds are applied everywhere, but herbaceous fuels in a desert grassland watered by
+the summer monsoon, a shortgrass prairie, and a California annual grassland respond to
+different cues on different calendars.
+
+In discussions with fire managers and planners, the need that came up was **fuel
+phenology regionalization**: a data-driven way to find regions with roughly common
+green-up, maintenance and curing patterns, so that phenology models can be built and
+tuned within each one. We start with **herbaceous fuels** and draw regions **wall to
+wall across CONUS**. That way they can be tested anywhere, including in the East where
+land-cover maps are challenging, and ground observations anywhere can be used. The
+regions can later roll up to the two NFDRS live fuel classes.
+
+## How the analysis is built
+
+```{mermaid}
+%%| fig-width: 7
+%%{init: {"themeVariables": {"fontSize": "17px"}}}%%
+flowchart LR
+  P["Daily PRISM 4 km<br/>ppt, tmin, tmax, vpdmax<br/>2001–2025"] --> B1["Block 1<br/>seasonal climate"]
+  P --> B2["Block 2<br/>timing and variability"]
+  P --> B3["Block 3<br/>GSI sub-indices"]
+  B1 --> A["Cut A<br/>climate regions"]
+  B2 --> A
+  B3 --> A
+  M["MODIS NDVI and NDII7<br/>Terra + Aqua, 1 km to 4 km"] --> C["Cut B<br/>seasonal-curve regions"]
+  N["NLCD herbaceous cover"] -. "weights and mask" .-> A
+  N -. "selects grass-dominated cells" .-> C
+  A --> X{"Compare"}
+  C --> X
+  O["NPN and iNaturalist<br/>phenophase observations"] --> X
+  X --> R["Fuel phenology regions<br/>for regional phenology models"]
+```
+
+Everything sits on the PRISM 4 km grid (about 480,000 land cells). Features are
+computed **for each year and then summarized across years** (median and year-to-year
+spread), never from an average-year climate: the GSI of an average year is not the
+average GSI.
+
+### Data
+
+| Data set | What it provides | Resolution and period |
+|---|---|---|
+| PRISM daily (Oregon State University) | Precipitation, min and max temperature, max vapor pressure deficit | 4 km, daily, 2001–2025 |
+| MODIS MOD13A2 (Terra) and MYD13A2 (Aqua), Collection 6.1, via NASA AppEEARS | NDVI (greenness); NIR and MIR reflectance for NDII7 (canopy water and curing) | 1 km, 16-day composites, averaged to 4 km; 2001–2025 (Aqua from mid-2002) |
+| Annual NLCD Collection 1 (USGS) | Grassland, shrub/scrub, pasture, crop shares per 4 km cell | 30 m land cover for 2001, 2012 and 2024 |
+| USA-NPN and iNaturalist | Ground observations of phenophases (green-up, flowering, senescence) | Point observations, CONUS |
+
+: Data sets {.striped}
+
+## Study domain and herbaceous cover
+
+Regions cover all CONUS land. Herbaceous cover from Annual NLCD is used to **describe and
+weight** cells, not to define the domain. Two shares are kept: a *core* share
+(grassland plus shrub/scrub) and an *open* share that adds pasture and hay, which is the
+main herbaceous cover in the East. A **strict mask** (core share at least half of the land
+and crops under a quarter) picks out the cells where a MODIS curve is mostly a
+herbaceous signal. It is used to select Cut B curves and for sensitivity runs.
+
+```{r fig-domain}
+#| results: asis
+show_fig("domain",
+  "Herbaceous cover on the 4 km grid from Annual NLCD (mean of 2001, 2012 and 2024). The strict mask covers about a third of CONUS land, almost all of it in the West and Great Plains.",
+  "Three maps of CONUS: core herbaceous share, open herbaceous share, and the strict herbaceous mask.")
+```
+
+::: {.callout-tip appearance="simple" collapse="true"}
+## Why grassland and shrub are combined
+In NLCD the split between grassland/herbaceous and shrub/scrub changes abruptly at
+some state lines (for example Wyoming/Nebraska, Colorado/Kansas, New Mexico/Texas),
+a mapping artifact rather than a real change in vegetation. The analysis therefore only
+uses the combined share, never grassland alone.
+:::
+
+## Cut A: climate features
+
+The climate features come in three blocks, which are added one at a time so we can see
+what each contributes: **A1** = Block 1 + elevation and latitude, **A2** = A1 + Block 2,
+**A3** = A2 + Block 3. Keeping the GSI-based features in their own block answers a
+practical question: does the GSI formulation add information about where phenology
+differs, or do its thresholds steer the regions?
+
+### Block 1: seasonal climate (built)
+
+The year runs from October through September (a *water year*) for temperature,
+precipitation and aridity, because cool-season moisture comes before the green-up it
+feeds. Freeze dates and growing degree days use the calendar year.
+
+| Feature | Definition |
+|---|---|
+| Seasonal and annual temperature | Mean of daily (tmin + tmax)/2 for Oct–Dec, Jan–Mar, Apr–Jun, Jul–Sep and the water year; warmest-minus-coolest season range |
+| Annual precipitation and seasonal shares | Water-year total and the fraction falling in each season (Jul–Sep isolates the monsoon; Apr–Jun the dry foresummer) |
+| Aridity index | Precipitation / potential evapotranspiration (Hargreaves), for the water year and the warm season (Apr–Sep) |
+| Freeze dates and freeze-free season | Last spring and first fall day with tmin ≤ 0 °C, and the days between them; ≤ −2.2 °C as a sensitivity check |
+| Growing degree days | Base 5 °C (cool-season and general growth) and base 10 °C (warm-season grasses) |
+
+: Block 1 features (21 per year) {.striped}
+
+```{r fig-block1-medians}
+#| results: asis
+show_fig("block1_medians",
+  "Six of the Block 1 features, as the median across years.",
+  "Six maps of Block 1 climate features: mean annual temperature, annual precipitation, July to September share of precipitation, aridity index, freeze-free season length, and growing degree days above 10 C.")
+```
+
+How a feature varies **from year to year** matters as much as its typical value:
+grasses in a place where summer rain is unreliable behave differently from grasses
+where it always arrives. Block 1 keeps the spread (interquartile range, IQR) of every
+feature alongside its median.
+
+```{r fig-block1-iqr}
+#| results: asis
+show_fig("block1_iqr",
+  "Year-to-year spread of three Block 1 features (interquartile range across years; precipitation as IQR relative to the median).",
+  "Three maps of year-to-year variability: annual precipitation, July to September share of precipitation, and freeze-free season length.")
+```
+
+::: {.callout-note appearance="simple"}
+## Reading the preliminary maps
+- Arizona test-area maps use only two water years, so they check that the processing
+  works rather than describe the climate. The CONUS maps use 2002–2025.
+- Where no freeze occurs, the freeze-free season is set to the full year, so the edge
+  of the frost-free low desert appears as a sharp boundary.
+- The aridity index is very skewed (most of the West is well below 1), so it will be
+  log- or rank-transformed before clustering.
+:::
+
+### Block 2: timing and variability (next)
+
+Herbaceous phenology responds to the **timing and reliability** of moisture and warmth,
+not just the averages. Candidate features:
+
+- onset of the warm-season rains (the first date a cumulative-precipitation threshold is
+  passed) and how much it varies from year to year;
+- frequency of rain pulses large enough to matter, and typical dry-spell length within
+  the warm season;
+- "false starts": warm spells followed by a hard freeze;
+- simple strata of what limits growth (cold, moisture, or both) from daily rules.
+
+The freeze definition matches Block 1. The rain-event size and the onset rule are still
+to be decided.
+
+### Block 3: GSI sub-indices (planned)
+
+The daily GSI sub-indices (minimum temperature, vapor pressure deficit, day length and a
+moisture ramp), computed per year, give the share of the active season limited by each
+factor, and the onset, peak and decline dates of the smoothed index. PRISM has no soil
+moisture, so the moisture ramp will use a precipitation-based index or a simple water
+balance, and that choice will be treated as a sensitivity test. Vapor pressure deficit is
+the least reliable PRISM variable, so A3 will be run with and without it.
+
+## Cut B: satellite seasonal curves
+
+Cut B uses MODIS 16-day composites from both Terra and Aqua at 1 km, averaged to the
+4 km grid using only good-quality pixels. The count of valid pixels and the share
+flagged as snow are kept for every composite. Two indices describe the season:
+
+- **NDVI** for greenness;
+- **NDII7** = (NIR − MIR) / (NIR + MIR) for canopy water content. It drops as grasses
+  cure, often separating from NDVI when plants are still green but drying.
+
+```{r fig-cutb-curves}
+#| results: asis
+show_fig("cutb_curves",
+  "16-day NDVI and NDII7 at sample grassland locations, Terra and Aqua.",
+  "Time series of NDVI and NDII7 at sample grassland locations, with Terra and Aqua shown as separate lines.")
+```
+
+```{r fig-cutb-peak}
+#| results: asis
+show_fig("cutb_peak",
+  "Size of the NDVI seasonal cycle and when it peaks, from one year of Terra composites. Cells with an amplitude under 0.1 have no clear green season.",
+  "Two maps: NDVI seasonal amplitude, and the timing of peak NDVI in three seasons.")
+```
+
+Before clustering, the curves will be merged across Terra and Aqua (the two sensors
+differ slightly, especially in NDII7), gap-filled where clouds or snow leave holes,
+smoothed, and summarized per year (green-up, peak, curing dates and rates). The
+clustering itself will work on the shapes of whole curves (functional principal
+components).
+
+## Clustering and evaluation plan
+
+Methods will be judged by how well the regions work as domains for regional phenology
+models, not by clustering scores alone.
+
+- **First runs (Cut A):** k-means as a baseline, Gaussian mixtures (soft membership
+  shows transition zones), and Ward hierarchical clustering (nested regions: fine for
+  modeling, coarse for operational roll-up). A spatially constrained version tests how
+  much is lost by requiring contiguous regions.
+- **Cut B:** functional PCA of the seasonal curves, then mixtures on the scores.
+- **Linking A and B:** cluster the curves, then predict those regions from the climate
+  features with random forests. This gives a wall-to-wall map and shows which climate
+  features separate phenology regions.
+- **Evaluation:** stability under resampling of years and space; agreement between
+  the A1, A2, A3 and Cut B partitions; comparison with EPA ecoregions and operational
+  units (Predictive Service Areas, NFDRS climate classes); and whether NPN and
+  iNaturalist phenophase dates differ more between regions than within them.
+
+## Decisions so far
+
+| Date | Decision | Why |
+|---|---|---|
+| Oct 2026 | Start with herbaceous fuels; regions are domains for regional phenology models | Most direct need raised by fire managers; herbaceous fuels respond fastest |
+| Oct 2026 | Build Cut A from daily PRISM at 4 km; features per year, then summarized | Daily data capture timing and variability; averaging climate first distorts nonlinear indices like GSI |
+| Oct 2026 | Herbaceous cover from Annual NLCD (grassland + shrub/scrub; 2001, 2012, 2024) | Consistent national product; combined share avoids the state-line artifact |
+| Oct 2026 | Regions are wall to wall across CONUS | Lets NPN and iNaturalist observations anywhere test the regions; cover is an attribute, not the domain |
+| Oct 2026 | Cut B from MODIS MOD13A2 + MYD13A2 (1 km, 16-day), averaged to 4 km; NDVI and NDII7 | Available nationally through AppEEARS; two sensors double the sampling; NDII7 tracks curing |
+| Oct 2026 | Data period starts in 2001 | First full year of MODIS, so the climate and satellite cuts overlap |
+| Oct 2026 | Block 1 definitions: water year, Oct–Dec/Jan–Mar/Apr–Jun/Jul–Sep seasons, GDD base 5 and 10 °C, freeze at 0 °C (−2.2 °C sensitivity), Hargreaves aridity | Seasons isolate the monsoon and the dry foresummer; bases fit cool- and warm-season grasses |
+| Oct 2026 | Soils deferred | No quick national water-holding capacity layer; add if the first runs suggest it matters |
+
+: Analysis decisions {.striped}
+
+## Open questions for the team
+
+- **Study period:** use all of 2001–2025, or a fixed recent window?
+- **Block 2 thresholds:** what size of rain event matters to herbaceous fuels, and how
+  should the onset of the warm-season rains be defined?
+- **GSI moisture ramp:** which precipitation or water-balance index to use in Block 3?
+- **Ground observations:** which NPN and iNaturalist taxa and phenophases best
+  represent herbaceous fuel green-up and curing?
+- **Operational use:** how contiguous do regions need to be to be useful to managers?
+- **C3/C4 grasses:** is there a suitable national layer of cool- versus warm-season
+  grass cover?
+
+Comments on any of these are welcome.
+
+## Changelog
+
+| Date | Change |
+|---|---|
+| 2026-10-06 | Page created: approach, data, decisions, Block 1 features, first figures |
+
+: {.striped}
+
+## Data sources and references
+
+- PRISM Group, Oregon State University, <https://prism.oregonstate.edu>, daily 4 km
+  data accessed October 2026.
+- Didan, K. (2021). MOD13A2 and MYD13A2 MODIS/Terra and Aqua Vegetation Indices 16-Day
+  L3 Global 1 km SIN Grid V061. NASA EOSDIS Land Processes DAAC. Accessed through
+  AppEEARS (<https://appeears.earthdatacloud.nasa.gov>).
+- U.S. Geological Survey. Annual National Land Cover Database (NLCD) Collection 1,
+  <https://www.mrlc.gov>.
+- USA National Phenology Network, <https://www.usanpn.org>; iNaturalist,
+  <https://www.inaturalist.org>.
+- Jolly, W. M., Nemani, R., and Running, S. W. (2005). A generalized, bioclimatic index
+  to predict foliar phenology in response to climate. *Global Change Biology* 11,
+  619–632.
+- Hargreaves, G. H., and Samani, Z. A. (1985). Reference crop evapotranspiration from
+  temperature. *Applied Engineering in Agriculture* 1, 96–99.
+- Allen, R. G., Pereira, L. S., Raes, D., and Smith, M. (1998). *Crop
+  evapotranspiration*. FAO Irrigation and Drainage Paper 56.

@@ -43,3 +43,8 @@ outputs/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- project page: rendered output (figures in report/figs/ ARE committed) ----
+report/*.html
+report/*_files/
+report/.quarto/
