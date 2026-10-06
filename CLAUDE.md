@@ -150,5 +150,14 @@ Deferred: fire data, gridMET, ERA5-Land.
    open herbaceous land is mostly pasture/hay. NLCD's grassland-vs-shrub split shows
    state-line artifacts (e.g. WY/NE, CO/KS, NM/TX): always use combined shares; never
    grassland-only or the grass fraction as a feature.
-4. Per-year features, one script per block. 5. Across-year summaries. 6. Clustering.
-7. Evaluation.
+4. `scripts/04_cutb_download.R` (Cut B, decided Oct 5): MOD13A2 + MYD13A2 v061 (16-day VI,
+   1 km; Terra + Aqua 8 days apart) via AppEEARS area requests (profile bbox, CONUS when
+   null), one task per product-year, state in `cutb/tasks.csv`. AppEEARS has no 0.05 deg
+   CMG products, so each year is aggregated to the 4 km grid as it is stacked: mean of
+   1 km pixels with pixel reliability 0-1, plus `n_valid` and `snow_frac` per composite.
+   Output `cutb/<product>/<var>/<product>_<var>_<year>.tif` on the PRISM grid, physical
+   units. Layer names resolved from AppEEARS at run time (`config.yml` `cutb:`). Earthdata
+   login from a netrc file only (`R/appeears.R`). Indices: NDVI (greenness) + NDII7 (NIR vs
+   2.1 um MIR, curing). Upgrade path: MCD43A4 (500 m daily NBAR, in AppEEARS).
+   Scoping notes: project doc `claude/gsi-cutb-scope.md`.
+5. Per-year climate features, one script per block (Blocks 1-3). 6. Cut B curves and summaries. 7. Across-year summaries. 8. Clustering. 9. Evaluation.

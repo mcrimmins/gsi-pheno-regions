@@ -73,6 +73,33 @@ default:
     min_herb_share: 0.5            # core herb share of LAND area (water excluded)
     max_crop_share: 0.25           # crop share of land area
 
+  # Cut B satellite curves (decided Oct 5): MODIS 16-day vegetation indices, Terra + Aqua
+  # (composites 8 days apart -> ~8-day sampling), via AppEEARS area requests subset to the
+  # profile bbox (CONUS when null). AppEEARS has no 0.05 deg CMG products, so the 1 km
+  # products are used and aggregated to the 4 km PRISM grid as each year is stacked.
+  # NDVI for greenness, NDII7 (NIR vs 2.1 um MIR) for curing.
+  # Upgrade path for curing fidelity: MCD43A4 (500 m daily NBAR, all bands) in AppEEARS.
+  cutb:
+    api: "https://appeears.earthdatacloud.nasa.gov/api"
+    products: ["MOD13A2.061", "MYD13A2.061"]
+    # short name: regex matched against the product's AppEEARS layer names (checked at run time)
+    layers:
+      ndvi: "16_days_NDVI$"
+      evi: "16_days_EVI$"
+      red: "16_days_red_reflectance$"
+      nir: "16_days_NIR_reflectance$"
+      mir: "16_days_MIR_reflectance$"
+      doy: "16_days_composite_day_of_the_year$"
+      reliability: "16_days_pixel_reliability$"
+    # Aggregation to the 4 km grid: mean of 1 km pixels whose pixel reliability is in
+    # valid_reliability (0 good, 1 marginal; 2 snow/ice, 3 cloudy, -1 fill). Also written per
+    # composite: n_valid (count of valid 1 km pixels) and snow_frac (share flagged snow/ice).
+    value_vars: [ndvi, evi, red, nir, mir, doy]
+    valid_reliability: [0, 1]
+    conus_bbox: {xmin: -125.1, ymin: 24.0, xmax: -66.4, ymax: 50.0}
+    max_pending_tasks: 4      # AppEEARS tasks queued at once (one task = one product-year)
+    poll_minutes: 5
+
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
   run_name: dev

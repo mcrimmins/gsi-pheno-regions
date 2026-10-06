@@ -1,0 +1,6 @@
+"region","land_cells","mask_cells","pct_land","at_25","at_75","crop_excluded","grass_in_mask","shrub_in_mask"
+"Pacific NW / N. Great Basin",40746,13664,33.5,19782,10317,789,0.32,0.53
+"California / SW coast",29581,17742,60,21716,13620,215,0.18,0.68
+"Interior West (Basin, Rockies, SW)",126957,90576,71.3,102550,76529,3195,0.2,0.69
+"Great Plains (-103 to -95)",93881,33400,35.6,36670,25392,6896,0.5,0.34
+"East (> -95)",184612,45,0,1159,2,0,0.26,0.17
