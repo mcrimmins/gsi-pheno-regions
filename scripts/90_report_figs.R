@@ -5,7 +5,9 @@
 # any stage of the pipeline. Outputs are small PNGs that go in git; the page embeds them,
 # so rendering the page needs no data.
 #
-# Writes report/figs/<figure>_<profile>.png and updates report/figs/manifest.csv
+# Writes <fig_dir>/<figure>_<profile>.png and updates <fig_dir>/manifest.csv, where
+# fig_dir is report/figs (dev) or <run_dir>/report_figs when config report:
+# figs_in_run_dir is true (full, on the P720; 91_sync_from_p720.R copies them to the repo)
 # (figure, profile, extent, years, made). The page shows the full-profile version of a
 # figure when one exists, else the dev version.
 #
@@ -36,7 +38,8 @@ cfg <- load_cfg(profile)
 log_file <- log_init("90_report_figs", profile)
 rep <- cfg$report
 extent_label <- rep$extent_label %||% profile
-fig_dir <- here::here("report", "figs")
+fig_dir <- if (isTRUE(rep$figs_in_run_dir)) file.path(cfg$run_dir, "report_figs") else
+  here::here("report", "figs")
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 terra::terraOptions(progress = 0)
 log_msg("=== 90_report_figs | profile: ", profile, " | extent: ", extent_label)
@@ -111,15 +114,19 @@ lin_breaks <- function(r, n = 8) {
 log_breaks <- function(r) {
   q <- unlist(terra::global(r, function(v) stats::quantile(v, c(0.01, 0.99), na.rm = TRUE)))
   q <- pmax(q, 1e-3)
-  s <- as.vector(outer(c(1, 2, 5), 10^(-3:4)))
-  b <- s[s > q[1] & s < q[2]]
+  # 1-2-5 steps; if that gives fewer than 7 classes, use 1-1.5-2-3-5-7 steps
+  for (m in list(c(1, 2, 5), c(1, 1.5, 2, 3, 5, 7))) {
+    s <- as.vector(outer(m, 10^(-3:4)))
+    b <- s[s > q[1] & s < q[2]]
+    if (length(b) >= 6) break
+  }
   if (length(b) < 3) return(lin_breaks(r))
   list(breaks = c(-Inf, b, Inf), labels = c("", num_lab(b), ""))
 }
 num_lab <- function(b) trimws(formatC(b, format = "fg", digits = 4, big.mark = ","))
 fix_breaks <- function(b) list(breaks = c(-Inf, b, Inf), labels = c("", num_lab(b), ""))
 
-# Record a figure in report/figs/manifest.csv (one row per figure and profile).
+# Record a figure in <fig_dir>/manifest.csv (one row per figure and profile).
 record <- function(name, years) {
   mf <- file.path(fig_dir, "manifest.csv")
   m <- if (file.exists(mf)) utils::read.csv(mf, stringsAsFactors = FALSE) else
@@ -215,7 +222,7 @@ if (have(med_file, iqr_file) && length(b1_years) >= 2) {
     b <- fix_breaks(seq(0.1, 0.6, by = 0.1))
     map_panel(rel, "Annual precipitation", "IQR / median across years", b$breaks,
               seq_pal("Blues", length(b$breaks) - 1), b$labels)
-    b <- fix_breaks(seq(0.05, 0.25, by = 0.05))
+    b <- fix_breaks(seq(0.05, 0.35, by = 0.05))
     map_panel(iqr[["pf_jas"]], "Jul-Sep share of precipitation", "IQR across years",
               b$breaks, seq_pal("BuPu", length(b$breaks) - 1), b$labels)
     b <- fix_breaks(c(10, 20, 30, 45, 60))
@@ -235,7 +242,10 @@ cb_cells <- function(product, year, cells) {
   rd <- function(v) as.matrix(terra::rast(cutb_out_file(cfg, product, v, year))[cells])
   r <- terra::rast(cutb_out_file(cfg, product, "ndvi", year))
   nir <- rd("nir"); mir <- rd("mir")
-  list(dates = as.Date(names(r)), ndvi = rd("ndvi"), ndii7 = (nir - mir) / (nir + mir))
+  d <- as.Date(names(r)); keep <- format(d, "%Y") == as.character(year)
+  ndvi <- rd("ndvi")
+  list(dates = d[keep], ndvi = ndvi[, keep, drop = FALSE],
+       ndii7 = ((nir - mir) / (nir + mir))[, keep, drop = FALSE])
 }
 
 pts <- do.call(rbind, lapply(rep$sample_points, as.data.frame))
@@ -298,6 +308,9 @@ if (length(yrs_t)) {
   y <- max(yrs_t)
   ndvi <- terra::rast(cutb_out_file(cfg, prods[1], "ndvi", y))
   dates <- as.Date(names(ndvi))
+  # only composites starting in year y (AppEEARS adds the previous December composite)
+  ndvi <- ndvi[[format(dates, "%Y") == as.character(y)]]
+  dates <- as.Date(names(ndvi))
   amp <- terra::app(ndvi, function(v) {
     if (sum(!is.na(v)) < 12) return(NA_real_)
     max(v, na.rm = TRUE) - min(v, na.rm = TRUE)
@@ -322,4 +335,4 @@ if (length(yrs_t)) {
   })
 }
 
-log_msg("=== done | figures in report/figs | render: quarto render report/index.qmd")
+log_msg("=== done | figures in ", fig_dir)

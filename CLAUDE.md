@@ -175,8 +175,10 @@ Deferred: fire data, gridMET, ERA5-Land.
 `report/index.qmd` is a living Quarto page for the project team and Mike's website: what
 the project is, decisions, open questions, status, changelog and preliminary figures. It
 renders to one self-contained HTML (`quarto render report/index.qmd`; HTML is git-ignored).
-Figures come from `scripts/90_report_figs.R [profile]`, which writes small PNGs to
-`report/figs/<figure>_<profile>.png` plus `manifest.csv` (committed); the page shows the
+Figures come from `scripts/90_report_figs.R [profile]`: dev writes small PNGs to
+`report/figs/<figure>_dev.png`; full writes to `<run_dir>/report_figs/` on the P720 (config
+`report: figs_in_run_dir`, keeps the P720 checkout clean) and 91 copies them to
+`report/figs/`. PNGs + `manifest.csv` are committed from the laptop only; the page shows the
 `full` version of a figure when present, else `dev`. Each figure skips if its inputs are
 missing. Sample points for Cut B curves: config `report: sample_points`. When a decision
 changes, also update the page's Decisions / Open questions / Status / Changelog sections.

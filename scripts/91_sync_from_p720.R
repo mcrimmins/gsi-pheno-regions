@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 # Step 91 (laptop): copy results from the P720 with scp.
-#   figs       report/figs/*_full.png, merged into the local report/figs/manifest.csv
+#   figs       <remote run dir>/report_figs/*_full.png (written there by 90_report_figs.R
+#              full) into report/figs, merged into the local report/figs/manifest.csv
 #              (rows for other profiles, e.g. dev, are kept)            [default]
 #   summaries  full-run across-year summaries and static layers, into the local data
 #              root (<data_root>/full/summaries, <data_root>/full/static) for plotting
@@ -81,11 +82,11 @@ if (need_ssh) {
 # ---- figs -------------------------------------------------------------------------------
 if ("figs" %in% what) {
   fig_dir <- here::here("report", "figs")
-  if (scp_get(file.path(remote_repo, "report/figs/*_full.png"), fig_dir)) {
+  if (scp_get(file.path(remote_run, "report_figs/*_full.png"), fig_dir)) {
     log_msg("figures: ", paste(basename(list.files(fig_dir, "_full\\.png$")), collapse = ", "))
   }
   tmp <- tempfile(); dir.create(tmp)
-  if (scp_get(file.path(remote_repo, "report/figs/manifest.csv"), tmp)) {
+  if (scp_get(file.path(remote_run, "report_figs/manifest.csv"), tmp)) {
     rem <- utils::read.csv(file.path(tmp, "manifest.csv"), stringsAsFactors = FALSE)
     mf <- file.path(fig_dir, "manifest.csv")
     loc <- if (file.exists(mf)) utils::read.csv(mf, stringsAsFactors = FALSE) else rem[0, ]

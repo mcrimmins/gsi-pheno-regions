@@ -80,8 +80,8 @@ models. Where they disagree is where to look for what's missing.
 |---|---|
 | Daily PRISM climate, 4 km, CONUS, 2001–2025 | Done |
 | Grid, elevation and herbaceous cover layers (Annual NLCD) | Done |
-| MODIS greenness and canopy water, CONUS, 2001–2025 | Downloading and processing |
-| Cut A, Block 1: seasonal climate features | Built and checked on Arizona; CONUS run next |
+| MODIS greenness and canopy water, CONUS, 2001–2025 | Downloading and processing (2001–2013 done) |
+| Cut A, Block 1: seasonal climate features | Done (CONUS, water years 2002–2025) |
 | Cut A, Blocks 2 and 3: timing/variability and GSI features | Next (thresholds to decide) |
 | Cut A clustering, first runs | Next |
 | Cut B curve processing and clustering | Planned |
@@ -212,10 +212,10 @@ show_fig("block1_iqr",
 
 ::: {.callout-note appearance="simple"}
 ## Reading the preliminary maps
-- Arizona test-area maps use only two water years, so they check that the processing
-  works rather than describe the climate. The CONUS maps use 2002–2025.
-- Where no freeze occurs, the freeze-free season is set to the full year, so the edge
-  of the frost-free low desert appears as a sharp boundary.
+- Medians and spreads are across water years 2002–2025.
+- Where no freeze occurs, the freeze-free season is set to the full year. Along the
+  California coast, south Texas and Florida, years with and without a freeze mix, which
+  shows up as a large year-to-year spread in freeze-free season length.
 - The aridity index is very skewed (most of the West is well below 1), so it will be
   log- or rank-transformed before clustering.
 :::
@@ -325,6 +325,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-07 | CONUS Block 1 maps (2002–2025) and first CONUS MODIS curves and peak-timing map |
 | 2026-10-06 | Page created: approach, data, decisions, Block 1 features, first figures |
 
 : {.striped}

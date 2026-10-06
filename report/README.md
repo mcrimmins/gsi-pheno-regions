@@ -37,8 +37,11 @@ gsi_sync <- c("figs", "summaries"); source("scripts/91_sync_from_p720.R")  # + r
    type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh user@p720-address "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
    ```
 
-Outputs are `report/figs/<figure>_<profile>.png` plus `report/figs/manifest.csv`
-(extent, years and date of each figure). PNGs are small and go in git. The page shows the
+Dev figures go to `report/figs/<figure>_dev.png`. CONUS (`full`) figures are written on
+the P720 next to the data (`<data_root>/full/report_figs/`), so the P720's git checkout
+stays clean, and `91_sync_from_p720.R` copies them into `report/figs/` on the laptop.
+`manifest.csv` records the extent, years and date of each figure. PNGs are small and are
+committed from the laptop only. The page shows the
 CONUS (`full`) version of a figure when it exists, otherwise the `dev` one.
 
 ## Sync, render and publish (laptop)

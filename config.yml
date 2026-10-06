@@ -180,3 +180,8 @@ full:
     end: 2025
   workers: 8
   memfrac: 0.08
+  report:
+    # CONUS figures are written next to the data (<run_dir>/report_figs), not into the
+    # repo, so the P720's git checkout stays clean; 91_sync_from_p720.R copies them into
+    # report/figs on the laptop, where they are committed.
+    figs_in_run_dir: true
