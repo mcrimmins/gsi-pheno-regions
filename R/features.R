@@ -75,9 +75,11 @@ summarise_years <- function(files, out_median, out_iqr, chunk_rows = 60) {
       med[cells, k] <- q[, 2]; iqr[cells, k] <- q[, 3] - q[, 1]
     }
   }
-  mask <- terra::rast(files[1])[[1]]
-  write_feature_matrix(med, mask, nm, out_median)
-  write_feature_matrix(iqr, mask, nm, out_iqr)
+  # Geometry from the first file, but no mask from it: a cell missing in the first year (e.g.
+  # Cut B 2001, Terra only) must still get the median of the years it has.
+  tmpl <- terra::init(terra::rast(files[1])[[1]], 1)
+  write_feature_matrix(med, tmpl, nm, out_median)
+  write_feature_matrix(iqr, tmpl, nm, out_iqr)
 }
 
 # Row-wise quantiles (type 7, NA removed, NA when a row has no values), vectorized: one
