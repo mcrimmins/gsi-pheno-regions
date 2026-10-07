@@ -61,15 +61,16 @@ ari <- function(a, b) {
 
 # Stability over k by spatial-block subsampling: two fits on independent half-samples of
 # spatial blocks, both applied to a common evaluation set, compared by ARI.
-stability_k <- function(X, xy, ks, st, nstart, seed) {
+# With cell weights w, fits and the evaluation set are drawn in proportion to w.
+stability_k <- function(X, xy, ks, st, nstart, seed, w = NULL) {
   set.seed(seed)
   blk <- paste(floor(xy[, 1] / st$block_deg), floor(xy[, 2] / st$block_deg))
   ub <- unique(blk)
-  ev <- sample(nrow(X), min(st$n_eval, nrow(X)))
+  ev <- sample(nrow(X), min(st$n_eval, nrow(X)), prob = w)
   draw <- function() {
     b <- sample(ub, round(length(ub) * st$frac))
     pool <- which(blk %in% b)
-    pool[sample.int(length(pool), min(st$n_fit, length(pool)))]
+    pool[sample.int(length(pool), min(st$n_fit, length(pool)), prob = if (is.null(w)) NULL else w[pool])]
   }
   res <- expand.grid(boot = seq_len(st$n_boot), k = ks)
   res$ari <- NA_real_
@@ -143,4 +144,55 @@ write_labels <- function(L, grid, out, datatype = "INT2U") {
                      gdal = c("COMPRESS=DEFLATE", "TILED=YES", "INTERLEAVE=BAND"))
   unlink(out); file.rename(tmp, out)
   invisible(out)
+}
+
+# ---- Variants: feature groups and cell weights ---------------------------------------------
+
+# Reduce Block 1 by feature groups: each group standardized + PCA, scaled so all groups share
+# the block's total variance equally (block total = weight). groups = NULL: one group.
+groups_reduce <- function(X, groups, weight = 1, pca_var = 0.99, log_cols = character()) {
+  if (is.null(groups)) groups <- list(all = colnames(X))
+  gw <- weight / length(groups)
+  parts <- lapply(names(groups), function(g) {
+    r <- block_reduce(X[, unlist(groups[[g]]), drop = FALSE], gw, pca_var, log_cols)
+    colnames(r$scores) <- paste0(g, "_PC", seq_len(ncol(r$scores)))
+    r
+  })
+  names(parts) <- names(groups)
+  list(scores = do.call(cbind, lapply(parts, `[[`, "scores")), parts = parts)
+}
+
+# Cell weights from a static layer: floor + (1 - floor) * share, so no cell has zero weight.
+cell_weights <- function(v, floor = 0.1) floor + (1 - floor) * pmin(pmax(v, 0), 1)
+
+# k-means with optional cell weights. Unweighted: kmeans_fit on all cells. Weighted: start
+# from k-means on a weight-proportional sample, then weighted Lloyd iterations on all cells
+# (centroids = weighted means), which minimizes the weighted within-cluster sum of squares.
+wkmeans <- function(X, w, k, nstart = 5, n_sample = 150000, max_iter = 50) {
+  if (is.null(w)) {
+    km <- kmeans_fit(X, k, nstart)
+    return(list(centers = km$centers, cluster = km$cluster, size = km$size,
+                tot.withinss = km$tot.withinss, iter = km$iter))
+  }
+  idx <- sample.int(nrow(X), min(n_sample, nrow(X)), prob = w)
+  C <- kmeans_fit(X[idx, , drop = FALSE], k, nstart)$centers
+  for (it in seq_len(max_iter)) {
+    cl <- assign_nearest(X, C)
+    sw <- as.vector(rowsum(w, factor(cl, levels = seq_len(k))))
+    Cn <- rowsum(X * w, factor(cl, levels = seq_len(k))) / sw
+    empty <- !is.finite(Cn[, 1])
+    if (any(empty)) Cn[empty, ] <- C[empty, ]
+    moved <- max(abs(Cn - C)); C <- Cn
+    if (moved < 1e-6) break
+  }
+  cl <- assign_nearest(X, C)
+  wss <- sum(w * rowSums((X - C[cl, , drop = FALSE])^2))
+  list(centers = C, cluster = cl, size = tabulate(cl, k), tot.withinss = wss, iter = it)
+}
+
+# Weighted total sum of squares (about the weighted mean).
+wtss <- function(X, w = NULL) {
+  if (is.null(w)) w <- rep(1, nrow(X))
+  m <- colSums(X * w) / sum(w)
+  sum(w * rowSums(sweep(X, 2, m)^2))
 }

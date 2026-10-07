@@ -133,9 +133,42 @@ default:
       static: [elev, lat]
       static_weight: 0.25            # static block variance relative to Block 1
       sensitivity_static_weight: 0   # second run without static, compared by ARI
+      # Variants (Rscript scripts/20_cluster_a1.R <profile> [variant,...]). Output dir is
+      # clusters/a1 for `base` (first run, Oct 7) and clusters/a1_<variant> otherwise.
+      #   groups: Block 1 split into feature groups that share the block's variance equally
+      #           (null = one group, i.e. temperature dominates by feature count).
+      #   cell_weight: weight cells by a herb_share.tif layer: floor + (1 - floor) * share.
+      default_variants: [groups, groups_herbw]
+      variants:
+        base:
+          groups: null
+          cell_weight: null
+        groups:
+          groups: &b1_groups
+            temperature: [t_ond, t_jfm, t_amj, t_jas, lsf_0, fff_0, gdd5, gdd10]
+            moisture: [p_ann, ai_ann, ai_warm]
+            seasonality: [pf_ond, pf_jfm, pf_amj, pf_jas]
+          cell_weight: null
+        groups_herbw:
+          groups: *b1_groups
+          cell_weight: {layer: open_herb_share, floor: 0.1}
+    # Sites used to check region boundaries (which region each falls in, per k).
+    check_points:
+      - {name: "Santa Rita (AZ desert grassland)", lon: -110.88, lat: 31.80}
+      - {name: "CPER (CO shortgrass)", lon: -104.75, lat: 40.82}
+      - {name: "Konza (KS tallgrass)", lon: -96.56, lat: 39.09}
+      - {name: "Sierra Foothills (CA annual grass)", lon: -121.29, lat: 39.25}
+      - {name: "Chino Valley (AZ grassland)", lon: -112.45, lat: 34.85}
+      - {name: "Columbus OH (Corn Belt / forest)", lon: -83.00, lat: 40.00}
+      - {name: "Barstow CA (Mojave)", lon: -117.02, lat: 34.90}
+      - {name: "Sevilleta NM (desert grassland)", lon: -106.88, lat: 34.35}
+      - {name: "Cheyenne WY (mixed grass)", lon: -104.82, lat: 41.14}
+      - {name: "Oklahoma tallgrass (Tallgrass Prairie Pres.)", lon: -96.42, lat: 36.84}
+      - {name: "Boise ID (sagebrush steppe)", lon: -116.20, lat: 43.62}
     pca_var: 0.99                    # variance kept by the within-block PCA
     k_range: [4, 30]
     kmeans_nstart: 5
+    weighted_sample: 150000          # weighted k-means: start from a weight-proportional sample
     stability:                       # spatial-block subsampling (Lange et al. style)
       n_boot: 10
       block_deg: 2                   # blocks of block_deg x block_deg degrees
