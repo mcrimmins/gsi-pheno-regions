@@ -169,7 +169,22 @@ Deferred: fire data, gridMET, ERA5-Land.
    Shared helpers in `R/features.R` (row-chunked reads, Hargreaves, across-year summary);
    block code in `R/block1.R`. Freeze definition tmin <= 0 C (-2.2 C sensitivity) is also the
    Block 2 default. Verified against an independent per-cell calculation.
-   Blocks 2-3: one script each (11_, 12_), same pattern. 6. Cut B curves and summaries. 7. Across-year summaries. 8. Clustering. 9. Evaluation.
+   Blocks 2-3: one script each (11_, 12_), same pattern.
+6. `scripts/20_cluster_a1.R` (A1 = Block 1 + static; built and run on CONUS Oct 7):
+   `Rscript scripts/20_cluster_a1.R <profile> [variant,...]` (RStudio: `gsi_profile`,
+   `gsi_variant`). Variants in config `clustering: a1: variants`: `base` (one feature group;
+   output `clusters/a1`), `groups` (Block 1 split into temperature / moisture amount /
+   seasonality groups with equal variance) and `groups_herbw` (same, cells weighted
+   0.1 + 0.9 x open_herb_share). Outputs `clusters/a1_<variant>/`: k-means for k = 4-30,
+   GMM + two-stage Ward at 3 k values (stability-picked or config `k_detail`), spatial-block
+   stability, agreement (incl. vs base run), per-cluster profiles, `check_points.csv`
+   (region of 11 check sites per k), maps. Helpers in `R/cluster.R` (block / group PCA,
+   weighted k-means, ARI, label matching). ~22 min per variant on the P720.
+   **Working A1 = `groups` at k = 10 (decided Oct 7).** Lessons: weight feature groups equally
+   within a block (one group = temperature-dominated); tallgrass prairie and eastern forest
+   don't separate on Block 1 medians (needs Block 2); mclust VVV is overconfident (retune).
+   `mclust::Mclust` needs `library(mclust)` attached.
+7. Cut B curves and summaries. 8. A2 / A3 clustering. 9. Evaluation.
 
 ## Project page (report/)
 `report/index.qmd` is a living Quarto page for the project team and Mike's website: what
