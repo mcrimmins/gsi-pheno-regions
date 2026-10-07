@@ -70,7 +70,7 @@ Deferred: fire data, gridMET, ERA5-Land.
 ## Open items: do NOT decide these; ask Mike
 - Study period for Cut A. The `full` profile downloads 2001–2025 first (first full MODIS
   year onward); that is download order, not a study-period decision.
-- Block 2 thresholds (rain-event size, onset rule, freeze definition).
+- Block 2 thresholds: decided Oct 7 (see pipeline step 5b); don't change without asking.
 - Moisture-ramp choice for Block 3 (precip index vs simple Hargreaves water balance).
 - Copy vs reference `gsi.R`; P720 disk space and any existing local PRISM archive.
 
@@ -170,6 +170,17 @@ Deferred: fire data, gridMET, ERA5-Land.
    block code in `R/block1.R`. Freeze definition tmin <= 0 C (-2.2 C sensitivity) is also the
    Block 2 default. Verified against an independent per-cell calculation.
    Blocks 2-3: one script each (11_, 12_), same pattern.
+5b. `scripts/11_block2_timing.R` (Block 2, decided Oct 7; code in `R/block2.R`, config
+   `features: block2`): rain event >= 5 mm/day (2.5, 10 mm sensitivity); dry day < 1 mm;
+   warm-season onset = first wet day from May 1 starting a 10-day total >= 20 mm with no
+   dry spell >= 20 days in the next 30 (none by Sep 30 -> DOY 274, censored); hard freeze
+   tmin <= -2.2 C. 12 per-year bands: onset_doy, ev_warm/ev_cool at each threshold,
+   dsl_max_warm, n_dry20_warm, gdd5_lhf (GDD by the last spring hard freeze), cold_frac,
+   dry_frac (not cold and 30-day P < 0.5 x 30-day Hargreaves PET). Summaries
+   `block2_median`, `block2_iqr` and `block2_var` (cv_p_ann, cv_p_warm, sd_t_amj from the
+   Block 1 per-year files; onset_frac). Verified against an independent per-cell
+   calculation on the dev box (exact). Gotcha: `format()` on a vector pads ("5.0"); use
+   `as.character()` per element for band-name tags.
 6. `scripts/20_cluster_a1.R` (A1 = Block 1 + static; built and run on CONUS Oct 7):
    `Rscript scripts/20_cluster_a1.R <profile> [variant,...]` (RStudio: `gsi_profile`,
    `gsi_variant`). Variants in config `clustering: a1: variants`: `base` (one feature group;

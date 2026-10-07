@@ -120,6 +120,25 @@ default:
       gdd_bases: [5, 10]        # deg C; daily mean = (tmin + tmax) / 2
       freeze_thresholds: [0, -2.2]   # tmin <= threshold; 0 primary, -2.2 sensitivity
       spring_end_doy: 181       # last spring freeze before Jul 1; first fall freeze after
+    block2:                     # decided Oct 7 2026 (event size, onset rule); rest as noted
+      event_mm: [5, 2.5, 10]    # rain-event thresholds (mm/day); first = primary, others sensitivity
+      dry_day_mm: 1             # dry day for dry spells: ppt < this (above PRISM drizzle noise)
+      warm_months: [4, 5, 6, 7, 8, 9]   # warm season for events and dry spells (AMJ + JAS)
+      cool_months: [10, 11, 12, 1, 2, 3] # cool season for events (OND + JFM)
+      dry_spell_days: 20        # count warm-season dry spells at least this long
+      onset:                    # warm-season rain onset, calendar year Y
+        start_doy: 121          # search from May 1 (DOY 121; 122 in leap years is fine)
+        end_doy: 273            # ... to Sep 30; no onset -> end_doy + 1 (censored)
+        window_days: 10         # onset day d: wet day and ppt(d .. d + 9) >= total_mm
+        total_mm: 20
+        check_days: 30          # false-start check: no dry spell >= max_dry_spell in d+1 .. d+30
+        max_dry_spell: 20
+      hard_freeze: -2.2         # "false start": GDD5 accumulated before the last spring tmin <= this
+      gdd_base: 5
+      limit:                    # rule-based limiting days (water year), no GSI
+        cold_tmean: 5           # cold-limited: daily mean < 5 C
+        window_days: 30         # moisture-limited: trailing 30-day P < dry_ratio x 30-day PET
+        dry_ratio: 0.5
 
   # Cut A clustering (scripts/20_cluster_a1.R; A2/A3 add blocks 2-3 the same way).
   # Features are the across-year medians, standardized; skewed ones log-transformed;
