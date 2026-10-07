@@ -121,6 +121,37 @@ default:
       freeze_thresholds: [0, -2.2]   # tmin <= threshold; 0 primary, -2.2 sensitivity
       spring_end_doy: 181       # last spring freeze before Jul 1; first fall freeze after
 
+  # Cut A clustering (scripts/20_cluster_a1.R; A2/A3 add blocks 2-3 the same way).
+  # Features are the across-year medians, standardized; skewed ones log-transformed;
+  # PCA within each block; each block scaled to a set total variance (Block 1 = 1).
+  clustering:
+    seed: 20261006
+    a1:
+      block1: [t_ond, t_jfm, t_amj, t_jas, p_ann, pf_ond, pf_jfm, pf_amj, pf_jas,
+               ai_ann, ai_warm, lsf_0, fff_0, gdd5, gdd10]
+      log: [p_ann, ai_ann, ai_warm]  # log10 before standardizing
+      static: [elev, lat]
+      static_weight: 0.25            # static block variance relative to Block 1
+      sensitivity_static_weight: 0   # second run without static, compared by ARI
+    pca_var: 0.99                    # variance kept by the within-block PCA
+    k_range: [4, 30]
+    kmeans_nstart: 5
+    stability:                       # spatial-block subsampling (Lange et al. style)
+      n_boot: 10
+      block_deg: 2                   # blocks of block_deg x block_deg degrees
+      frac: 0.5                      # share of blocks drawn per fit
+      n_fit: 60000                   # cells per fit, sampled from the drawn blocks
+      n_eval: 60000                  # cells (all CONUS) on which the two fits are compared
+    k_detail: null                   # k values for GMM/Ward/maps; null = stability picks
+    n_detail: 3                      # how many k to pick from the stability curve
+    gmm:
+      model: VVV
+      n_fit: 25000
+      n_init_subset: 2000
+    ward:
+      n_micro: 1500                  # k-means micro-clusters, then Ward on their centroids
+      cuts: [2, 3, 4, 6, 8]          # extra coarse cuts for roll-up (plus the k_detail values)
+
   # Project page figures (scripts/90_report_figs.R -> report/figs). Sample points are
   # illustrative grassland locations; points outside a profile's extent are skipped.
   report:
