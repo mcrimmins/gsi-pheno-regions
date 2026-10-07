@@ -174,7 +174,7 @@ default:
       #   groups: Block 1 split into feature groups that share the block's variance equally
       #           (null = one group, i.e. temperature dominates by feature count).
       #   cell_weight: weight cells by a herb_share.tif layer: floor + (1 - floor) * share.
-      default_variants: [groups, groups_herbw]
+      default_variants: [a2_groups, a2_groups_herbw]   # A1 variants (groups, groups_herbw) ran Oct 7
       variants:
         base:
           groups: null
@@ -188,6 +188,28 @@ default:
         groups_herbw:
           groups: *b1_groups
           cell_weight: {layer: open_herb_share, floor: 0.1}
+        # A2 = A1 (groups) + Block 2 as its own block with equal weight (plan: blocks weighted
+        # equally). Features are "<source>:<band>" with sources b2med / b2iqr / b2var (Block 2
+        # median / IQR / variability) and b1iqr (Block 1 IQR). Four groups share Block 2 equally.
+        a2_groups:
+          out: a2_groups
+          compare_to: a1_groups
+          groups: *b1_groups
+          cell_weight: null
+          block2: &b2_block
+            weight: 1
+            log1p: ["b2med:ev_warm_5", "b2med:ev_cool_5", "b2med:dsl_max_warm"]   # log10(x + 1)
+            groups:
+              timing: ["b2med:onset_doy", "b2iqr:onset_doy", "b2var:onset_frac", "b2med:gdd5_lhf", "b1iqr:lsf_0"]
+              pulses: ["b2med:ev_warm_5", "b2med:ev_cool_5", "b2med:dsl_max_warm", "b2med:n_dry20_warm"]
+              limiting: ["b2med:cold_frac", "b2med:dry_frac"]
+              variability: ["b2var:cv_p_ann", "b2var:cv_p_warm", "b2var:sd_t_amj"]
+        a2_groups_herbw:
+          out: a2_groups_herbw
+          compare_to: a1_groups_herbw
+          groups: *b1_groups
+          cell_weight: {layer: open_herb_share, floor: 0.1}
+          block2: *b2_block
     # Sites used to check region boundaries (which region each falls in, per k).
     check_points:
       - {name: "Santa Rita (AZ desert grassland)", lon: -110.88, lat: 31.80}
@@ -214,7 +236,7 @@ default:
     k_detail: null                   # k values for GMM/Ward/maps; null = stability picks
     n_detail: 3                      # how many k to pick from the stability curve
     gmm:
-      model: VVV
+      model: [VVV, VVI, EEE]         # first that fits; full covariance (VVV) can be singular in A2
       n_fit: 25000
       n_init_subset: 2000
     ward:

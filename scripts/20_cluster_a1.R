@@ -110,12 +110,31 @@ if (!is.null(cp_df)) {
   cp_df$row <- match(cell, land_all[ok])
   cp_df <- cp_df[!is.na(cp_df$row), , drop = FALSE]
 }
-base_km_file <- file.path(clusters_dir(cfg, "a1"), "a1_kmeans.tif")
+`%||%` <- function(a, b) if (is.null(a)) b else a
+# Extra feature sources for variants with more blocks (A2): "<source>:<band>" names.
+feature_sources <- list(b1med = summary_file(cfg, "block1", "median"), b1iqr = summary_file(cfg, "block1", "iqr"),
+                        b2med = summary_file(cfg, "block2", "median"), b2iqr = summary_file(cfg, "block2", "iqr"),
+                        b2var = summary_file(cfg, "block2", "var"))
+src_values <- function(names_) {
+  sp <- do.call(rbind, strsplit(names_, ":", fixed = TRUE))
+  bad <- setdiff(unique(sp[, 1]), names(feature_sources))
+  if (length(bad)) stop("unknown feature source(s): ", paste(bad, collapse = ", "))
+  X <- do.call(cbind, lapply(unique(sp[, 1]), function(s) {
+    f <- feature_sources[[s]]
+    if (!file.exists(f)) stop("missing ", f, " (run the block's feature script first)")
+    r <- terra::rast(f); b <- sp[sp[, 1] == s, 2]
+    miss <- setdiff(b, names(r)); if (length(miss)) stop(basename(f), " lacks: ", paste(miss, collapse = ", "))
+    v <- land_values(r, grid, b); colnames(v) <- paste0(s, ":", b); v
+  }))
+  X[, names_, drop = FALSE]
+}
 states <- if (requireNamespace("maps", quietly = TRUE)) maps::map("state", plot = FALSE) else NULL
 
 run_variant <- function(vname) {
   v <- a1$variants[[vname]]
-  out_dir <- clusters_dir(cfg, if (vname == "base") "a1" else paste0("a1_", vname))
+  out_name <- v$out %||% (if (vname == "base") "a1" else paste0("a1_", vname))
+  out_dir <- clusters_dir(cfg, out_name)
+  base_km_file <- file.path(clusters_dir(cfg, v$compare_to %||% "a1"), "a1_kmeans.tif")
   fig_dir <- file.path(out_dir, "figs")
   dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
   t0 <- Sys.time()
@@ -127,6 +146,20 @@ run_variant <- function(vname) {
   colnames(rst$scores) <- paste0("static_PC", seq_len(ncol(rst$scores)))
   Z <- cbind(rb1$scores, rst$scores)
   Z0 <- rb1$scores                                                     # sensitivity: no static
+  if (!is.null(v$block2)) {                                            # A2: Block 2 as its own block
+    b2 <- v$block2
+    nm2 <- unique(unlist(b2$groups))
+    X2 <- src_values(nm2)[ok, , drop = FALSE]
+    for (cn in intersect(unlist(b2$log1p), colnames(X2))) X2[, cn] <- log10(pmax(X2[, cn], 0) + 1)
+    nna <- colSums(is.na(X2))
+    for (cn in names(nna)[nna > 0]) X2[is.na(X2[, cn]), cn] <- stats::median(X2[, cn], na.rm = TRUE)
+    if (any(nna > 0)) log_warn("  block 2: NA filled with column medians: ", paste(sprintf("%s (%d)", names(nna)[nna > 0], nna[nna > 0]), collapse = ", "))
+    rb2 <- groups_reduce(X2, b2$groups, b2$weight %||% 1, cc$pca_var)
+    colnames(rb2$scores) <- paste0("b2_", colnames(rb2$scores))
+    names(rb2$parts) <- paste0("b2_", names(rb2$parts))
+    Z <- cbind(rb1$scores, rb2$scores, rst$scores); Z0 <- cbind(Z0, rb2$scores)
+    rb1$parts <- c(rb1$parts, rb2$parts)                               # report all groups below
+  }
   if (a1$sensitivity_static_weight > 0) {
     Z0 <- cbind(Z0, block_reduce(XS[ok, , drop = FALSE], a1$sensitivity_static_weight, 1)$scores)
   }
@@ -199,9 +232,14 @@ run_variant <- function(vname) {
   fit_i <- sample(nrow(Z), min(cc$gmm$n_fit, nrow(Z)), prob = w)
   for (k in k_detail) {
     t2 <- Sys.time()
-    m <- mclust::Mclust(Z[fit_i, ], G = k, modelNames = cc$gmm$model, verbose = FALSE,
-                        initialization = list(subset = sample(length(fit_i), cc$gmm$n_init_subset)))
-    if (is.null(m)) { log_warn("  GMM k=", k, " failed to fit"); next }
+    m <- NULL
+    for (mn in unlist(cc$gmm$model)) {   # first model in the list that fits (full covariance can be singular)
+      m <- tryCatch(mclust::Mclust(Z[fit_i, ], G = k, modelNames = mn, verbose = FALSE,
+                                   initialization = list(subset = sample(length(fit_i), cc$gmm$n_init_subset))),
+                    error = function(e) NULL)
+      if (!is.null(m)) break
+    }
+    if (is.null(m)) { log_warn("  GMM k=", k, " failed to fit (", paste(unlist(cc$gmm$model), collapse = ", "), ")"); next }
     cl <- integer(nrow(Z)); pmax_ <- numeric(nrow(Z))
     for (s in seq(1, nrow(Z), by = 50000)) {
       i <- s:min(s + 49999, nrow(Z))
@@ -214,8 +252,8 @@ run_variant <- function(vname) {
     M[land_all[ok], ] <- cbind(gm[[as.character(k)]]$class, pmax_)
     write_feature_matrix(M, grid, c("class", "maxprob"), file.path(out_dir, sprintf("a1_gmm_k%02d.tif", k)))
     agree <- rbind(agree, data.frame(k = k, a = "kmeans", b = "gmm", ari = ari(kmk, cl)))
-    log_msg(sprintf("  GMM k=%d: %.1f min; median max-prob %.2f; %.1f %% cells < 0.6; ARI vs k-means %.2f",
-                    k, as.numeric(difftime(Sys.time(), t2, units = "mins")), stats::median(pmax_),
+    log_msg(sprintf("  GMM k=%d (%s): %.1f min; median max-prob %.2f; %.1f %% cells < 0.6; ARI vs k-means %.2f",
+                    k, m$modelName, as.numeric(difftime(Sys.time(), t2, units = "mins")), stats::median(pmax_),
                     100 * mean(pmax_ < 0.6), ari(kmk, cl)))
   }
 
@@ -237,7 +275,7 @@ run_variant <- function(vname) {
   cuts <- sort(unique(c(unlist(cc$ward$cuts), k_detail)))
   WD <- sapply(cuts, function(k) stats::cutree(hc, k)[mcl])
   colnames(WD) <- sprintf("cut%02d", cuts)
-  base_km <- if (vname != "base" && file.exists(base_km_file)) land_values(terra::rast(base_km_file), grid)[ok, , drop = FALSE] else NULL
+  base_km <- if (out_name != basename(dirname(base_km_file)) && file.exists(base_km_file)) land_values(terra::rast(base_km_file), grid)[ok, , drop = FALSE] else NULL
   for (k in k_detail) {
     kn <- sprintf("k%02d", k); kmk <- KM[, kn]; wk <- WD[, sprintf("cut%02d", k)]
     WD[, sprintf("cut%02d", k)] <- match_labels(kmk, wk)
@@ -252,7 +290,7 @@ run_variant <- function(vname) {
   utils::write.csv(agree, file.path(out_dir, "agreement.csv"), row.names = FALSE)
   log_msg(sprintf("  Ward: %d micro-clusters, %.1f min", nrow(mc), as.numeric(difftime(Sys.time(), t3, units = "mins"))))
   if (any(agree$b == "kmeans_base_run"))
-    log_msg("  ARI vs base run: ", paste(sprintf("k%d=%.2f", agree$k[agree$b == "kmeans_base_run"],
+    log_msg("  ARI vs comparison run (", basename(dirname(base_km_file)), "): ", paste(sprintf("k%d=%.2f", agree$k[agree$b == "kmeans_base_run"],
                                                 agree$ari[agree$b == "kmeans_base_run"]), collapse = " "))
 
   # ---- Cluster profiles (original units) and check sites ---------------------------------
@@ -285,7 +323,7 @@ run_variant <- function(vname) {
           file.path(out_dir, "a1_run.rds"))
 
   # ---- Figures ---------------------------------------------------------------------------
-  vlab <- if (vname == "base") "A1" else paste0("A1 (", vname, ")")
+  vlab <- if (vname == "base") "A1" else if (!is.null(v$block2)) paste0("A2 (", vname, ")") else paste0("A1 (", vname, ")")
   map_cat <- function(lbl, col, title) {
     terra::plot(lab_rast(lbl), col = col, breaks = seq(0.5, length(col) + 0.5), legend = FALSE,
                 axes = FALSE, mar = c(2.5, 0.5, 2, 0.5), main = title, cex.main = 1.1)
