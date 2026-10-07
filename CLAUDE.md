@@ -211,7 +211,28 @@ Deferred: fire data, gridMET, ERA5-Land.
    within a block (one group = temperature-dominated); tallgrass prairie and eastern forest
    don't separate on Block 1 medians (needs Block 2); mclust VVV is overconfident (retune).
    `mclust::Mclust` needs `library(mclust)` attached.
-7. Cut B fPCA + clustering (07_). 8. A2 / A3 clustering. 9. Evaluation.
+7. `scripts/07_cutb_regions.R` (Cut B regions, Oct 7; config `cutb_regions:`): PCA of the
+   across-year median NDVI + NDII7 curves (46 values each; on regular smooth curves this is
+   functional PCA), each index total variance 1; variants `raw` (level + shape) and `shape`
+   (each curve centred and divided by its amplitude: timing only). Spatial-block stability,
+   k-means k = 4-20, two-stage Ward, ARI vs Cut A for every (B k, A k) on all cells and the
+   strict herb mask, cluster-mean curves. Outputs `clusters/b_<variant>/` (`b_kmeans.tif`,
+   `b_features.tif`, `ari_vs_A.csv`, `curves_k<K>.csv`, figs). ~30-50 min on CONUS.
+8. Evaluation (config `evaluation:`; helpers `R/evaluate.R`): partitions = k-means label
+   rasters under `clusters/` (A1_groups, A2_groups, B_raw, B_shape) + `geo` baseline (k-means
+   on location only, cached in `clusters/geo/`).
+   - `scripts/30_compare_ab.R`: share of the Cut B curve variance (and of single metrics:
+     amplitude, green-up, peak, end, season length, curing) explained by each partition per k,
+     all cells and strict herb mask -> `eval/ab/`. Cut B = upper reference (fitted to the
+     curves); geo = what any compact regions give. Minutes.
+   - `scripts/31_obs_regions.R`: ground check from the GSI study tables
+     (`GrowingSeasonIndex/study/data/derived/*.rds`; config `evaluation: study_dir` or
+     `GSI_STUDY_DIR`): NPN graminoid % green (green-up / curing / cured), NPN herbaceous
+     onset / end, woody onset, Globe-LFMC herb / woody peak and 50 % decline, iNaturalist
+     flowering onset. Site = place x plant type (NPN site x species, LFMC series, iNat point x
+     genus), median date across years, then adjusted R^2 on region per partition and k, plus
+     sites per region -> `eval/obs/`. Run on the laptop (study data live there).
+9. A3 (Block 3, GSI sub-indices): not started.
 
 ## Project page (report/)
 `report/index.qmd` is a living Quarto page for the project team and Mike's website: what
