@@ -201,9 +201,13 @@ if (have(med_file) && length(b1_years)) {
     map_panel(med[["pf_jas"]], "Jul-Sep share of precipitation",
               "Monsoon / summer-rain fraction", b$breaks,
               seq_pal("BuPu", length(b$breaks) - 1), b$labels)
-    b <- fix_breaks(c(0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20))
+    # Breaks follow the UNEP aridity classes (hyper-arid < 0.05, arid < 0.2, semi-arid
+    # < 0.5, dry subhumid < 0.65, humid above) and split the humid range, where the East and
+    # the Plains gradient sit (most of the East is 0.9-1.5). Diverging at 0.65: six brown
+    # steps below, six teal above.
+    b <- fix_breaks(c(0.05, 0.1, 0.2, 0.3, 0.5, 0.65, 0.8, 1, 1.25, 1.5, 2))
     map_panel(med[["ai_ann"]], "Aridity index (P / PET)",
-              "Hargreaves PET; below 1 = water-limited", b$breaks,
+              "Hargreaves PET; brown = arid to dry subhumid (< 0.65)", b$breaks,
               grDevices::hcl.colors(length(b$breaks) - 1, "BrBG"), b$labels)
     b <- fix_breaks(seq(100, 350, by = 50))
     map_panel(med[["ffs_0"]], "Freeze-free season",
