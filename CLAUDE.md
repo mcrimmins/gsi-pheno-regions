@@ -160,6 +160,22 @@ Deferred: fire data, gridMET, ERA5-Land.
    login from a netrc file only (`R/appeears.R`). Indices: NDVI (greenness) + NDII7 (NIR vs
    2.1 um MIR, curing). Upgrade path: MCD43A4 (500 m daily NBAR, in AppEEARS).
    Scoping notes: project doc `claude/gsi-cutb-scope.md`.
+4b. `scripts/06_cutb_curves.R` (Cut B curves, built Oct 7; code `R/cutb_curves.R`, config
+   `cutb_curves:`). Pass 1 per year: Terra - Aqua offset per cell (Terra interpolated to Aqua
+   composite midpoints, median of valid pairs) -> `cutb/offsets/`, median across years. Pass 2
+   per year Y: composites Oct (Y-1) - Mar (Y+1), year-boundary duplicates removed (each
+   AppEEARS year file repeats the previous December composite), n_valid >= 5 and
+   snow_frac <= 0.5, offset split between sensors, observation date from the composite
+   `doy` layer (falls back to the midpoint when the 1 km doy average straddles the year
+   boundary), weighted Whittaker (lambda 30 on a 4-day grid, one upper-envelope pass;
+   vectorized banded Cholesky `whit_fit()`). Outputs `cutb/curves/{ndvi,ndii}_<Y>.tif` (DOY 1,
+   9, ..., 361), `cutb/metrics/metrics_<Y>.tif` (18 bands: NDVI max/base/amp/peak, sos20/50,
+   eos50/20, gsl20, n_green, NDII7 max/base/amp/peak, cure50, cure_days, n_obs, max_gap; DOY
+   relative to Jan 1 of Y), summaries `cutb_metrics_*`, `cutb_{ndvi,ndii}_curve_*`. Verified on
+   dev against an independent per-cell rebuild (dense solve): agreement to float32 precision.
+   Dev offsets: NDII7 Terra - Aqua ~0.033 (5-95 %: 0.020-0.048); NDVI ~0. NDII7 curing dates
+   can land in winter where NDII7 keeps falling with soil moisture (e.g. SE Arizona).
+   `summarise_years()` now uses vectorized `row_quantiles()` (identical results, ~36x faster).
 5. `scripts/10_block1_seasonal.R` (Block 1, decided Oct 6): per year label Y, water year
    Oct(Y-1)-Sep(Y) for temperature / precipitation / aridity, calendar year Y for freezes
    and GDD; seasons OND/JFM/AMJ/JAS; 21 bands (seasonal + annual T, T range, annual P,
@@ -195,7 +211,7 @@ Deferred: fire data, gridMET, ERA5-Land.
    within a block (one group = temperature-dominated); tallgrass prairie and eastern forest
    don't separate on Block 1 medians (needs Block 2); mclust VVV is overconfident (retune).
    `mclust::Mclust` needs `library(mclust)` attached.
-7. Cut B curves and summaries. 8. A2 / A3 clustering. 9. Evaluation.
+7. Cut B fPCA + clustering (07_). 8. A2 / A3 clustering. 9. Evaluation.
 
 ## Project page (report/)
 `report/index.qmd` is a living Quarto page for the project team and Mike's website: what

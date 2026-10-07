@@ -71,12 +71,30 @@ summarise_years <- function(files, out_median, out_iqr, chunk_rows = 60) {
     arr <- vapply(rs, function(r) read_rows(r, row, nr, seq_len(nl)),
                   matrix(0, length(cells), nl))           # cells x layers x years
     for (k in seq_len(nl)) {
-      q <- apply(arr[, k, , drop = FALSE], 1, stats::quantile, probs = c(0.25, 0.5, 0.75),
-                 na.rm = TRUE, names = FALSE)
-      med[cells, k] <- q[2, ]; iqr[cells, k] <- q[3, ] - q[1, ]
+      q <- row_quantiles(matrix(arr[, k, ], length(cells)), c(0.25, 0.5, 0.75))
+      med[cells, k] <- q[, 2]; iqr[cells, k] <- q[, 3] - q[, 1]
     }
   }
   mask <- terra::rast(files[1])[[1]]
   write_feature_matrix(med, mask, nm, out_median)
   write_feature_matrix(iqr, mask, nm, out_iqr)
+}
+
+# Row-wise quantiles (type 7, NA removed, NA when a row has no values), vectorized: one
+# order() over the whole matrix instead of quantile() per row. Identical to
+# stats::quantile(x, probs, na.rm = TRUE) per row.
+row_quantiles <- function(M, probs) {
+  n <- nrow(M); k <- ncol(M)
+  o <- order(rep(seq_len(n), k), as.vector(M), na.last = TRUE)
+  S <- matrix(as.vector(M)[o], n, k, byrow = TRUE)
+  cnt <- rowSums(!is.na(M))
+  vapply(probs, function(p) {
+    h <- (cnt - 1) * p + 1; lo <- floor(h); hi <- ceiling(h)
+    ok <- cnt > 0
+    out <- rep(NA_real_, n)
+    i <- which(ok)
+    a <- S[cbind(i, lo[i])]; b <- S[cbind(i, hi[i])]
+    out[i] <- a + (h[i] - lo[i]) * (b - a)
+    out
+  }, numeric(n))
 }

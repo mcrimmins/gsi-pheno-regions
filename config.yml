@@ -105,6 +105,23 @@ default:
     max_pending_tasks: 4      # AppEEARS tasks queued at once (one task = one product-year)
     poll_minutes: 5
 
+  # Cut B curve step (06_cutb_curves.R), defaults agreed Oct 7 2026.
+  cutb_curves:
+    min_valid: 5              # composite kept if >= 5 valid 1 km pixels (of up to ~25 per cell)
+    full_valid: 20            # smoothing weight = min(n_valid / full_valid, 1)
+    max_snow_frac: 0.5        # composite dropped if more than half its pixels are snow/ice
+    offset_min_pairs: 6       # Terra-Aqua pairs needed per cell-year for an offset
+    window: {start_month: 10, end_month: 3}   # year Y smoothed over Oct 1 (Y-1) .. Mar 31 (Y+1)
+    node_days: 4              # smoothing grid spacing (days); obs go to the nearest node
+    lambda: 30                # Whittaker penalty on that grid (tested Oct 7: 5 noisy, 200 merges peaks)
+    envelope: {iter: 1, below_weight: 0.5}   # down-weight obs below the first fit, refit
+    min_obs_window: 20        # nodes with observations needed in the window, else NA
+    curve_step: 8             # output curves at DOY 1, 9, ..., 361 (46 values)
+    season_halfwidth_days: 183   # base (minimum) and crossings searched within +/- this of the peak
+    min_amp: 0.03             # season dates NA when amplitude is below this (no clear season)
+    green_frac: 0.5           # green spell: NDVI above base + 0.5 x amplitude ...
+    min_spell_days: 16        # ... for at least 16 days (n_green counts them within year Y)
+
   # Cut A feature blocks. Year label Y: water year Oct(Y-1)-Sep(Y) for precipitation,
   # temperature and aridity; calendar year Y for freeze dates and GDD (fall freezes fall
   # in Oct-Nov). Water years start one year after the first PRISM year.
