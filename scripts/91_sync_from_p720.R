@@ -90,7 +90,10 @@ if ("figs" %in% what) {
     rem <- utils::read.csv(file.path(tmp, "manifest.csv"), stringsAsFactors = FALSE)
     mf <- file.path(fig_dir, "manifest.csv")
     loc <- if (file.exists(mf)) utils::read.csv(mf, stringsAsFactors = FALSE) else rem[0, ]
-    m <- rbind(loc[loc$profile != "full", , drop = FALSE], rem[rem$profile == "full", , drop = FALSE])
+    # keep local rows except full figures the P720 also made (full figures made on the
+    # laptop, e.g. the evaluation figures, stay)
+    remf <- rem[rem$profile == "full", , drop = FALSE]
+    m <- rbind(loc[!(loc$profile == "full" & loc$figure %in% remf$figure), , drop = FALSE], remf)
     utils::write.csv(m[order(m$figure, m$profile), ], mf, row.names = FALSE)
     log_msg("manifest merged: ", sum(m$profile == "full"), " full + ",
             sum(m$profile != "full"), " other rows")

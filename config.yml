@@ -288,6 +288,17 @@ default:
   report:
     extent_label: "CONUS"
     curve_years: 3              # Cut B curves: most recent N years available
+    # Region maps (figure `regions`): partitions from `evaluation: partitions`. Colours are
+    # matched to the first panel where regions overlap, so similar regions look alike.
+    region_maps:
+      - {partition: A1_groups, k: 10, title: "Climate A1 (seasonal climate), 10 regions"}
+      - {partition: A2_groups, k: 7, title: "Climate A2 (+ timing, variability), 7 regions"}
+      - {partition: A2_groups, k: 13, title: "Climate A2, 13 regions"}
+      - {partition: B_raw, k: 7, title: "Satellite curves (level + shape), 7 regions"}
+      - {partition: B_raw, k: 13, title: "Satellite curves (level + shape), 13 regions"}
+      - {partition: B_shape, k: 13, title: "Satellite curves (timing only), 13 regions"}
+    # Observation sets shown in figure `eval_obs` and the summary table (31_obs_regions.R)
+    eval_sets: [grass_greenup, grass_curing, grass_cured, lfmc_herb_peak, lfmc_woody_peak, inat_flower]
     sample_points:
       - {name: "SE Arizona desert grassland (Santa Rita Exp. Range)", lon: -110.88, lat: 31.80}
       - {name: "Colorado shortgrass steppe (Central Plains Exp. Range)", lon: -104.75, lat: 40.82}
@@ -345,5 +356,8 @@ full:
   report:
     # CONUS figures are written next to the data (<run_dir>/report_figs), not into the
     # repo, so the P720's git checkout stays clean; 91_sync_from_p720.R copies them into
-    # report/figs on the laptop, where they are committed.
-    figs_in_run_dir: true
+    # report/figs on the laptop, where they are committed. On the laptop (windows) full
+    # figures go straight to report/figs (figures that need laptop-only data: evaluation).
+    figs_in_run_dir:
+      windows: false
+      linux: true

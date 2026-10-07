@@ -80,12 +80,13 @@ models. Where they disagree is where to look for what's missing.
 |---|---|
 | Daily PRISM climate, 4 km, CONUS, 2001–2025 | Done |
 | Grid, elevation and herbaceous cover layers (Annual NLCD) | Done |
-| MODIS greenness and canopy water, CONUS, 2001–2025 | Downloading and processing (2001–2013 done) |
+| MODIS greenness and canopy water, CONUS, 2001–2025 | Done (Terra and Aqua merged, smoothed daily curves per year) |
 | Cut A, Block 1: seasonal climate features | Done (CONUS, water years 2002–2025) |
-| Cut A, Blocks 2 and 3: timing/variability and GSI features | Next (thresholds to decide) |
-| Cut A clustering, first runs | Next |
-| Cut B curve processing and clustering | Planned |
-| NPN and iNaturalist observations | Planned (data inventory needed) |
+| Cut A, Block 2: timing and variability features | Done (CONUS) |
+| Cut A, Block 3: GSI sub-indices | Planned (moisture ramp to decide) |
+| Cut A clustering: A1 (Block 1) and A2 (Blocks 1 + 2) | First runs done |
+| Cut B clustering of satellite curves | First runs done |
+| Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | First runs done; choosing the number of regions |
 
 : Pipeline status {.striped}
 
@@ -220,20 +221,22 @@ show_fig("block1_iqr",
   log- or rank-transformed before clustering.
 :::
 
-### Block 2: timing and variability (next)
+### Block 2: timing and variability (built)
 
 Herbaceous phenology responds to the **timing and reliability** of moisture and warmth,
-not just the averages. Candidate features:
+not just the averages. Block 2 is computed per year from daily PRISM and summarized as the
+median, the year-to-year spread, and coefficients of variation.
 
-- onset of the warm-season rains (the first date a cumulative-precipitation threshold is
-  passed) and how much it varies from year to year;
-- frequency of rain pulses large enough to matter, and typical dry-spell length within
-  the warm season;
-- "false starts": warm spells followed by a hard freeze;
-- simple strata of what limits growth (cold, moisture, or both) from daily rules.
+| Feature | Definition |
+|---|---|
+| Warm-season rain onset | First wet day from May 1 that starts a 10-day total of at least 20 mm, with no dry spell of 20 days or more in the following 30 days; no onset by September 30 is recorded as "no onset" (and the share of years with an onset is kept) |
+| Rain pulses | Days with at least 5 mm in the warm (Apr–Sep) and cool (Oct–Mar) seasons; 2.5 and 10 mm as sensitivity checks |
+| Dry spells | Longest warm-season run of days under 1 mm, and the number of warm-season dry spells of 20 days or more |
+| False starts | Growing degree days (base 5 °C) accumulated before the last spring hard freeze (≤ −2.2 °C) |
+| Limiting factor | Share of the year that is cold-limited (30-day mean temperature under 5 °C) or moisture-limited (30-day precipitation under half of potential evapotranspiration) |
+| Year-to-year variability | Coefficient of variation of annual and warm-season precipitation; standard deviation of Apr–Jun temperature |
 
-The freeze definition matches Block 1. The rain-event size and the onset rule are still
-to be decided.
+: Block 2 features {.striped}
 
 ### Block 3: GSI sub-indices (planned)
 
@@ -268,11 +271,111 @@ show_fig("cutb_peak",
   "Two maps: NDVI seasonal amplitude, and the timing of peak NDVI in three seasons.")
 ```
 
-Before clustering, the curves will be merged across Terra and Aqua (the two sensors
-differ slightly, especially in NDII7), gap-filled where clouds or snow leave holes,
-smoothed, and summarized per year (green-up, peak, curing dates and rates). The
-clustering itself will work on the shapes of whole curves (functional principal
-components).
+For each year the two sensors are merged (Terra reads slightly higher than Aqua in
+NDII7, so the median difference per cell is split between them), composites with too few
+good pixels or too much snow are dropped, and a weighted smoother that follows the upper
+envelope of the data (clouds and snow pull values down) gives a curve every 8 days from
+October of the previous year through March of the next. From those curves come green-up,
+peak, end of season and curing dates, amplitudes, and the median curve across years that
+the clustering uses. Cut B is run two ways: on the curves as they are (**level + shape**:
+how green and when) and on curves rescaled by their own amplitude (**timing only**).
+
+## First regions and how well they work
+
+Both cuts were clustered with k-means for 4 to 20 regions (Cut A up to 30). Within a block,
+features are grouped (for Block 1: temperature, moisture amount, seasonality) and each
+group gets equal weight, so the eight temperature features don't outvote the rest. The
+number of regions is **not chosen yet**; the comparisons below are what that choice will
+rest on. Seven regions is where the A2 climate regions are most stable under resampling;
+around 13 the climate regions begin to split the tallgrass prairie from the northern
+Midwest and the California annual grasslands from the Mojave.
+
+```{r fig-regions}
+#| results: asis
+show_fig("regions",
+  "First climate (top) and satellite-curve (bottom) regions. Region colours are matched to the first map where regions overlap, so the same colour across maps means mostly the same area. Climate regions are smooth by construction; satellite regions follow land cover and are patchier.",
+  "Six maps of CONUS regions: climate A1 with 10 regions, climate A2 with 7 and 13 regions, satellite-curve regions with 7 and 13 regions, and timing-only satellite regions with 13 regions.")
+```
+
+### Do climate regions explain the satellite curves?
+
+For each set of regions, the share of the variation in the median satellite curves
+(NDVI and NDII7) that lies *between* regions rather than within them. The satellite
+regions are fitted to these curves, so they show roughly how much any set of that size
+can explain. The *location only* baseline divides the map into compact blobs with no
+climate information: a useful set of regions has to beat it.
+
+```{r fig-eval-curves}
+#| results: asis
+show_fig("eval_curves",
+  "Share of the satellite-curve variance explained by each set of regions, by number of regions. Dashed vertical lines mark 7, 10 and 13 regions.",
+  "Two line charts of variance explained versus number of regions, for all cells and for the strict herbaceous mask, one line per set of regions.")
+```
+
+### Do the regions separate observed phenology on the ground?
+
+Ground observations come from three sources: USA-NPN observations of grasses (percent
+green canopy, giving green-up, curing and cured dates) and other plants (leaf onset and
+end), the Globe-LFMC live fuel moisture database (date of the seasonal peak and of the
+50 % decline), and iNaturalist flowering records. Each site (one plant type at one place)
+is reduced to its median date across years. The score is the adjusted R-squared of those
+dates on region: how much of the spread in dates is between regions, with a penalty for
+using more regions.
+
+```{r fig-eval-obs}
+#| results: asis
+show_fig("eval_obs",
+  "How well each set of regions separates observed dates (adjusted R-squared of site median dates on region), by number of regions.",
+  "Six line charts of adjusted R-squared versus number of regions for NPN grass green-up, curing and cured dates, live fuel moisture peaks for herbaceous and woody fuels, and iNaturalist flowering onset.")
+```
+
+```{r tbl-eval}
+#| results: asis
+es <- NULL
+for (pr in c("full", "dev")) {
+  f <- sprintf("figs/eval_summary_%s.csv", pr)
+  if (file.exists(f)) { es <- utils::read.csv(f, stringsAsFactors = FALSE); break }
+}
+if (!is.null(es)) {
+  plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", B_raw = "Satellite (level + shape)",
+            B_shape = "Satellite (timing only)", geo = "Location only")
+  clab <- c(curves_all = "Curves, all cells", curves_herb = "Curves, herb mask",
+            grass_greenup = "Grass green-up", grass_curing = "Grass curing", grass_cured = "Grass cured",
+            lfmc_herb_peak = "LFMC herb peak", lfmc_woody_peak = "LFMC woody peak",
+            inat_flower = "iNat flowering")
+  es$partition <- ifelse(es$partition %in% names(plab), plab[es$partition], es$partition)
+  num <- setdiff(names(es), c("partition", "k"))
+  es[num] <- lapply(es[num], function(v) sprintf("%.2f", v))
+  names(es) <- c("Regions", "k", ifelse(num %in% names(clab), clab[num], num))
+  cat(knitr::kable(es, align = c("l", "r", rep("r", length(num))),
+                   caption = "Scores at 7, 10 and 13 regions: share of satellite-curve variance explained, and adjusted R-squared of observed dates on region"),
+      sep = "\n")
+} else {
+  cat('\n::: {.callout-note appearance="simple"}\n## Table pending\nScores at 7, 10 and 13 regions.\n:::\n\n')
+}
+```
+
+```{r fig-obs-sites}
+#| results: asis
+show_fig("obs_sites",
+  "Where the ground observations are. NPN grass observations (the most direct check on herbaceous green-up and curing) are sparse; live fuel moisture sites are mostly western and woody.",
+  "Map of CONUS with points for iNaturalist, NPN, live fuel moisture and NPN grass observation sites.")
+```
+
+::: {.callout-note appearance="simple"}
+## Reading the first comparisons
+- From about 6 regions up, the climate regions explain more of the satellite curves than
+  location alone, and the margin is largest in the herbaceous cells.
+- The level + shape satellite regions explain the curves best (they are fitted to them)
+  but separate the ground dates poorly: they mostly sort cells by how green they get.
+  Timing-only satellite regions do better on curing and live fuel moisture dates, though
+  not on grass green-up, where the climate regions lead.
+- Grass green-up and curing dates and the woody live fuel moisture peak are the most
+  informative ground checks; NPN leaf onset and end for herbaceous plants barely separate
+  by any set of regions, and are likely too noisy as site medians.
+- Adding Block 2 (A2) changes little against the curves; its gains show up in particular
+  places (for example the tallgrass prairie) rather than in the national scores.
+:::
 
 ## Clustering and evaluation plan
 
@@ -304,14 +407,17 @@ models, not by clustering scores alone.
 | Oct 2026 | Data period starts in 2001 | First full year of MODIS, so the climate and satellite cuts overlap |
 | Oct 2026 | Block 1 definitions: water year, Oct–Dec/Jan–Mar/Apr–Jun/Jul–Sep seasons, GDD base 5 and 10 °C, freeze at 0 °C (−2.2 °C sensitivity), Hargreaves aridity | Seasons isolate the monsoon and the dry foresummer; bases fit cool- and warm-season grasses |
 | Oct 2026 | Soils deferred | No quick national water-holding capacity layer; add if the first runs suggest it matters |
+| Oct 2026 | Block 2 definitions: rain event ≥ 5 mm (2.5 and 10 mm sensitivity), dry day < 1 mm, warm-season onset rule (10-day total ≥ 20 mm from May 1, no 20-day dry spell in the next 30), hard freeze ≤ −2.2 °C | Event size that wets the root zone of grasses; onset rule screens out false starts |
+| Oct 2026 | Feature groups weighted equally within a block (temperature, moisture amount, seasonality) | With one group, temperature features dominated and the Plains moisture gradient was lost |
+| Oct 2026 | Working climate regions: A1 at 10 regions, pending the comparison with satellite curves and ground observations | Stable, and separates the main grassland types |
 
 : Analysis decisions {.striped}
 
 ## Open questions for the team
 
 - **Study period:** use all of 2001–2025, or a fixed recent window?
-- **Block 2 thresholds:** what size of rain event matters to herbaceous fuels, and how
-  should the onset of the warm-season rains be defined?
+- **Number of regions:** a few broad regions (about 7, most stable) or finer ones
+  (about 13, which split the tallgrass prairie and the California grasslands)?
 - **GSI moisture ramp:** which precipitation or water-balance index to use in Block 3?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
@@ -325,6 +431,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-07 | Block 2 built; first climate (A1, A2) and satellite-curve regions; comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) |
 | 2026-10-07 | CONUS Block 1 maps (2002–2025) and first CONUS MODIS curves and peak-timing map |
 | 2026-10-06 | Page created: approach, data, decisions, Block 1 features, first figures |
 
@@ -341,6 +448,8 @@ Comments on any of these are welcome.
   <https://www.mrlc.gov>.
 - USA National Phenology Network, <https://www.usanpn.org>; iNaturalist,
   <https://www.inaturalist.org>.
+- Globe-LFMC: Yebra, M., et al. (2024). Globe-LFMC 2.0, an enhanced and updated dataset for
+  live fuel moisture content research. *Scientific Data* 11.
 - Jolly, W. M., Nemani, R., and Running, S. W. (2005). A generalized, bioclimatic index
   to predict foliar phenology in response to climate. *Global Change Biology* 11,
   619–632.

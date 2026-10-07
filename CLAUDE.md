@@ -243,7 +243,14 @@ Figures come from `scripts/90_report_figs.R [profile]`: dev writes small PNGs to
 `report: figs_in_run_dir`, keeps the P720 checkout clean) and 91 copies them to
 `report/figs/`. PNGs + `manifest.csv` are committed from the laptop only; the page shows the
 `full` version of a figure when present, else `dev`. Each figure skips if its inputs are
-missing. Sample points for Cut B curves: config `report: sample_points`. When a decision
+missing. Sample points for Cut B curves: config `report: sample_points`. Optional figure names
+after the profile run only those (`Rscript scripts/90_report_figs.R full regions eval_obs`).
+Region and evaluation figures (`regions`, `eval_curves`, `eval_obs`, `obs_sites`, plus
+`eval_summary_<profile>.csv` shown as a table) are made on the laptop with the full profile
+(`figs_in_run_dir` is `{windows: false, linux: true}`, so they go straight to report/figs),
+because 31's output exists only there; 91 keeps laptop-made full rows when merging the
+manifest. Workflow from Oct 7: Mike runs the analyses on his machines; agents update the
+page (text + figure code) and read results from the laptop. When a decision
 changes, also update the page's Decisions / Open questions / Status / Changelog sections.
 The page is public-facing: no machine names, paths, credentials or ntfy topics.
 `scripts/91_sync_from_p720.R` (laptop) pulls `*_full.png` + merged manifest (and optionally
