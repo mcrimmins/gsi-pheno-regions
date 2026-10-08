@@ -617,19 +617,11 @@ gsi_subindices <- function(D, ps, g, photo_s, kbdi) {
        kbdi = if (!is.null(kbdi)) m_ramp(kbdi, g$kbdi$lo, g$kbdi$hi, decreasing = TRUE) else NULL)
 }
 
-# One variant: daily iGSI, smoothed GSI, phase, and the per-year metrics.
-# dd: day of each column relative to Jan 1 of Y (1 = Jan 1); iy: columns within year Y.
-gsi_variant_metrics <- function(SI, v, ps, g, dd, iy) {
-  parts <- list(tmin = SI$tmin)
-  if (isTRUE(v$vpd)) parts$vpd <- SI$vpd
-  parts$photo <- SI$photo
-  if (v$moisture == "precip") parts$moist <- SI$precip
-  if (v$moisture == "kbdi") parts$moist <- SI$kbdi
-  igsi <- Reduce(`*`, parts)
-  G <- m_roll_mean(igsi, ps$smooth)
-  G1 <- G; G1[G1 > 1] <- 1
+# Season of the smoothed GSI in year Y (peak in Y; relative 20 % / 50 % crossings within
+# +/- season_halfwidth_days of the peak, as for the satellite curves). G: cells x days.
+gsi_season_from_G <- function(G, dd, iy, g) {
   m <- nrow(G); n <- ncol(G); rows <- seq_len(m)
-  out <- matrix(NA_real_, m, length(gsi_metric_names), dimnames = list(NULL, gsi_metric_names))
+  out <- matrix(NA_real_, m, 5, dimnames = list(NULL, c("gsi_mean", "gsi_max", "peak_doy", "sos20", "eos50")))
   Gy <- G[, iy, drop = FALSE]
   out[, "gsi_mean"] <- rowMeans(Gy)
   pmx <- apply(Gy, 1, max)
@@ -657,6 +649,24 @@ gsi_variant_metrics <- function(SI, v, ps, g, dd, iy) {
     eos[hit] <- dd[ca[hit]]
   }
   out[, "sos20"] <- ifelse(seas, sos, NA); out[, "eos50"] <- ifelse(seas, eos, NA)
+  out
+}
+
+# One variant: daily iGSI, smoothed GSI, phase, and the per-year metrics.
+# dd: day of each column relative to Jan 1 of Y (1 = Jan 1); iy: columns within year Y.
+gsi_variant_metrics <- function(SI, v, ps, g, dd, iy) {
+  parts <- list(tmin = SI$tmin)
+  if (isTRUE(v$vpd)) parts$vpd <- SI$vpd
+  parts$photo <- SI$photo
+  if (v$moisture == "precip") parts$moist <- SI$precip
+  if (v$moisture == "kbdi") parts$moist <- SI$kbdi
+  igsi <- Reduce(`*`, parts)
+  G <- m_roll_mean(igsi, ps$smooth)
+  G1 <- G; G1[G1 > 1] <- 1
+  m <- nrow(G); n <- ncol(G); rows <- seq_len(m)
+  out <- matrix(NA_real_, m, length(gsi_metric_names), dimnames = list(NULL, gsi_metric_names))
+  ss <- gsi_season_from_G(G, dd, iy, g)
+  out[, colnames(ss)] <- ss
   # phases (absolute threshold on GSI / gsi_max, gsi_max = 1 as in the operational default)
   S <- m_phase2(G1, ps$greenup, g$persist)
   on <- S[, iy, drop = FALSE] & !S[, iy - 1, drop = FALSE]

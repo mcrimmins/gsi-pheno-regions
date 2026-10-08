@@ -406,6 +406,41 @@ show_fig("eval_sync",
   "Four line charts of year-to-year synchrony versus number of regions, for green-up, peak, end of season and curing.")
 ```
 
+**Reading the synchrony scores.**
+
+- **Most year-to-year variation is local.** Even at 20 regions, a region's average departure
+  accounts for only about a quarter of the cells' year-to-year departures in green-up and
+  peak, and about a sixth for curing. One CONUS-wide region accounts for 3–11 %. A
+  phenology model that only knows a region's typical season will miss most of a given
+  year; it needs that year's local weather, which is what the GSI supplies.
+- **Climate regions capture more of it than location alone,** most clearly for the NDVI
+  peak and curing (at 13 regions: 0.20–0.22 against 0.16 for the peak, 0.14–0.16 against
+  0.12 for curing). The level + shape satellite regions do worst: grouping cells by how
+  green they get says little about whether they vary together.
+- **The gains continue past 13 regions** without levelling off, slowly. Herbaceous-weighted
+  A2 is slightly ahead at 13 regions for green-up (0.27 against 0.24–0.26 for A1 and A2).
+- **Synchrony differs a lot between regions.** In A2 at 13 regions, cells move together
+  in the Southeast (1), the mid-South (5), the upper Midwest (13) and the low deserts' peak
+  (4) (shared share 0.35–0.65), but hardly at all in the interior West (6, 12) and the
+  monsoon Southwest's curing (3) (about 0.1). Those are regions where the season follows
+  scattered storms, so neighboring cells can have quite different years.
+
+### Does tuning the GSI by region predict green-up and curing better?
+
+This is the test the regions are for. On a sample of 4,000 grass- and shrub-dominated cells,
+the GSI's thresholds (minimum temperature, VPD, the start of the daylength ramp and the
+28-day precipitation ramp) are fitted to the satellite green-up and curing dates: once for
+all of CONUS, and separately for each region at 7, 10 and 13 regions. The fits use half of
+the years and are scored on the other half, against the national default settings and
+against simply predicting each cell's typical date.
+
+```{r fig-gsi-model}
+#| results: asis
+show_fig("gsi_model",
+  "Error in predicted green-up and curing dates on held-out years (top) and how well each model tracks early and late years (bottom), for GSI thresholds fitted per region, fitted once for CONUS, the national default settings, and each cell's typical date.",
+  "Four charts comparing GSI model versions by number of regions: green-up and curing date error, and correlation of yearly departures.")
+```
+
 ```{r fig-obs-sites}
 #| results: asis
 show_fig("obs_sites",
@@ -674,6 +709,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-08 | Year-to-year synchrony of satellite season dates by region |
 | 2026-10-08 | GSI (Block 3) built: two parameter sets, three moisture options, no-VPD runs |
 | 2026-10-08 | Herbaceous-weighted A2 regions added to the comparisons and profiles |
 | 2026-10-07 | Region profiles (climate, satellite season and ground dates per region) for the candidate sets |

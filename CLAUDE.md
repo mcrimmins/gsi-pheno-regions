@@ -91,7 +91,8 @@ Deferred: fire data, gridMET, ERA5-Land.
   keep disk-bound steps (many raster reads) near 8-16 workers. The GPU is unused so far: use
   it for heavy numeric work that fits in 24 GB, e.g. `torch` (CUDA) for autoencoders or for
   k-means / distance matrices on all ~480k cells x tens of features (fits easily), and check
-  `nvidia-smi` first. Keep a CPU fallback so scripts still run on the laptop. Scripts must not call `quit()` when interactive. `GSI_DATA_ROOT` overrides the data root.
+  `nvidia-smi` first. Keep a CPU fallback so scripts still run on the laptop.
+- Scripts must not call `quit()` when interactive. `GSI_DATA_ROOT` overrides the data root.
 - `GSI_SCRATCH_ROOT` (or `scratch_root` in config) puts temporary raw downloads on a local
   disk. On the P720 data_root is the TrueNAS NFS share `/mnt/truenas_phenology` and scratch
   is local; set both in `~/.Renviron` there.
@@ -273,7 +274,17 @@ Deferred: fire data, gridMET, ERA5-Land.
      numbers/colours from `region_display()` in `R/evaluate.R` (shared with the report maps:
      colours matched to `report: region_maps[1]`). Page figures `prof_*` via 90 (`profiles`).
      Keep config.yml ASCII (a degree sign broke YAML reading in a C locale).
-9. A3 (Block 3, GSI features): after 12_gsi.R; GSI-per-region model test next.
+   - `scripts/34_gsi_model.R` (P720, ~1-1.5 h with 24 forked workers; code `R/gsi_model.R`,
+     config `gsi_model:`): samples 4,000 strict-herb cells, caches their daily PRISM series and
+     yearly satellite sos20 / cure50 (`eval/gsi_model/sample_<profile>.rds`), fits GSI ramp
+     thresholds (Tmin, VPD, daylength start, 28-day precip; FEMS smoothing) by Nelder-Mead to
+     minimize the capped (90 d) mean absolute error of GSI sos20 / eos50 vs satellite sos20 /
+     cure50: once for CONUS and per region for A1 / A2 / A2 herb-weighted at k 7/10/13; two
+     folds (odd / even years). Compared with FEMS / NFDRS defaults and cell climatology on
+     held-out years: MAE, median error, share within 30 d, anomaly correlation ->
+     `scores.csv`, `region_scores.csv`, `params.csv`. Uses forked workers (parallel::mclapply)
+     on Linux so the cached series are shared; sequential on Windows. Page figure `gsi_model`.
+9. A3 (Block 3, GSI features): after 12_gsi.R.
    Note: `clusters/a2_groups` was made in the cloud workspace and lives on the laptop only;
    copy it to the P720 before running 30/33 there or A2 is silently skipped.
 

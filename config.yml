@@ -187,6 +187,26 @@ default:
     max_abs_anomaly: 90         # days; larger anomalies = season jumps, dropped
     region_domain: herb         # per-region numbers and cell correlations on strict herb cells
 
+  # GSI-per-region model test (34_gsi_model.R, P720): fit GSI ramp thresholds (Tmin, VPD,
+  # daylength start, 28-day precipitation) to satellite green-up (sos20) and curing (NDII7
+  # cure50) dates, against the GSI's own season dates (sos20 / eos50 of the smoothed index).
+  # Models: NFDRS and FEMS defaults (no fitting), one CONUS-wide fit, one fit per region (for
+  # each partition and k below), and the cell's own typical date (climatology). Two folds:
+  # fit on odd years, score on even, and the reverse.
+  gsi_model:
+    n_sample: 4000              # strict herbaceous cells, random (seed below)
+    min_sat_years: 10           # cells need a satellite green-up in at least this many years
+    min_cells: 25               # regions with fewer sampled cells use the CONUS fit
+    conus_fit_cells: 1500       # subsample for the CONUS-wide fit
+    partitions: [A1_groups, A2_groups, A2_herbw]
+    k: [7, 10, 13]
+    smooth: 28                  # fitted models: FEMS smoothing
+    maxit: 150                  # Nelder-Mead evaluations per fit
+    penalty_days: 60            # missing GSI date where the satellite has one
+    cap_days: 90                # errors capped (season jumps, e.g. spring vs monsoon), as in 33
+    workers: 24                 # forked on Linux (shared memory); sequential on Windows
+    seed: 20261008
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
@@ -442,6 +462,13 @@ dev:
     extent_label: "Arizona test area (dev)"
   synchrony:
     min_years: 2                # dev has 3 years
+  gsi_model:
+    n_sample: 300
+    min_sat_years: 2
+    min_cells: 15
+    conus_fit_cells: 150
+    maxit: 40
+    workers: 2
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).
 # Uses 2022 (outside the dev years) so smoke tests don't re-fetch files dev already

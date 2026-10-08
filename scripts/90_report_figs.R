@@ -50,7 +50,7 @@ source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -542,6 +542,48 @@ if (do("eval_sync") && have(sy_file)) {
     }
     legend_row(parts)
   })
+}
+
+# gsi_model: GSI-per-region model test (34_gsi_model.R)
+gm_file <- file.path(eval_dir, "gsi_model", "scores.csv")
+if (do("gsi_model") && have(gm_file)) {
+  gm <- utils::read.csv(gm_file, stringsAsFactors = FALSE)
+  reg <- gm[gm$model == "regional", ]; ref <- gm[gm$model != "regional", ]
+  parts <- intersect(names(part_lab), unique(reg$partition))
+  refc <- c(climatology = "#8a8985", default_fems = "#c0392b", default_nfdrs = aqua_col, conus = ink)
+  refl <- c(climatology = "Cell's typical date (no weather)", default_fems = "GSI, FEMS defaults",
+            default_nfdrs = "GSI, NFDRS defaults", conus = "GSI fitted once for CONUS")
+  refy <- c(climatology = 3, default_fems = 2, default_nfdrs = 2, conus = 1)
+  panel <- function(col, main, sub, ylab, ylim) {
+    plot(NA, xlim = c(6.5, 13.5), ylim = ylim, xlab = "number of regions (fitted per region)", ylab = ylab,
+         bty = "n", xaxt = "n", cex.axis = 0.85)
+    axis(1, at = sort(unique(reg$k)), cex.axis = 0.85)
+    abline(h = pretty(ylim), col = "#ecebe7")
+    for (m in intersect(names(refc), ref$model)) abline(h = ref[[col]][ref$model == m], col = refc[[m]], lty = refy[[m]], lwd = 1.6)
+    for (p in parts) { e <- reg[reg$partition == p, ]; e <- e[order(e$k), ]
+      lines(e$k, e[[col]], col = part_col[[p]], lwd = 2.4, type = "b", pch = 16) }
+    mtext(main, side = 3, line = 1.4, adj = 0, cex = 0.9, font = 2, col = ink)
+    mtext(sub, side = 3, line = 0.3, adj = 0, cex = 0.72, col = ink2)
+  }
+  rng <- function(cols) { v <- unlist(gm[, cols]); v <- v[is.finite(v)]; c(floor(min(v) / 5) * 5, ceiling(max(v) / 5) * 5) }
+  plot_png("gsi_model", all_years, 2400, 1700, function() {
+    par(mfrow = c(2, 2), mar = c(4.2, 4.4, 3.6, 1), oma = c(0, 0, 3.4, 0))
+    yl <- rng(c("sos_mae", "cure_mae"))
+    panel("sos_mae", "Green-up date: error", "Held-out years, herbaceous cells; lower is better", "mean absolute error (days)", yl)
+    panel("cure_mae", "Curing date: error", "Held-out years, herbaceous cells; lower is better", "mean absolute error (days)", yl)
+    rr <- range(c(0, unlist(gm[, c("sos_anom_r", "cure_anom_r")])), na.rm = TRUE); rr <- c(min(0, floor(rr[1] * 10) / 10), ceiling(rr[2] * 10) / 10)
+    panel("sos_anom_r", "Green-up: early vs late years", "Correlation of yearly departures; higher is better", "correlation", rr)
+    panel("cure_anom_r", "Curing: early vs late years", "Correlation of yearly departures; higher is better", "correlation", rr)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+    plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    rm_ <- intersect(names(refc), ref$model)
+    legend("top", legend = c(paste("Fitted per region:", lab_of(parts, part_lab)), refl[rm_]),
+           col = c(part_col[parts], refc[rm_]), lty = c(rep(1, length(parts)), refy[rm_]),
+           pch = c(rep(16, length(parts)), rep(NA, length(rm_))), lwd = 2, ncol = 3, bty = "n", cex = 0.8, text.col = ink2)
+  })
+  tb <- gm; tb$model <- ifelse(tb$model == "regional", paste0("Per region: ", lab_of(tb$partition, part_lab), ", ", tb$k), refl[tb$model])
+  utils::write.csv(tb[, c("model", "sos_mae", "sos_mdae", "sos_within30", "sos_anom_r", "cure_mae", "cure_mdae", "cure_within30", "cure_anom_r")],
+                   file.path(fig_dir, sprintf("gsi_model_%s.csv", profile)), row.names = FALSE)
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------
