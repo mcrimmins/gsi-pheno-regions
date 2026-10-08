@@ -71,8 +71,8 @@ Deferred: fire data, gridMET, ERA5-Land.
 - Study period for Cut A. The `full` profile downloads 2001–2025 first (first full MODIS
   year onward); that is download order, not a study-period decision.
 - Block 2 thresholds: decided Oct 7 (see pipeline step 5b); don't change without asking.
-- Moisture-ramp choice for Block 3 (precip index vs simple Hargreaves water balance).
-- Copy vs reference `gsi.R`; P720 disk space and any existing local PRISM archive.
+- Block 3 / GSI: decided Oct 8 (step 5c); don't change variants without asking.
+- P720 disk space and any existing local PRISM archive.
 
 ## Compute workflow
 - Develop on the Windows laptop with the `dev` profile (Arizona box, 2023–2025, 2 workers);
@@ -197,6 +197,20 @@ Deferred: fire data, gridMET, ERA5-Land.
    Block 1 per-year files; onset_frac). Verified against an independent per-cell
    calculation on the dev box (exact). Gotcha: `format()` on a vector pads ("5.0"); use
    `as.character()` per element for band-name tags.
+5c. `scripts/12_gsi.R` (Block 3 / GSI, decided Oct 8; code `R/gsi.R`, config `features: gsi`):
+   daily GSI per year Y on the grid, series Jan 1 (Y-1) .. Mar 31 (Y+1) (Dec 31 for the last
+   year). Variants = param set {nfdrs: VPD 900-4100 Pa, daylength 10-11 h, precip 0-10 mm/28 d,
+   21-d smoothing, green-up 0.5; fems: 1956-3882 Pa, 11-12 h, 10.16-20.32 mm/28 d, 28 d, 0.3}
+   x moisture {none, precip, kbdi (ramp 200-600 decreasing, MAP from 2001-2025 ->
+   static/kbdi_map.tif)} + no-VPD runs (nfdrs/fems with precip). Tmin -2..5 C, geometric
+   daylength, gsi_max 1, persistence 3 d. 13 bands per year and variant (gsi_mean/max,
+   peak_doy, sos20, eos50 (relative crossings as Cut B), gu_doy, dorm_doy, green_days,
+   n_pulses, lim_tmin/vpd/photo/moist) -> `features/gsi_<variant>/`, summaries
+   `gsi_<variant>_{median,iqr}`. `R/gsi.R` Part 1 = gsi-scout's point model copied (only
+   change: compute_kbdi() takes R); Part 2 = grid version. `scripts/12b_gsi_check.R` checks
+   Part 2 against run_gsi() at the check sites (dev Oct 8: daily GSI equal to ~1e-15, PASS).
+   Gotchas: pmin/pmax(scalar, matrix) drop dim (use m_ramp); max.col() has a tolerance, and
+   GSI plateaus at 1, so the peak is the first day within 1e-6 of the maximum.
 6. `scripts/20_cluster_a1.R` (A1 = Block 1 + static; built and run on CONUS Oct 7):
    `Rscript scripts/20_cluster_a1.R <profile> [variant,...]` (RStudio: `gsi_profile`,
    `gsi_variant`). Variants in config `clustering: a1: variants`: `base` (one feature group;
@@ -238,6 +252,11 @@ Deferred: fire data, gridMET, ERA5-Land.
      resamples, ~5 min): `obs_r2_boot.csv` (range per score), `obs_r2_diff.csv` (paired
      differences, e.g. A2 - A1). Gotcha: a YAML key named `n` reads as FALSE (YAML 1.1); use
      `n_boot`.
+   - `scripts/33_synchrony.R` (P720; needs per-year `cutb/metrics`): share of cells' yearly
+     anomalies (value - own median; jumps > 90 days dropped) in sos20, NDVI peak, eos20 and
+     cure50 explained by their region's mean anomaly that year, per partition and k (k = 1 =
+     CONUS), herb and all cells; per-region numbers and per-cell correlation rasters for the
+     profiled sets -> `eval/sync/`. Page figure `eval_sync`.
    - `scripts/32_region_profiles.R` (laptop, ~1 min): per candidate region set (config
      `region_profiles: sets`; A1 k10, A2 k7, A2 k13) feature medians/IQR, Cut B season
      metrics and median curves (all cells and strict herb cells), ground-observation dates
@@ -245,7 +264,9 @@ Deferred: fire data, gridMET, ERA5-Land.
      numbers/colours from `region_display()` in `R/evaluate.R` (shared with the report maps:
      colours matched to `report: region_maps[1]`). Page figures `prof_*` via 90 (`profiles`).
      Keep config.yml ASCII (a degree sign broke YAML reading in a C locale).
-9. A3 (Block 3, GSI sub-indices): not started.
+9. A3 (Block 3, GSI features): after 12_gsi.R; GSI-per-region model test next.
+   Note: `clusters/a2_groups` was made in the cloud workspace and lives on the laptop only;
+   copy it to the P720 before running 30/33 there or A2 is silently skipped.
 
 ## Project page (report/)
 `report/index.qmd` is a living Quarto page for the project team and Mike's website: what

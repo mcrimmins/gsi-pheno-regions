@@ -83,7 +83,7 @@ models. Where they disagree is where to look for what's missing.
 | MODIS greenness and canopy water, CONUS, 2001–2025 | Done (Terra and Aqua merged, smoothed daily curves per year) |
 | Cut A, Block 1: seasonal climate features | Done (CONUS, water years 2002–2025) |
 | Cut A, Block 2: timing and variability features | Done (CONUS) |
-| Cut A, Block 3: GSI sub-indices | Planned (moisture ramp to decide) |
+| Cut A, Block 3: GSI | Built and checked against the GSI Scout model; CONUS run next |
 | Cut A clustering: A1 (Block 1) and A2 (Blocks 1 + 2) | First runs done |
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | First runs done; choosing the number of regions |
@@ -238,14 +238,22 @@ median, the year-to-year spread, and coefficients of variation.
 
 : Block 2 features {.striped}
 
-### Block 3: GSI sub-indices (planned)
+### Block 3: the Growing Season Index (built)
 
-The daily GSI sub-indices (minimum temperature, vapor pressure deficit, day length and a
-moisture ramp), computed per year, give the share of the active season limited by each
-factor, and the onset, peak and decline dates of the smoothed index. PRISM has no soil
-moisture, so the moisture ramp will use a precipitation-based index or a simple water
-balance, and that choice will be treated as a sensitivity test. Vapor pressure deficit is
-the least reliable PRISM variable, so A3 will be run with and without it.
+The daily GSI is computed for every year and grid cell from PRISM, with the same model code
+as the project's GSI Scout tool. It serves two purposes: features for the A3 regions (when
+the season starts, peaks and ends; which factor limits it), and the model whose regional
+tuning the regions are meant for.
+
+| Choice | Variants |
+|---|---|
+| Parameter sets | **National literature defaults** (NFDRS 2016: VPD 900–4,100 Pa, daylength 10–11 h, 21-day smoothing, green-up at 0.5) and **FEMS operational values** (VPD 1,956–3,882 Pa, daylength 11–12 h, 28-day smoothing, green-up at 0.3); minimum temperature −2 to 5 °C in both |
+| Moisture | None, a 28-day precipitation sum (0–10 mm literature, 10–20 mm FEMS), or the Keetch–Byram Drought Index (limiting from 200, fully at 600) |
+| Sensitivity | Without the VPD ramp (PRISM VPD is its least reliable variable) |
+
+: GSI variants {.striped}
+
+PRISM has no soil moisture, so the soil-moisture option of GSI Scout is not used here.
 
 ## Cut B: satellite seasonal curves
 
@@ -380,6 +388,22 @@ if (!is.null(ed)) {
   cat(knitr::kable(w, row.names = FALSE, align = c("l", "l", rep("r", ncol(w) - 2))), sep = "\n")
   cat("\n:::\n\n")
 }
+```
+
+### Do cells in a region move together from year to year?
+
+A region is a good domain for a phenology model when its cells green up and cure early or
+late in the same years, not only when their average seasons match. For each cell and year,
+the satellite green-up, peak, end-of-season and curing dates are expressed as departures
+from that cell's own typical date, and the score is the share of those departures that the
+region's average departure in the same year accounts for. One CONUS-wide region is the
+baseline.
+
+```{r fig-eval-sync}
+#| results: asis
+show_fig("eval_sync",
+  "Share of year-to-year departures in satellite season dates that cells share with their region, by number of regions (herbaceous cells). The dotted line is one region for all of CONUS.",
+  "Four line charts of year-to-year synchrony versus number of regions, for green-up, peak, end of season and curing.")
 ```
 
 ```{r fig-obs-sites}
@@ -559,8 +583,28 @@ show_fig("prof_obs_A2_herbw_k13", "Ground observation dates by region.", "Six do
 show_crosswalk("A2_herbw_k13", "A2_groups_k13", "How the herbaceous-weighted regions relate to the unweighted 13 (regions holding at least 5 % of a weighted region's cells)")
 ```
 
-Weighting by herbaceous cover spends more of the 13 regions where grasses and shrubs
-dominate (the West and Plains) and fewer on the forested and farmed East.
+**Reading the herbaceous-weighted 13.** Weighting by herbaceous cover moves regions from
+the East to the West, as intended. Compared with the unweighted 13:
+
+- **The Southwest gets more detail.** The monsoon region splits into a core monsoon region
+  (**11**: southeastern Arizona and southwestern New Mexico, with Santa Rita, Sevilleta and
+  Chino Valley; half the precipitation in July–September, green-up in late June, peak in
+  early September) and a fringe to the north and east (**3**: green-up in late April, peak
+  in late August). The interior West splits three ways (**5**, **6**, **12**), separating
+  the cooler basins that cure in early July from the drier ones that cure by mid June.
+- **California and the low deserts keep their own regions** (**13** and **4**), as in the
+  unweighted 13.
+- **The East loses detail.** It falls into two broad regions (**1**, the Southeast, and
+  **8**, the Midwest and Northeast). The Kansas tallgrass prairie goes back in with the Ohio
+  Valley (region 8), the Oklahoma tallgrass joins the Southeast, and the upper Midwest is
+  split between region 8 and the northern Plains (**10**).
+
+On the scores, the weighted regions explain seasonal timing in the herbaceous cells about
+as well as A1 and slightly better than unweighted A2 (timing-only curves: 0.51, 0.54 and
+0.59 at 7, 10 and 13 regions, against 0.49, 0.53 and 0.55 for unweighted A2). Against the ground data they are indistinguishable
+from unweighted A2, except a lower score on the herbaceous live fuel moisture peak at 10
+and 13 regions, which rests on only 115 sites. Like unweighted A2, they are most stable at
+7 regions.
 
 :::
 
@@ -608,6 +652,7 @@ models, not by clustering scores alone.
 | Oct 2026 | Soils deferred | No quick national water-holding capacity layer; add if the first runs suggest it matters |
 | Oct 2026 | Block 2 definitions: rain event ≥ 5 mm (2.5 and 10 mm sensitivity), dry day < 1 mm, warm-season onset rule (10-day total ≥ 20 mm from May 1, no 20-day dry spell in the next 30), hard freeze ≤ −2.2 °C | Event size that wets the root zone of grasses; onset rule screens out false starts |
 | Oct 2026 | Feature groups weighted equally within a block (temperature, moisture amount, seasonality) | With one group, temperature features dominated and the Plains moisture gradient was lost |
+| Oct 2026 | GSI variants: national literature and FEMS operational parameters; no moisture, 28-day precipitation or KBDI; with and without VPD; GSI Scout's model code reused | Tests how far local tuning has drifted from the national default, and which moisture control matters where |
 | Oct 2026 | Working climate regions: A1 at 10 regions, pending the comparison with satellite curves and ground observations | Stable, and separates the main grassland types |
 
 : Analysis decisions {.striped}
@@ -617,7 +662,6 @@ models, not by clustering scores alone.
 - **Study period:** use all of 2001–2025, or a fixed recent window?
 - **Number of regions:** a few broad regions (about 7, most stable) or finer ones
   (about 13, which split the tallgrass prairie and the California grasslands)?
-- **GSI moisture ramp:** which precipitation or water-balance index to use in Block 3?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -630,6 +674,8 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-08 | GSI (Block 3) built: two parameter sets, three moisture options, no-VPD runs |
+| 2026-10-08 | Herbaceous-weighted A2 regions added to the comparisons and profiles |
 | 2026-10-07 | Region profiles (climate, satellite season and ground dates per region) for the candidate sets |
 | 2026-10-07 | Block 2 built; first climate (A1, A2) and satellite-curve regions; comparison with satellite curves (as observed and timing only) and ground observations (NPN, live fuel moisture, iNaturalist) with block-bootstrap ranges |
 | 2026-10-07 | CONUS Block 1 maps (2002–2025) and first CONUS MODIS curves and peak-timing map |

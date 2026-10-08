@@ -50,7 +50,7 @@ source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -518,6 +518,30 @@ if (do("obs_sites") && have(si_file)) {
     legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", pch = 16, col = gc,
            legend = sprintf("%s (%d)", grp[names(gc)], n), cex = 0.8, text.col = ink2, x.intersp = 0.6)
   }, panel_w = 1600)
+}
+
+# eval_sync: year-to-year synchrony (33_synchrony.R)
+sy_file <- file.path(eval_dir, "sync", "sync_r2.csv")
+if (do("eval_sync") && have(sy_file)) {
+  sy <- utils::read.csv(sy_file, stringsAsFactors = FALSE)
+  sy <- sy[sy$domain == "herb", ]
+  mets_s <- unique(sy$metric)
+  ml <- c(sos20 = "Green-up (20 %)", ndvi_peak_doy = "NDVI peak", eos20 = "End of season (20 %)",
+          cure50 = "Curing (NDII7 50 %)")
+  parts <- intersect(names(part_lab), unique(sy$partition))
+  nc <- min(2, length(mets_s)); nr <- ceiling(length(mets_s) / nc)
+  plot_png("eval_sync", all_years, 1200 * nc, 230 + 760 * nr, function() {
+    par(mfrow = c(nr, nc), mar = c(4.2, 4.4, 3.6, 1), oma = c(0, 0, 2.2, 0))
+    for (mt in mets_s) {
+      d <- sy[sy$metric == mt & sy$k > 1, ]
+      c1 <- sy$sync_r2[sy$metric == mt & sy$partition == "conus"]
+      yl <- c(0, max(0.2, ceiling(max(d$sync_r2, c1, na.rm = TRUE) * 10) / 10))
+      k_panel(d, "sync_r2", lab_of(mt, ml), "Herbaceous cells; dotted line = one CONUS-wide region",
+              yl, "share of yearly anomalies shared", parts)
+      abline(h = c1, lty = 3, col = ink)
+    }
+    legend_row(parts)
+  })
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------

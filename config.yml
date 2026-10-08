@@ -179,6 +179,14 @@ default:
         - [B_shape, A2_groups]
         - [A2_herbw, A2_groups]
 
+  # Year-to-year synchrony (33_synchrony.R, P720): share of the cells' yearly anomalies in
+  # the satellite season metrics explained by their region's mean anomaly.
+  synchrony:
+    metrics: [sos20, ndvi_peak_doy, eos20, cure50]
+    min_years: 10               # cells need at least this many valid years
+    max_abs_anomaly: 90         # days; larger anomalies = season jumps, dropped
+    region_domain: herb         # per-region numbers and cell correlations on strict herb cells
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
@@ -263,6 +271,44 @@ default:
         cold_tmean: 5           # cold-limited: daily mean < 5 C
         window_days: 30         # moisture-limited: trailing 30-day P < dry_ratio x 30-day PET
         dry_ratio: 0.5
+
+    # Block 3 / GSI (scripts/12_gsi.R, R/gsi.R; decided Oct 8 2026, Mike: "go with your
+    # defaults"). Daily GSI per year from PRISM on the grid, ported from gsi-scout R/gsi.R.
+    # Two parameter sets (national literature defaults vs FEMS operational), three moisture
+    # options (none / 28-day precipitation sum / KBDI ramp) and a no-VPD sensitivity run.
+    # Each set keeps its own smoothing window and green-up threshold.
+    gsi:
+      chunk_rows: 15              # grid rows per chunk (cells x ~820 days per matrix)
+      photo_method: geometric     # FAO-56 daylength (gsi-scout default)
+      persist: 3                  # days on the far side of the green-up threshold to switch phase
+      spinup_from_prev_jan: true  # series starts Jan 1 of Y-1 (smoothing, precipitation sum, KBDI spin-up)
+      season_halfwidth_days: 183  # relative crossings searched within +/- this of the peak (as Cut B)
+      min_amp: 0.05               # GSI amplitude below this -> no season (sos/eos NA)
+      kbdi:
+        lo: 200                   # TAMU/TICC bands, decreasing ramp (gsi-scout idx_kbdi)
+        hi: 600
+        interception_in: 0.2      # per rain event
+        # mean annual precipitation from the PRISM years available (2001-2025), written once
+        # to static/kbdi_map.tif (gsi-scout uses 1991-2020)
+      param_sets:
+        nfdrs:                    # NFDRS2016 literature (Jolly et al. 2024 Table 5); NFDRS4 code: 21 d, GU 0.5
+          tmin: [-2, 5]
+          vpd: [900, 4100]        # Pa, decreasing
+          photo_h: [10, 11]
+          precip: {window: 28, lo: 0, hi: 10}      # mm over the window
+          smooth: 21
+          greenup: 0.5
+        fems:                     # FEMS operational (gsi-scout scout_defaults)
+          tmin: [-2, 5]
+          vpd: [1956, 3882]
+          photo_h: [11, 12]
+          precip: {window: 28, lo: 10.16, hi: 20.32}
+          smooth: 28
+          greenup: 0.3
+      moisture: [none, precip, kbdi]
+      extra_variants:             # sensitivity: no VPD ramp
+        - {param_set: nfdrs, moisture: precip, vpd: false}
+        - {param_set: fems, moisture: precip, vpd: false}
 
   # Cut A clustering (scripts/20_cluster_a1.R; A2/A3 add blocks 2-3 the same way).
   # Features are the across-year medians, standardized; skewed ones log-transformed;
@@ -394,6 +440,8 @@ dev:
   memfrac: 0.3
   report:
     extent_label: "Arizona test area (dev)"
+  synchrony:
+    min_years: 2                # dev has 3 years
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).
 # Uses 2022 (outside the dev years) so smoke tests don't re-fetch files dev already
