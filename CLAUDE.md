@@ -82,7 +82,16 @@ Deferred: fire data, gridMET, ERA5-Land.
   variables, workers, memfrac). Scripts are identical on both machines.
 - Profiles: `test` (5 days, 2 vars, minutes), `dev`, `full`. Select with the first script
   argument, a `gsi_profile` variable in the global env (RStudio console / background job
-  with `importEnv = TRUE`), or `R_CONFIG_ACTIVE`. Scripts must not call `quit()` when interactive. `GSI_DATA_ROOT` overrides the data root.
+  with `importEnv = TRUE`), or `R_CONFIG_ACTIVE`. Worker counts: `step_workers(cfg, step)` (R/config.R)
+  = env `GSI_WORKERS` (one run) > profile `workers_by_step: <step>` > profile `workers`; it
+  also caps terra memfrac at 0.6 / workers. New parallel scripts should call it.
+- **P720 hardware** (Oct 8): 2 x Intel Xeon Gold 6148 (20 cores each: 40 cores / 80
+  threads), 125 GB RAM (+7 GB swap), NVIDIA RTX 3090 with 24 GB VRAM. Size per-year jobs to
+  run in one round where memory allows (24 years -> 24 workers; 12_gsi.R ~2 GB per worker),
+  keep disk-bound steps (many raster reads) near 8-16 workers. The GPU is unused so far: use
+  it for heavy numeric work that fits in 24 GB, e.g. `torch` (CUDA) for autoencoders or for
+  k-means / distance matrices on all ~480k cells x tens of features (fits easily), and check
+  `nvidia-smi` first. Keep a CPU fallback so scripts still run on the laptop. Scripts must not call `quit()` when interactive. `GSI_DATA_ROOT` overrides the data root.
 - `GSI_SCRATCH_ROOT` (or `scratch_root` in config) puts temporary raw downloads on a local
   disk. On the P720 data_root is the TrueNAS NFS share `/mnt/truenas_phenology` and scratch
   is local; set both in `~/.Renviron` there.

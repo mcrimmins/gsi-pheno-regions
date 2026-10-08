@@ -34,6 +34,7 @@ source(here::here("R", "features.R"))
 source(here::here("R", "block1.R"))
 
 cfg <- load_cfg(profile)
+sw <- step_workers(cfg, "block1")
 log_file <- log_init("10_block1_seasonal", profile)
 notify_init(cfg)
 b1 <- cfg$features$block1
@@ -42,7 +43,7 @@ grid_file <- file.path(static_dir(cfg), "grid_mask.tif")
 if (!file.exists(grid_file)) stop("static/grid_mask.tif missing; run 02_static.R first")
 years <- feature_years(cfg)
 log_msg("=== 10_block1_seasonal | profile: ", profile, " | years ", min(years), "-", max(years),
-        " | ", length(block1_names(b1)), " features | workers ", cfg$workers)
+        " | ", length(block1_names(b1)), " features | workers ", sw$n)
 t0 <- Sys.time()
 
 prism_file <- function(v, y) file.path(cfg$run_dir, "prism_daily", v, sprintf("prism_%s_%d.tif", v, y))
@@ -60,8 +61,8 @@ log_msg(length(jobs), " year(s) to compute")
 
 if (length(jobs)) {
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", MKL_NUM_THREADS = "1")
-  plan(multisession, workers = min(cfg$workers, length(jobs)))
-  memfrac <- cfg$memfrac
+  plan(multisession, workers = min(sw$n, length(jobs)))
+  memfrac <- sw$memfrac
   res <- future_map(jobs, function(j) block1_year(j$Y, j$files, grid_file, j$out, b1,
                                                   chunk_rows, memfrac),
                     .options = furrr_options(seed = NULL, packages = "terra"))

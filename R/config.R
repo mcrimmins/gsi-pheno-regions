@@ -24,6 +24,7 @@ load_cfg <- function(profile = NULL) {
     file.path(normalizePath(path.expand(scratch), winslash = "/", mustWork = FALSE), cfg$run_name)
   cfg$years <- seq(as.integer(cfg$years$start), as.integer(cfg$years$end))
 
+
   if (!is.null(cfg$bbox)) {
     b <- unlist(cfg$bbox)
     need <- c("xmin", "ymin", "xmax", "ymax")
@@ -32,6 +33,16 @@ load_cfg <- function(profile = NULL) {
   }
   cfg
 }
+
+# Workers for one step: GSI_WORKERS env (one run) > profile `workers_by_step: <step>` >
+# profile `workers`. Also caps terra's memfrac so all workers together stay under ~60 % of RAM.
+step_workers <- function(cfg, step) {
+  w <- suppressWarnings(as.integer(Sys.getenv("GSI_WORKERS", "")))
+  if (is.na(w) || w < 1) w <- cfg$workers_by_step[[step]] %||% cfg$workers
+  w <- as.integer(w)
+  list(n = w, memfrac = min(cfg$memfrac, 0.6 / w))
+}
+if (!exists("%||%", mode = "function")) `%||%` <- function(a, b) if (is.null(a)) b else a
 
 # Paths used by the PRISM step, all under the run directory.
 prism_paths <- function(cfg) {

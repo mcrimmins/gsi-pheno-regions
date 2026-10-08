@@ -39,6 +39,7 @@ source(here::here("R", "cutb.R"))
 source(here::here("R", "cutb_curves.R"))
 
 cfg <- load_cfg(profile)
+sw <- step_workers(cfg, "cutb_curves")
 log_file <- log_init("06_cutb_curves", profile)
 notify_init(cfg)
 cc <- cfg$cutb_curves
@@ -49,13 +50,13 @@ have <- function(p, y) all(file.exists(vapply(cc_vars, function(v) cutb_out_file
 years <- cfg$years[vapply(cfg$years, function(y) have(prods[1], y), TRUE)]
 if (!length(years)) stop("no Cut B years found; run 04_cutb_download.R first")
 log_msg("=== 06_cutb_curves | profile: ", profile, " | years ", min(years), "-", max(years),
-        " | lambda ", cc$lambda, " | workers ", cfg$workers)
+        " | lambda ", cc$lambda, " | workers ", sw$n)
 t0 <- Sys.time()
 Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", MKL_NUM_THREADS = "1")
-memfrac <- cfg$memfrac
+memfrac <- sw$memfrac
 run_jobs <- function(jobs, fun) {
   if (!length(jobs)) return(list())
-  plan(multisession, workers = min(cfg$workers, length(jobs)))
+  plan(multisession, workers = min(sw$n, length(jobs)))
   on.exit(plan(sequential))
   future_map(jobs, fun, .options = furrr_options(seed = NULL, packages = "terra",
              globals = c("cfg", "cc", "grid_file", "chunk_rows", "memfrac", "cc_vars",

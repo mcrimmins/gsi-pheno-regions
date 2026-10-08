@@ -45,6 +45,7 @@ source(here::here("R", "features.R"))
 source(here::here("R", "gsi.R"))
 
 cfg <- load_cfg(profile)
+sw <- step_workers(cfg, "gsi")
 log_file <- log_init("12_gsi", profile)
 notify_init(cfg)
 g <- cfg$features$gsi
@@ -53,7 +54,7 @@ grid_file <- file.path(static_dir(cfg), "grid_mask.tif")
 if (!file.exists(grid_file)) stop("static/grid_mask.tif missing; run 02_static.R first")
 years <- feature_years(cfg)
 log_msg("=== 12_gsi | profile: ", profile, " | years ", min(years), "-", max(years), " | variants: ",
-        paste(names(variants), collapse = ", "), " | workers ", cfg$workers)
+        paste(names(variants), collapse = ", "), " | workers ", sw$n)
 t0 <- Sys.time()
 
 # Mean annual precipitation for KBDI (mm), from the Block 1 per-year water-year totals.
@@ -86,8 +87,8 @@ log_msg(length(jobs), " year(s) to compute")
 
 if (length(jobs)) {
   Sys.setenv(OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1", MKL_NUM_THREADS = "1")
-  plan(multisession, workers = min(cfg$workers, length(jobs)))
-  memfrac <- cfg$memfrac; chunk_rows <- g$chunk_rows %||% 15
+  plan(multisession, workers = min(sw$n, length(jobs)))
+  memfrac <- sw$memfrac; chunk_rows <- g$chunk_rows %||% 15
   res <- future_map(jobs, function(j) gsi_year(j$Y, j$files, grid_file, map_file, j$outs, g, variants,
                                                chunk_rows, memfrac),
                     .options = furrr_options(seed = NULL, packages = "terra"))

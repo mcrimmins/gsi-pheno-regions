@@ -466,7 +466,16 @@ full:
   years:
     start: 2001
     end: 2025
+  # P720: 2 x Xeon Gold 6148 (40 cores / 80 threads), 125 GB RAM, RTX 3090 (24 GB).
+  # `workers` is the default (disk-bound steps); `workers_by_step` sets CPU/memory-bound
+  # steps (one worker per year; years run in one round when workers >= years).
+  # GSI_WORKERS overrides both for one run. memfrac is capped at 0.6 / workers per worker.
   workers: 8
+  workers_by_step:
+    gsi: 24                   # ~2 GB per worker
+    block1: 16
+    block2: 16
+    cutb_curves: 16
   memfrac: 0.08
   report:
     # CONUS figures are written next to the data (<run_dir>/report_figs), not into the
