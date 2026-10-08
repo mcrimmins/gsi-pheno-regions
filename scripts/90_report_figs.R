@@ -46,10 +46,11 @@ source(here::here("R", "grid.R"))
 source(here::here("R", "features.R"))
 source(here::here("R", "cutb.R"))
 source(here::here("R", "cluster.R"))
+source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -387,10 +388,7 @@ set_lab <- c(grass_greenup = "NPN grasses: green-up (50 % green)",
              lfmc_woody_decline = "Live fuel moisture, woody: 50 % decline",
              inat_flower = "iNaturalist: flowering onset")
 lab_of <- function(x, tab) ifelse(x %in% names(tab), tab[x], x)
-# Qualitative palette for up to 20 regions (distinct hues, two lightness levels).
-reg_pal <- c("#2a78d6", "#eb6834", "#1a7f37", "#c0392b", "#7b4fb3", "#d4a020", "#17a2b8",
-             "#8c564b", "#e377c2", "#6b8e23", "#9ec5f4", "#f5b386", "#98df8a", "#f19c99",
-             "#c5b0d5", "#f0d58c", "#9edae5", "#c49c94", "#f7b6d2", "#4d4d4d")
+reg_pal <- region_pal
 # Line-plot figure (not a map): fixed size, the usual style, recorded in the manifest.
 plot_png <- function(name, years, w, h, code) {
   f <- file.path(fig_dir, sprintf("%s_%s.png", name, profile))
@@ -429,17 +427,10 @@ rm_ <- Filter(function(m) file.exists(part_file(m$partition)), rep$region_maps %
 if (do("regions") && length(rep$region_maps) && !length(rm_)) log_msg("skip regions: no partition rasters")
 if (do("regions") && length(rm_)) {
   land_cells <- which(!is.na(terra::values(land, mat = FALSE)))
-  labs <- lapply(rm_, function(m) {
-    r <- terra::rast(part_file(m$partition)); kn <- sprintf("k%02d", m$k)
-    if (!kn %in% names(r)) return(NULL)
-    terra::values(r[[kn]], mat = FALSE)[land_cells]
-  })
-  keep <- !vapply(labs, is.null, TRUE); rm_ <- rm_[keep]; labs <- labs[keep]
-  ref <- labs[[1]]
-  # reference ids ordered by mean latitude, then each panel matched to the reference
-  lat <- terra::yFromCell(land, land_cells)
-  o <- order(tapply(lat, ref, mean)); ref <- match(ref, as.integer(names(tapply(lat, ref, mean)))[o])
-  labs <- c(list(ref), lapply(labs[-1], function(l) match_labels(ref, l)))
+  # shared numbering/colours (R/evaluate.R): reference = first map, regions matched to it
+  RD <- region_display(cfg, land, rm_, ref = rm_[[1]])
+  keep <- !vapply(RD, is.null, TRUE); rm_ <- rm_[keep]
+  labs <- lapply(RD[keep], `[[`, "col")
   cp <- do.call(rbind, lapply(cfg$clustering$check_points, as.data.frame))
   nc <- min(3, length(rm_)); nr <- ceiling(length(rm_) / nc)
   fig("regions", all_years, nc, nr, function() {
@@ -526,6 +517,172 @@ if (do("obs_sites") && have(si_file)) {
     legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", pch = 16, col = gc,
            legend = sprintf("%s (%d)", grp[names(gc)], n), cex = 0.8, text.col = ink2, x.intersp = 0.6)
   }, panel_w = 1600)
+}
+
+# ---- Region profiles (32_region_profiles.R) ------------------------------------------------
+# Per region set (config region_profiles: sets): prof_map_<id> (numbered region map),
+# prof_heat_<id> (features x regions, coloured by standardized median, labelled with the
+# median), prof_curves_<id> (median NDVI / NDII7 curves per region with 25-75 % bands),
+# prof_obs_<id> (ground-observation dates per region) and prof_table_<id>_<profile>.csv
+# (summary table for the page); crosswalk CSVs are copied as prof_crosswalk_*_<profile>.csv.
+prof_root <- file.path(eval_dir, "profiles")
+doy_lab <- function(d) ifelse(is.na(d), "", trimws(format(as.Date("2001-01-01") + round(d) - 1, "%b %e")))
+fmt_val <- function(v, unit) {
+  if (is.na(v)) return("")
+  if (identical(unit, "doy")) return(doy_lab(v))
+  if (identical(unit, "")) return(if (abs(v) < 10) formatC(v, format = "f", digits = 2) else num_lab(signif(v, 3)))
+  num_lab(if (abs(v) >= 100) round(v) else signif(v, 3))
+}
+mon_axis <- function(side = 1, cex = 0.75) {
+  at <- as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1
+  axis(side, at = at, labels = month.abb, cex.axis = cex, tick = TRUE, las = 1)
+}
+pr_sets <- cfg$region_profiles$sets %||% list()
+if (do("profiles") && !dir.exists(prof_root)) log_msg("skip profiles: no ", prof_root, " (run 32_region_profiles.R)")
+if (do("profiles") && dir.exists(prof_root)) for (s_ in pr_sets) {
+  id <- region_set_id(s_); pd <- file.path(prof_root, id)
+  if (!have(file.path(pd, "regions.csv"), file.path(pd, "features.csv"))) next
+  key <- utils::read.csv(file.path(pd, "regions.csv"), stringsAsFactors = FALSE)
+  ft <- utils::read.csv(file.path(pd, "features.csv"), stringsAsFactors = FALSE)
+  mt <- if (file.exists(file.path(pd, "metrics.csv"))) utils::read.csv(file.path(pd, "metrics.csv"), stringsAsFactors = FALSE) else NULL
+  cv <- if (file.exists(file.path(pd, "curves.csv"))) utils::read.csv(file.path(pd, "curves.csv"), stringsAsFactors = FALSE) else NULL
+  os <- if (file.exists(file.path(pd, "obs_sites.csv"))) utils::read.csv(file.path(pd, "obs_sites.csv"), stringsAsFactors = FALSE) else NULL
+  k <- nrow(key); title <- s_$label %||% id
+  min_herb <- cfg$region_profiles$min_herb_cells %||% 200
+  dom_of <- function(j) if (key$herb_cells[j] >= min_herb) "herb" else "all"
+
+  # numbered map
+  RD <- region_display(cfg, land, list(s_))[[1]]
+  if (!is.null(RD)) fig(paste0("prof_map_", id), all_years, 1, 1, function() {
+    land_cells <- which(!is.na(terra::values(land, mat = FALSE)))
+    r <- terra::rast(land); v <- rep(NA_real_, terra::ncell(land)); v[land_cells] <- RD$num
+    terra::values(r) <- v
+    map_panel(r, title, "Region numbers match the tables and charts below", seq(0.5, k + 0.5), key$colour, NULL)
+    shadowtext <- function(x, y, lab) {
+      for (dx in c(-1, 1)) for (dy in c(-1, 1)) text(x + dx * 0.06, y + dy * 0.06, lab, col = "#ffffff", font = 2, cex = 1.05)
+      text(x, y, lab, col = ink, font = 2, cex = 1.05)
+    }
+    shadowtext(key$lon, key$lat, key$region)
+  }, panel_w = 1500)
+
+  # heatmap: features (all cells) + season metrics (all cells)
+  rows <- unique(ft[, c("var", "label", "unit")])
+  vals <- t(sapply(rows$var, function(v) ft$med[ft$var == v][order(ft$region[ft$var == v])]))
+  if (!is.null(mt)) {
+    ma <- mt[mt$domain == "all", ]
+    mrows <- unique(ma[, c("var", "label", "unit")])
+    mvals <- t(sapply(mrows$var, function(v) ma$med[ma$var == v][order(ma$region[ma$var == v])]))
+    rows <- rbind(rows, transform(mrows, label = paste("Satellite:", label))); vals <- rbind(vals, mvals)
+  }
+  vals <- matrix(vals, nrow = nrow(rows))
+  Z <- t(apply(vals, 1, function(v) { s <- stats::sd(v, na.rm = TRUE); if (!is.finite(s) || s == 0) v * 0 else (v - mean(v, na.rm = TRUE)) / s }))
+  zc <- grDevices::colorRampPalette(c("#2a78d6", "#9ec5f4", "#f4f3ef", "#f5b386", "#c0582a"))(11)
+  zb <- c(-Inf, seq(-2, 2, length.out = 10), Inf)
+  nr_ <- nrow(rows)
+  plot_png(paste0("prof_heat_", id), all_years, 900 + 150 * k, 260 + 62 * nr_, function() {
+    par(mar = c(0.5, 22, 7, 1), xaxs = "i", yaxs = "i")
+    plot(NA, xlim = c(0.5, k + 0.5), ylim = c(nr_ + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
+    for (i in seq_len(nr_)) for (j in seq_len(k)) {
+      zcol <- if (is.na(Z[i, j])) "#ffffff" else zc[findInterval(Z[i, j], zb, all.inside = TRUE)]
+      rect(j - 0.5, i - 0.5, j + 0.5, i + 0.5, col = zcol, border = bg, lwd = 1.5)
+      lab_ <- if (rows$var[i] == "b2med:onset_doy" && !is.na(vals[i, j]) && vals[i, j] >= 274) "none" else fmt_val(vals[i, j], rows$unit[i])
+      text(j, i, lab_, cex = 0.62, col = ink)
+    }
+    ul <- ifelse(rows$unit %in% c("", "doy"), "", paste0(" (", rows$unit, ")"))
+    axis(2, at = seq_len(nr_), labels = paste0(rows$label, ul), tick = FALSE, las = 1, cex.axis = 0.72, line = -0.6)
+    rect(seq_len(k) - 0.42, 0.5 - 0.95, seq_len(k) + 0.42, 0.5 - 0.15, col = key$colour, border = NA, xpd = NA)
+    text(seq_len(k), 0.5 - 0.55, key$region, col = "#ffffff", font = 2, cex = 0.8, xpd = NA)
+    text(seq_len(k), 0.5 - 1.25, sprintf("%.0f%%", 100 * key$share), cex = 0.62, col = ink2, xpd = NA)
+    mtext(paste0(title, ": region medians"), side = 3, line = 5.4, adj = 0, cex = 0.95, font = 2, col = ink, at = 0.5)
+    mtext("Colour: below (blue) or above (orange) the average across regions; % = share of land; satellite dates for all cells",
+          side = 3, line = 4.4, adj = 0, cex = 0.7, col = ink2, at = 0.5)
+  })
+
+  # season curves per region
+  if (!is.null(cv) && nrow(cv)) {
+    nc <- min(4, k); nr <- ceiling(k / nc)
+    yl <- range(c(cv$q25, cv$q75), na.rm = TRUE)
+    plot_png(paste0("prof_curves_", id), all_years, 620 * nc, 200 + 470 * nr, function() {
+      par(mfrow = c(nr, nc), mar = c(2.4, 3.2, 3.2, 0.6), oma = c(0, 0, 2.6, 0))
+      for (j in seq_len(k)) {
+        dm <- dom_of(j)
+        plot(NA, xlim = c(1, 365), ylim = yl, axes = FALSE, xlab = "", ylab = "")
+        abline(h = pretty(yl), col = "#ecebe7"); mon_axis(); axis(2, cex.axis = 0.72, las = 1)
+        for (ix in c("ndii", "ndvi")) {
+          e <- cv[cv$region == j & cv$domain == dm & cv$index == ix, ]; e <- e[order(e$doy), ]
+          if (!nrow(e)) next
+          col_ <- if (ix == "ndvi") key$colour[j] else "#52514e"
+          polygon(c(e$doy, rev(e$doy)), c(e$q25, rev(e$q75)), col = grDevices::adjustcolor(col_, 0.22), border = NA)
+          lines(e$doy, e$med, col = col_, lwd = 2.2, lty = if (ix == "ndvi") 1 else 2)
+        }
+        if (dm == "herb") {                     # all-cells NDVI for comparison
+          e <- cv[cv$region == j & cv$domain == "all" & cv$index == "ndvi", ]; e <- e[order(e$doy), ]
+          lines(e$doy, e$med, col = ink2, lwd = 1, lty = 3)
+        }
+        n <- if (dm == "herb") key$herb_cells[j] else key$cells[j]
+        mtext(sprintf("Region %d", j), side = 3, line = 1.3, adj = 0, cex = 0.82, font = 2, col = key$colour[j])
+        mtext(sprintf("%s, %s cells", if (dm == "herb") "herbaceous cells" else "all cells (few herbaceous)",
+                      format(n, big.mark = ",")), side = 3, line = 0.3, adj = 0, cex = 0.62, col = ink2)
+      }
+      par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+      plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+      legend("top", c("NDVI (greenness), region colour", "NDII7 (canopy water / curing)", "25-75 % of cells",
+                      "NDVI, all cells of the region"),
+             lty = c(1, 2, NA, 3), lwd = c(2.2, 2.2, NA, 1), pch = c(NA, NA, 15, NA), pt.cex = 2, ncol = 4,
+             col = c(ink, "#52514e", grDevices::adjustcolor(ink2, 0.3), ink2), bty = "n", cex = 0.85,
+             text.col = ink2, x.intersp = 0.8, text.width = c(0.22, 0.2, 0.13, 0.2))
+    })
+  }
+
+  # ground-observation dates per region
+  if (!is.null(os) && nrow(os)) {
+    sets <- intersect(unlist(cfg$region_profiles$obs_sets), unique(os$set))
+    nc <- min(3, length(sets)); nr <- ceiling(length(sets) / nc)
+    plot_png(paste0("prof_obs_", id), "site medians across years", 760 * nc, 200 + 560 * nr, function() {
+      par(mfrow = c(nr, nc), mar = c(3.2, 4, 3.4, 0.6), oma = c(0, 0, 0, 0))
+      set.seed(1)
+      for (st in sets) {
+        e <- os[os$set == st, ]
+        yl <- range(e$doy, na.rm = TRUE); yl <- yl + c(-10, 10)
+        plot(NA, xlim = c(0.5, k + 0.5), ylim = yl, axes = FALSE, xlab = "region", ylab = "")
+        at <- as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1
+        at <- c(at - 365, at, at + 365); lb <- rep(month.abb, 3)
+        keep_ <- at >= yl[1] & at <= yl[2]
+        abline(h = at[keep_], col = "#ecebe7")
+        axis(2, at = at[keep_], labels = lb[keep_], cex.axis = 0.72, las = 1)
+        axis(1, at = seq_len(k), cex.axis = 0.72, tick = FALSE, line = -0.8)
+        for (j in seq_len(k)) {
+          y <- e$doy[e$region == j]; if (!length(y)) { text(j, yl[1] + 5, "0", cex = 0.6, col = ink2); next }
+          points(j + stats::runif(length(y), -0.28, 0.28), y, pch = 16, cex = 0.45,
+                 col = grDevices::adjustcolor(key$colour[j], 0.55))
+          segments(j - 0.35, stats::median(y), j + 0.35, stats::median(y), lwd = 2.5, col = ink)
+          text(j, yl[2] - 3, length(y), cex = 0.6, col = ink2)
+        }
+        mtext(lab_of(st, set_lab), side = 3, line = 1.3, adj = 0, cex = 0.8, font = 2, col = ink)
+        mtext("dots: sites; bar: median; number: sites", side = 3, line = 0.3, adj = 0, cex = 0.62, col = ink2)
+      }
+    })
+  }
+
+  # page table
+  getf <- function(v) ft$med[ft$var == v][order(ft$region[ft$var == v])]
+  getm <- function(v) if (is.null(mt)) rep(NA, k) else sapply(seq_len(k), function(j) {
+    x <- mt$med[mt$var == v & mt$region == j & mt$domain == dom_of(j)]; if (length(x)) x else NA })
+  tb <- data.frame(Region = key$region, `Share of land` = sprintf("%.0f%%", 100 * key$share),
+                   `Herbaceous cells` = format(key$herb_cells, big.mark = ","), check.names = FALSE)
+  add <- function(name, v, unit) tb[[name]] <<- vapply(v, fmt_val, "", unit = unit)
+  add("Mean temp. (C)", getf("b1med:t_ann"), "C"); add("Precip. (mm)", getf("b1med:p_ann"), "mm")
+  add("Aridity (P/PET)", getf("b1med:ai_ann"), ""); add("Jul-Sep share", getf("b1med:pf_jas"), "")
+  add("Freeze-free (days)", getf("b1med:ffs_0"), "days"); add("Rain onset", getf("b2med:onset_doy"), "doy")
+  add("Precip. CV", getf("b2var:cv_p_ann"), "")
+  add("Green-up", getm("sos20"), "doy"); add("NDVI peak", getm("ndvi_peak_doy"), "doy")
+  add("Curing", getm("cure50"), "doy"); add("NDVI amplitude", getm("ndvi_amp"), "")
+  tb$`Season from` <- ifelse(key$herb_cells >= min_herb, "herbaceous cells", "all cells")
+  utils::write.csv(tb, file.path(fig_dir, sprintf("prof_table_%s_%s.csv", id, profile)), row.names = FALSE)
+  log_msg("wrote prof_table_", id, "_", profile, ".csv")
+}
+if (do("profiles") && dir.exists(prof_root)) for (f in list.files(prof_root, "^crosswalk_.*\\.csv$", full.names = TRUE)) {
+  file.copy(f, file.path(fig_dir, sub("\\.csv$", sprintf("_%s.csv", profile), paste0("prof_", basename(f)))), overwrite = TRUE)
 }
 
 # summary table for the page: scores at evaluation: report_k

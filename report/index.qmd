@@ -416,6 +416,151 @@ show_fig("obs_sites",
   most stable level of A2, is what today's observations can support.
 :::
 
+## What the candidate regions look like
+
+Scores say how well a set of regions works on average; profiles say what the regions
+are. For each candidate set, the tabs below show a numbered map, the median climate and
+satellite-season values of every region, the satellite seasonal curves, and the ground
+observation dates that fall in each region. Region numbers and colours are the same in
+the map, table and charts of a tab, and a region keeps its colour from tab to tab where it
+covers mostly the same area. Season dates and curves come from the strict herbaceous cells
+of a region when it has at least 200 of them, otherwise from all of its cells.
+
+```{r profiles-setup}
+#| include: false
+show_prof_table <- function(id, caption) {
+  f <- NULL
+  for (pr in c("full", "dev")) {
+    g <- sprintf("figs/prof_table_%s_%s.csv", id, pr)
+    if (file.exists(g)) { f <- g; break }
+  }
+  if (is.null(f)) return(invisible())
+  t <- utils::read.csv(f, stringsAsFactors = FALSE, check.names = FALSE)
+  cat(knitr::kable(t, align = c("r", rep("r", ncol(t) - 2), "l"), caption = caption), sep = "\n")
+  cat("\n\n")
+}
+show_crosswalk <- function(fine, coarse, caption) {
+  f <- NULL
+  for (pr in c("full", "dev")) {
+    g <- sprintf("figs/prof_crosswalk_%s__%s_%s.csv", fine, coarse, pr)
+    if (file.exists(g)) { f <- g; break }
+  }
+  if (is.null(f)) return(invisible())
+  cw <- utils::read.csv(f)
+  cw <- cw[cw$share_of_fine >= 0.05, ]
+  out <- do.call(rbind, lapply(split(cw, cw$fine), function(d) {
+    d <- d[order(-d$share_of_fine), ]
+    data.frame(`Fine region` = d$fine[1],
+               `Coarse region (share of cells)` = paste(sprintf("%d (%.0f%%)", d$coarse, 100 * d$share_of_fine), collapse = ", "),
+               check.names = FALSE)
+  }))
+  cat(knitr::kable(out, row.names = FALSE, caption = caption), sep = "\n")
+  cat("\n\n")
+}
+```
+
+::: {.panel-tabset}
+
+### Climate A2, 13 regions
+
+```{r prof-a2-13}
+#| results: asis
+show_fig("prof_map_A2_groups_k13", "Climate A2 at 13 regions.", "Map of CONUS with 13 numbered climate regions.")
+show_prof_table("A2_groups_k13", "Climate A2, 13 regions: median climate and satellite season by region")
+show_fig("prof_heat_A2_groups_k13", "Region medians of the climate features and satellite season metrics (all cells), coloured by how far each region is above or below the average across regions.", "Heatmap of features by region with median values.")
+show_fig("prof_curves_A2_groups_k13", "Median NDVI and NDII7 seasonal curves per region, with the range of the middle half of the cells.", "Thirteen small charts of seasonal NDVI and NDII7 curves, one per region.")
+show_fig("prof_obs_A2_groups_k13", "Ground observation dates by region: each dot is one site (median date across years).", "Six dot plots of observed phenology dates by region.")
+show_crosswalk("A2_groups_k13", "A2_groups_k07", "How the 13 regions fit into the 7 (regions holding at least 5 % of a fine region's cells)")
+```
+
+**Reading the 13 regions.** In the West and Plains the regions line up with recognizable
+herbaceous fuel types, each with its own season:
+
+- **3, monsoon Southwest** (southern Arizona and New Mexico, west Texas; Santa Rita,
+  Sevilleta, Chino Valley): nearly half the precipitation falls in July–September, the
+  warm-season rains start around July 1, and grasses green up in early June and peak in
+  late August.
+- **2, southern Plains** (central and south Texas, western Oklahoma): green-up around
+  April 1, a broad peak from late June into the fall, and the most variable rainfall
+  outside the deserts.
+- **11, California annual grasslands** (Sierra Foothills): over half the precipitation in
+  January–March and none in summer; green-up comes with the fall rains (median early
+  December), peak in late March, curing in late May.
+- **4, low deserts** (Mojave and lower Colorado River): little rain, no regular
+  warm-season onset, a small green flush in February–March and curing in early May.
+- **6 and 12, the interior West** (Snake River Plain and northern Great Basin; southern
+  Great Basin and Colorado Plateau): spring green-up, peak in late May and curing in June.
+  They differ more in how much they green up than in when.
+- **10, northern and central Great Plains** (CPER, Cheyenne): green-up in early April,
+  peak in mid June, curing in early August.
+- **7, the Rockies** and **9, the Pacific Northwest**: cold or wet mountain and coastal
+  regions with summer curing.
+
+In the East the regions follow climate gradients across land that is mostly forest and
+cropland: **1** (Gulf and south Atlantic coastal plain), **5** (mid-South, which also takes
+in the Kansas and Oklahoma tallgrass prairie), **8** (Midwest and Northeast, with almost no
+strict herbaceous cells) and **13** (upper Midwest). Their season curves describe the
+mixed land cover more than grasses.
+
+### Climate A2, 7 regions
+
+```{r prof-a2-7}
+#| results: asis
+show_fig("prof_map_A2_groups_k07", "Climate A2 at 7 regions.", "Map of CONUS with 7 numbered climate regions.")
+show_prof_table("A2_groups_k07", "Climate A2, 7 regions: median climate and satellite season by region")
+show_fig("prof_heat_A2_groups_k07", "Region medians of the climate features and satellite season metrics (all cells).", "Heatmap of features by region with median values.")
+show_fig("prof_curves_A2_groups_k07", "Median NDVI and NDII7 seasonal curves per region.", "Seven small charts of seasonal NDVI and NDII7 curves, one per region.")
+show_fig("prof_obs_A2_groups_k07", "Ground observation dates by region.", "Six dot plots of observed phenology dates by region.")
+```
+
+**Reading the 7 regions.** The seven are broad and very stable, but three of them pool
+herbaceous fuels with different calendars:
+
+- **2** joins the monsoon Southwest with the southern Plains. Its median green-up (late
+  April) and peak (late August) fall between two quite different seasons: an early-April
+  green-up in the southern Plains and an early-June green-up with the monsoon.
+- **3** joins the California annual grasslands with the low deserts: a fall-to-spring
+  season in both, but the California grasslands green up two months earlier and have about
+  four times the greenness amplitude.
+- **7** joins the northern Plains with the upper Midwest, where curing comes about two
+  months later (early October against early August).
+
+The other four (Southeast, interior West, Rockies and Pacific Northwest, Midwest and
+Northeast) are about as uniform in season timing as their parts at 13 regions.
+
+### Climate A1, 10 regions
+
+```{r prof-a1-10}
+#| results: asis
+show_fig("prof_map_A1_groups_k10", "Climate A1 (Block 1 only) at 10 regions, the current working set.", "Map of CONUS with 10 numbered climate regions.")
+show_prof_table("A1_groups_k10", "Climate A1, 10 regions: median climate and satellite season by region")
+show_fig("prof_heat_A1_groups_k10", "Region medians of the climate features and satellite season metrics (all cells).", "Heatmap of features by region with median values.")
+show_fig("prof_curves_A1_groups_k10", "Median NDVI and NDII7 seasonal curves per region.", "Ten small charts of seasonal NDVI and NDII7 curves, one per region.")
+show_fig("prof_obs_A1_groups_k10", "Ground observation dates by region.", "Six dot plots of observed phenology dates by region.")
+```
+
+**Reading the 10 regions.** A1 already separates the monsoon Southwest (3) from the
+southern Plains (2). Its two weak spots for herbaceous fuels are the California annual
+grasslands, which it splits between region 9 (Sierra foothills, with the wet Pacific
+Northwest) and region 4 (Central Valley and southern California, with the low deserts),
+and the tallgrass prairie, which shares region 5 with the Ohio Valley. A2 at 13 regions
+gives the California grasslands their own region and moves the tallgrass prairie out of
+the Ohio Valley region.
+
+:::
+
+::: {.callout-note appearance="simple"}
+## What the profiles suggest for the number of regions
+Going from 7 to 13 regions pays off for herbaceous fuels in three splits: monsoon
+Southwest from southern Plains, California grasslands from low deserts, and northern Plains
+from upper Midwest. Each separates seasons that differ by one to two months. The other
+splits divide the interior West by how much it greens up, or divide the East where
+herbaceous cells are few. That points to a working set between the two (about 10 regions
+with those three splits), or to 13 regions that are rolled up to fewer for fitting models.
+Ground data are thin at 13 regions: six regions have five or fewer NPN grass green-up
+sites, and four have no herbaceous live fuel moisture sites.
+:::
+
 ## Clustering and evaluation plan
 
 Methods will be judged by how well the regions work as domains for regional phenology
@@ -470,6 +615,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-07 | Region profiles (climate, satellite season and ground dates per region) for the candidate sets |
 | 2026-10-07 | Block 2 built; first climate (A1, A2) and satellite-curve regions; comparison with satellite curves (as observed and timing only) and ground observations (NPN, live fuel moisture, iNaturalist) with block-bootstrap ranges |
 | 2026-10-07 | CONUS Block 1 maps (2002–2025) and first CONUS MODIS curves and peak-timing map |
 | 2026-10-06 | Page created: approach, data, decisions, Block 1 features, first figures |

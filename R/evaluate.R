@@ -1,4 +1,5 @@
 # Evaluation helpers: partitions (k-means label rasters with bands k04, k05, ...), a purely
+if (!exists("%||%", mode = "function")) `%||%` <- function(a, b) if (is.null(a)) b else a
 # geographic baseline, and explained-variance scores. Used by 30_compare_ab.R and
 # 31_obs_regions.R. Config `evaluation:`.
 
@@ -57,4 +58,44 @@ r2_adj <- function(y, g) {
   if (n < 5 || m < 2 || n <= m) return(c(n = n, groups = m, r2 = NA, adj_r2 = NA))
   r2 <- r2_groups(matrix(y), g)
   c(n = n, groups = m, r2 = r2, adj_r2 = 1 - (1 - r2) * (n - 1) / (n - m))
+}
+
+# ---- Region display labels (report maps and region profiles) ------------------------------
+# Qualitative palette for up to 20 regions (distinct hues, two lightness levels).
+region_pal <- c("#2a78d6", "#eb6834", "#1a7f37", "#c0392b", "#7b4fb3", "#d4a020", "#17a2b8",
+                "#8c564b", "#e377c2", "#6b8e23", "#9ec5f4", "#f5b386", "#98df8a", "#f19c99",
+                "#c5b0d5", "#f0d58c", "#9edae5", "#c49c94", "#f7b6d2", "#4d4d4d")
+
+# Raw k-means labels (land cells) of one region set list(partition, k); NULL if missing.
+region_set_labels <- function(cfg, grid, s) {
+  f <- file.path(cfg$run_dir, "clusters", cfg$evaluation$partitions[[s$partition]] %||% "none")
+  if (!file.exists(f)) return(NULL)
+  r <- terra::rast(f); kn <- sprintf("k%02d", s$k)
+  if (!kn %in% names(r)) return(NULL)
+  land <- which(!is.na(terra::values(grid, mat = FALSE)))
+  terra::values(r[[kn]], mat = FALSE)[land]
+}
+region_set_id <- function(s) sprintf("%s_k%02d", s$partition, as.integer(s$k))
+
+# Display labels for region sets, shared by the report maps and the profiles so numbers and
+# colours agree everywhere. The reference set's regions are ordered south to north (mean
+# latitude); every other set's regions are matched to them by overlap. Returns per set:
+# col (colour slot per land cell, index into region_pal), num (region number 1..k per land
+# cell: colour slots in increasing order), pal (colour per region number).
+region_display <- function(cfg, grid, sets, ref = cfg$report$region_maps[[1]]) {
+  land <- which(!is.na(terra::values(grid, mat = FALSE)))
+  lat <- terra::yFromCell(grid, land)
+  r0 <- region_set_labels(cfg, grid, ref)
+  if (is.null(r0)) stop("reference region set ", region_set_id(ref), " not found")
+  m <- tapply(lat, r0, mean); r0 <- match(r0, as.integer(names(m))[order(m)])
+  out <- lapply(sets, function(s) {
+    l <- region_set_labels(cfg, grid, s)
+    if (is.null(l)) return(NULL)
+    col <- if (identical(s$partition, ref$partition) && identical(as.integer(s$k), as.integer(ref$k))) r0 else match_labels(r0, l)
+    slots <- sort(unique(col[!is.na(col)]))
+    list(id = region_set_id(s), set = s, col = col, num = match(col, slots),
+         pal = rep_len(region_pal, max(slots))[slots])
+  })
+  names(out) <- vapply(sets, region_set_id, "")
+  out
 }

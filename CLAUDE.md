@@ -238,6 +238,13 @@ Deferred: fire data, gridMET, ERA5-Land.
      resamples, ~5 min): `obs_r2_boot.csv` (range per score), `obs_r2_diff.csv` (paired
      differences, e.g. A2 - A1). Gotcha: a YAML key named `n` reads as FALSE (YAML 1.1); use
      `n_boot`.
+   - `scripts/32_region_profiles.R` (laptop, ~1 min): per candidate region set (config
+     `region_profiles: sets`; A1 k10, A2 k7, A2 k13) feature medians/IQR, Cut B season
+     metrics and median curves (all cells and strict herb cells), ground-observation dates
+     per region, fine->coarse crosswalks -> `eval/profiles/<partition>_k<KK>/`. Region
+     numbers/colours from `region_display()` in `R/evaluate.R` (shared with the report maps:
+     colours matched to `report: region_maps[1]`). Page figures `prof_*` via 90 (`profiles`).
+     Keep config.yml ASCII (a degree sign broke YAML reading in a C locale).
 9. A3 (Block 3, GSI sub-indices): not started.
 
 ## Project page (report/)

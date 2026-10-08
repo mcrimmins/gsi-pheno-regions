@@ -177,6 +177,54 @@ default:
         - [A2_groups, geo]
         - [B_shape, A2_groups]
 
+  # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
+  # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
+  # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
+  # crosswalk from fine to coarse regions. Region numbers and colours match the report maps
+  # (colours matched to report: region_maps[1]; numbers 1..k south to north in that order).
+  # Features: "<source>:<band>"; sources b1med, b2med, b2var, static (elev), herb
+  # (herb_share.tif). DOY features are shown as dates.
+  region_profiles:
+    sets:
+      - {partition: A1_groups, k: 10, label: "Climate A1, 10 regions"}
+      - {partition: A2_groups, k: 7, label: "Climate A2, 7 regions"}
+      - {partition: A2_groups, k: 13, label: "Climate A2, 13 regions"}
+    crosswalk:                  # fine set -> coarse set (set ids <partition>_k<KK>)
+      - [A2_groups_k13, A2_groups_k07]
+      - [A2_groups_k13, A1_groups_k10]
+    features:
+      - {name: "b1med:t_ann", label: "Mean annual temperature", unit: "C"}
+      - {name: "b1med:t_jfm", label: "Jan-Mar temperature", unit: "C"}
+      - {name: "b1med:t_jas", label: "Jul-Sep temperature", unit: "C"}
+      - {name: "b1med:p_ann", label: "Annual precipitation", unit: "mm"}
+      - {name: "b1med:pf_jfm", label: "Jan-Mar share of precipitation", unit: ""}
+      - {name: "b1med:pf_jas", label: "Jul-Sep share of precipitation", unit: ""}
+      - {name: "b1med:ai_ann", label: "Aridity index (P/PET)", unit: ""}
+      - {name: "b1med:ai_warm", label: "Warm-season aridity (Apr-Sep)", unit: ""}
+      - {name: "b1med:lsf_0", label: "Last spring freeze", unit: "doy"}
+      - {name: "b1med:ffs_0", label: "Freeze-free season", unit: "days"}
+      - {name: "b1med:gdd10", label: "Growing degree days, base 10", unit: "C-days"}
+      - {name: "b2med:onset_doy", label: "Warm-season rain onset", unit: "doy"}
+      - {name: "b2var:onset_frac", label: "Years with a rain onset", unit: ""}
+      - {name: "b2med:ev_warm_5", label: "Warm-season rain days >= 5 mm", unit: "days"}
+      - {name: "b2med:ev_cool_5", label: "Cool-season rain days >= 5 mm", unit: "days"}
+      - {name: "b2med:dsl_max_warm", label: "Longest warm-season dry spell", unit: "days"}
+      - {name: "b2var:cv_p_ann", label: "Year-to-year variability of precipitation (CV)", unit: ""}
+      - {name: "b2med:cold_frac", label: "Cold-limited share of the year", unit: ""}
+      - {name: "b2med:dry_frac", label: "Moisture-limited share of the year", unit: ""}
+      - {name: "static:elev", label: "Elevation", unit: "m"}
+      - {name: "herb:open_herb_share", label: "Open herbaceous share (incl. pasture)", unit: ""}
+    metrics:                    # Cut B season metrics (cutb_metrics_median); DOY relative to Jan 1
+      - {name: sos20, label: "Green-up (20 % of NDVI amplitude)", unit: "doy"}
+      - {name: ndvi_peak_doy, label: "NDVI peak", unit: "doy"}
+      - {name: eos20, label: "End of season (20 %)", unit: "doy"}
+      - {name: gsl20, label: "Green season length", unit: "days"}
+      - {name: cure50, label: "Curing (NDII7 50 % decline)", unit: "doy"}
+      - {name: ndvi_amp, label: "NDVI amplitude", unit: ""}
+      - {name: ndii_amp, label: "NDII7 amplitude", unit: ""}
+    obs_sets: [grass_greenup, grass_curing, grass_cured, lfmc_herb_peak, lfmc_woody_peak, inat_flower]
+    min_herb_cells: 200         # curves/metrics for the herbaceous cells shown when at least this many
+
   # Cut A feature blocks. Year label Y: water year Oct(Y-1)-Sep(Y) for precipitation,
   # temperature and aridity; calendar year Y for freeze dates and GDD (fall freezes fall
   # in Oct-Nov). Water years start one year after the first PRISM year.
