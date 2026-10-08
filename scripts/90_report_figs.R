@@ -372,11 +372,12 @@ clus_dir <- file.path(cfg$run_dir, "clusters")
 eval_dir <- file.path(cfg$run_dir, "eval")
 part_file <- function(nm) file.path(clus_dir, ev$partitions[[nm]] %||% "none")
 part_lab <- c(A1_groups = "Climate A1 (seasonal climate)", A2_groups = "Climate A2 (+ timing, variability)",
+              A2_herbw = "Climate A2, herbaceous-weighted",
               B_raw = "Satellite curves (level + shape)", B_shape = "Satellite curves (timing only)",
               geo = "Location only (baseline)")
-part_col <- c(A1_groups = terra_col, A2_groups = "#1a7f37", B_raw = aqua_col, B_shape = "#c0392b",
+part_col <- c(A1_groups = terra_col, A2_groups = "#1a7f37", A2_herbw = "#7b4fb3", B_raw = aqua_col, B_shape = "#c0392b",
               geo = "#8a8985")
-part_lty <- c(A1_groups = 1, A2_groups = 1, B_raw = 2, B_shape = 2, geo = 3)
+part_lty <- c(A1_groups = 1, A2_groups = 1, A2_herbw = 1, B_raw = 2, B_shape = 2, geo = 3)
 set_lab <- c(grass_greenup = "NPN grasses: green-up (50 % green)",
              grass_curing = "NPN grasses: curing (below 50 % green)",
              grass_cured = "NPN grasses: cured",
@@ -713,7 +714,7 @@ if (any(c("eval_curves", "eval_obs") %in% want) && (file.exists(rc_file) || file
   if (file.exists(dfile)) {
     dd <- utils::read.csv(dfile, stringsAsFactors = FALSE)
     dd <- dd[dd$set %in% unlist(rep$eval_sets), ]
-    short <- c(A1_groups = "A1", A2_groups = "A2", B_raw = "Satellite (level + shape)",
+    short <- c(A1_groups = "A1", A2_groups = "A2", A2_herbw = "A2 herb-weighted", B_raw = "Satellite (level + shape)",
                B_shape = "Satellite (timing)", geo = "location only")
     dd$comparison <- paste(lab_of(dd$first, short), "minus", lab_of(dd$second, short))
     dd$set <- lab_of(dd$set, set_lab)

@@ -146,6 +146,7 @@ default:
     partitions:
       A1_groups: a1_groups/a1_kmeans.tif
       A2_groups: a2_groups/a1_kmeans.tif
+      A2_herbw: a2_groups_herbw/a1_kmeans.tif
       B_raw: b_raw/b_kmeans.tif
       B_shape: b_shape/b_kmeans.tif
     geo_baseline: true
@@ -176,6 +177,7 @@ default:
         - [A1_groups, geo]
         - [A2_groups, geo]
         - [B_shape, A2_groups]
+        - [A2_herbw, A2_groups]
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
@@ -189,9 +191,11 @@ default:
       - {partition: A1_groups, k: 10, label: "Climate A1, 10 regions"}
       - {partition: A2_groups, k: 7, label: "Climate A2, 7 regions"}
       - {partition: A2_groups, k: 13, label: "Climate A2, 13 regions"}
+      - {partition: A2_herbw, k: 13, label: "Climate A2, herbaceous-weighted, 13 regions"}
     crosswalk:                  # fine set -> coarse set (set ids <partition>_k<KK>)
       - [A2_groups_k13, A2_groups_k07]
       - [A2_groups_k13, A1_groups_k10]
+      - [A2_herbw_k13, A2_groups_k13]
     features:
       - {name: "b1med:t_ann", label: "Mean annual temperature", unit: "C"}
       - {name: "b1med:t_jfm", label: "Jan-Mar temperature", unit: "C"}

@@ -340,7 +340,7 @@ for (pr in c("full", "dev")) {
   if (file.exists(f)) { es <- utils::read.csv(f, stringsAsFactors = FALSE); break }
 }
 if (!is.null(es)) {
-  plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", B_raw = "Satellite (level + shape)",
+  plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", A2_herbw = "Climate A2, herb-weighted", B_raw = "Satellite (level + shape)",
             B_shape = "Satellite (timing only)", geo = "Location only")
   clab <- c(curves_all = "Curves, all cells", curves_herb = "Curves, herb mask",
             timing_all = "Timing, all cells", timing_herb = "Timing, herb mask",
@@ -546,6 +546,21 @@ Northwest) and region 4 (Central Valley and southern California, with the low de
 and the tallgrass prairie, which shares region 5 with the Ohio Valley. A2 at 13 regions
 gives the California grasslands their own region and moves the tallgrass prairie out of
 the Ohio Valley region.
+
+### A2 herbaceous-weighted, 13 regions
+
+```{r prof-a2h-13}
+#| results: asis
+show_fig("prof_map_A2_herbw_k13", "Climate A2 at 13 regions with cells weighted by open herbaceous cover, so grass- and shrub-dominated land counts more in shaping the regions.", "Map of CONUS with 13 numbered climate regions, herbaceous-weighted.")
+show_prof_table("A2_herbw_k13", "Climate A2, herbaceous-weighted, 13 regions: median climate and satellite season by region")
+show_fig("prof_heat_A2_herbw_k13", "Region medians of the climate features and satellite season metrics (all cells).", "Heatmap of features by region with median values.")
+show_fig("prof_curves_A2_herbw_k13", "Median NDVI and NDII7 seasonal curves per region.", "Thirteen small charts of seasonal NDVI and NDII7 curves, one per region.")
+show_fig("prof_obs_A2_herbw_k13", "Ground observation dates by region.", "Six dot plots of observed phenology dates by region.")
+show_crosswalk("A2_herbw_k13", "A2_groups_k13", "How the herbaceous-weighted regions relate to the unweighted 13 (regions holding at least 5 % of a weighted region's cells)")
+```
+
+Weighting by herbaceous cover spends more of the 13 regions where grasses and shrubs
+dominate (the West and Plains) and fewer on the forested and farmed East.
 
 :::
 
