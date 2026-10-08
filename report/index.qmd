@@ -391,17 +391,29 @@ show_fig("obs_sites",
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
-- From about 6 regions up, the climate regions explain more of the satellite curves than
-  location alone, and the margin is largest in the herbaceous cells.
-- The level + shape satellite regions explain the curves best (they are fitted to them)
-  but separate the ground dates poorly: they mostly sort cells by how green they get.
-  Timing-only satellite regions do better on curing and live fuel moisture dates, though
-  not on grass green-up, where the climate regions lead.
-- Grass green-up and curing dates and the woody live fuel moisture peak are the most
-  informative ground checks; NPN leaf onset and end for herbaceous plants barely separate
-  by any set of regions, and are likely too noisy as site medians.
-- Adding Block 2 (A2) changes little against the curves; its gains show up in particular
-  places (for example the tallgrass prairie) rather than in the national scores.
+- **Climate regions capture seasonal timing better than location alone.** On the
+  timing-only curves in herbaceous cells, A1 explains 50, 54 and 58 % of the variance at
+  7, 10 and 13 regions, against 36, 45 and 47 % for compact blobs of the same number.
+- **Adding Block 2 (A2) does not improve the national scores.** A1 and A2 are tied on
+  timing (A2: 49, 53, 55 %), and A1 is ahead on the curves as observed in herbaceous
+  cells (40 vs 29 % at 7 regions, 53 vs 50 % at 13). Against the ground observations, the
+  A2-minus-A1 range spans zero for every data set. Block 2's gains are local: at 13
+  regions A2 separates the Kansas and Oklahoma tallgrass prairie from the eastern Corn
+  Belt and the California annual grasslands from the Mojave.
+- **The level + shape satellite regions mostly sort cells by how green they get.** They
+  explain the curves best (they are fitted to them) but separate the ground dates poorly.
+- **Where the ground data can judge, climate wins.** Climate regions clearly beat location
+  alone for the woody live fuel moisture peak (about +0.12 to +0.21 in adjusted
+  R-squared), iNaturalist flowering (+0.05) and grass cured dates at 7 regions (+0.25).
+  Grass green-up beats location only at 13 regions. At 10 to 13 regions location alone
+  does as well on grass curing and cured dates: with about 150 to 190 grass sites,
+  clustered in a few places, the observations cannot judge finer regions.
+- **NPN leaf onset and end** for herbaceous and woody plants barely separate by any set of
+  regions (adjusted R-squared under 0.07) and are likely too noisy as site medians.
+- **Number of regions:** about 13 regions describes herbaceous timing best, but several of
+  those regions have fewer than five grass sites and no herbaceous fuel moisture sites,
+  so fitting phenology models in every region is not yet possible. About 7 regions, the
+  most stable level of A2, is what today's observations can support.
 :::
 
 ## Clustering and evaluation plan
@@ -458,7 +470,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
-| 2026-10-07 | Block 2 built; first climate (A1, A2) and satellite-curve regions; comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) |
+| 2026-10-07 | Block 2 built; first climate (A1, A2) and satellite-curve regions; comparison with satellite curves (as observed and timing only) and ground observations (NPN, live fuel moisture, iNaturalist) with block-bootstrap ranges |
 | 2026-10-07 | CONUS Block 1 maps (2002–2025) and first CONUS MODIS curves and peak-timing map |
 | 2026-10-06 | Page created: approach, data, decisions, Block 1 features, first figures |
 
