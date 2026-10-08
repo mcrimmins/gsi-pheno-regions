@@ -18,8 +18,14 @@
 # `evaluation: partitions`, plus the geographic baseline) and k. Score: adjusted R^2 of site
 # medians on region (one-way ANOVA; adjusted for the number of regions with sites), so a
 # partition is rewarded for separating observed dates, not for having more regions.
+# Uncertainty (config `evaluation: boot`): spatial-block bootstrap at the report_k values.
+# Sites are grouped in block_deg x block_deg blocks and whole blocks are resampled (nearby
+# sites are not independent); every partition is scored on the same resample, so the
+# difference between two partitions (config `boot: pairs`) gets its own range.
 # Outputs <run_dir>/eval/obs/: sites.csv (site medians with cell and lon/lat), obs_r2.csv,
-#   sites_per_region_k<K>.csv (sampling density), figs/obs_r2.png, figs/obs_sites.png.
+#   sites_per_region_k<K>.csv (sampling density), obs_r2_boot.csv (score with its range),
+#   obs_r2_diff.csv (paired differences with range and share of resamples above 0),
+#   figs/obs_r2.png, figs/obs_sites.png.
 # Reads the .rds tables from the study folder, so run it where that folder is (the laptop).
 #
 # Usage: Rscript scripts/31_obs_regions.R [profile]
@@ -38,6 +44,7 @@ source(here::here("R", "features.R"))
 source(here::here("R", "cluster.R"))
 source(here::here("R", "evaluate.R"))
 
+`%||%` <- function(a, b) if (is.null(a)) b else a
 cfg <- load_cfg(profile)
 log_file <- log_init("31_obs_regions", profile)
 ev <- cfg$evaluation
@@ -132,6 +139,54 @@ for (k in intersect(unlist(ev$report_k), ks)) {
     tab <- cbind(region = seq_len(k), cells = tabulate(P[[nm]][, kn], k), tab)
     utils::write.csv(tab, file.path(out_dir, sprintf("sites_per_region_%s_k%02d.csv", nm, k)), row.names = FALSE)
   }
+}
+
+# ---- Uncertainty: spatial-block bootstrap at report_k -------------------------------------
+bt <- ev$boot
+rk <- intersect(unlist(ev$report_k), ks)
+if (!is.null(bt) && isTRUE(bt$n_boot > 0) && length(rk)) {
+  t1 <- Sys.time()
+  set.seed(cfg$clustering$seed + 31)
+  probs <- unlist(bt$probs %||% c(0.05, 0.95))
+  pairs <- Filter(function(p) all(unlist(p) %in% names(P)), bt$pairs %||% list())
+  bres <- data.frame(); dres <- data.frame()
+  for (st in unique(S$set)) {
+    s <- S[S$set == st, ]
+    blk <- paste(floor(s$lon / bt$block_deg), floor(s$lat / bt$block_deg))
+    idx <- split(seq_len(nrow(s)), blk); ub <- names(idx)
+    if (length(ub) < 5) { log_warn("boot: ", st, " has only ", length(ub), " blocks (skipped)"); next }
+    for (k in rk) {
+      kn <- sprintf("k%02d", k)
+      pn_k <- names(P)[vapply(P, function(m) kn %in% colnames(m), TRUE)]
+      G <- vapply(pn_k, function(nm) as.numeric(P[[nm]][s$row, kn]), numeric(nrow(s)))
+      if (is.null(dim(G))) G <- matrix(G, nrow = 1, dimnames = list(NULL, pn_k))
+      full <- vapply(pn_k, function(nm) r2_adj(s$doy, G[, nm])[["adj_r2"]], 0)
+      Bm <- t(vapply(seq_len(bt$n_boot), function(i) {
+        pick <- unlist(idx[sample(ub, length(ub), replace = TRUE)], use.names = FALSE)
+        vapply(pn_k, function(nm) r2_adj(s$doy[pick], G[pick, nm])[["adj_r2"]], 0)
+      }, numeric(length(pn_k))))
+      colnames(Bm) <- pn_k
+      q <- apply(Bm, 2, stats::quantile, probs = probs, na.rm = TRUE)
+      bres <- rbind(bres, data.frame(set = st, partition = pn_k, k = k, n = nrow(s), blocks = length(ub),
+                                     adj_r2 = full, lo = q[1, ], hi = q[2, ]))
+      for (p in pairs) {
+        a <- p[[1]]; b <- p[[2]]
+        if (!all(c(a, b) %in% pn_k)) next
+        dd <- Bm[, a] - Bm[, b]
+        dres <- rbind(dres, data.frame(set = st, k = k, first = a, second = b, diff = full[[a]] - full[[b]],
+                                       lo = stats::quantile(dd, probs[1], na.rm = TRUE),
+                                       hi = stats::quantile(dd, probs[2], na.rm = TRUE),
+                                       share_above_0 = mean(dd > 0, na.rm = TRUE)))
+      }
+    }
+  }
+  rownames(bres) <- NULL; rownames(dres) <- NULL
+  utils::write.csv(bres, file.path(out_dir, "obs_r2_boot.csv"), row.names = FALSE)
+  utils::write.csv(dres, file.path(out_dir, "obs_r2_diff.csv"), row.names = FALSE)
+  log_msg(sprintf("bootstrap: %d resamples of %g-degree blocks, %.1f min; differences (%g-%g %% range):",
+                  bt$n_boot, bt$block_deg, as.numeric(difftime(Sys.time(), t1, units = "mins")), 100 * probs[1], 100 * probs[2]))
+  for (i in seq_len(nrow(dres))) with(dres[i, ], log_msg(sprintf(
+    "  %-20s k=%2d  %s - %s: %+.2f [%+.2f, %+.2f]  above 0 in %3.0f %%", set, k, first, second, diff, lo, hi, 100 * share_above_0)))
 }
 
 # ---- Figures ------------------------------------------------------------------------------

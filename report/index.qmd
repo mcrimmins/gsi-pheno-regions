@@ -300,7 +300,10 @@ show_fig("regions",
 ### Do climate regions explain the satellite curves?
 
 For each set of regions, the share of the variation in the median satellite curves
-(NDVI and NDII7) that lies *between* regions rather than within them. The satellite
+(NDVI and NDII7) that lies *between* regions rather than within them. This is scored twice:
+on the curves as observed, where how green a place gets dominates, and on the curves
+scaled by their own seasonal amplitude, which leaves only **timing** (when green-up, peak
+and curing happen), the part that matters most for regional phenology models. The satellite
 regions are fitted to these curves, so they show roughly how much any set of that size
 can explain. The *location only* baseline divides the map into compact blobs with no
 climate information: a useful set of regions has to beat it.
@@ -308,8 +311,8 @@ climate information: a useful set of regions has to beat it.
 ```{r fig-eval-curves}
 #| results: asis
 show_fig("eval_curves",
-  "Share of the satellite-curve variance explained by each set of regions, by number of regions. Dashed vertical lines mark 7, 10 and 13 regions.",
-  "Two line charts of variance explained versus number of regions, for all cells and for the strict herbaceous mask, one line per set of regions.")
+  "Share of the satellite-curve variance explained by each set of regions, by number of regions: curves as observed (top) and timing only (bottom). Dashed vertical lines mark 7, 10 and 13 regions.",
+  "Four line charts of variance explained versus number of regions, for all cells and for the strict herbaceous mask, one line per set of regions.")
 ```
 
 ### Do the regions separate observed phenology on the ground?
@@ -325,7 +328,7 @@ using more regions.
 ```{r fig-eval-obs}
 #| results: asis
 show_fig("eval_obs",
-  "How well each set of regions separates observed dates (adjusted R-squared of site median dates on region), by number of regions.",
+  "How well each set of regions separates observed dates (adjusted R-squared of site median dates on region), by number of regions. Bars at 7, 10 and 13 regions show the range over 90 % of block resamples of the sites.",
   "Six line charts of adjusted R-squared versus number of regions for NPN grass green-up, curing and cured dates, live fuel moisture peaks for herbaceous and woody fuels, and iNaturalist flowering onset.")
 ```
 
@@ -340,6 +343,7 @@ if (!is.null(es)) {
   plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", B_raw = "Satellite (level + shape)",
             B_shape = "Satellite (timing only)", geo = "Location only")
   clab <- c(curves_all = "Curves, all cells", curves_herb = "Curves, herb mask",
+            timing_all = "Timing, all cells", timing_herb = "Timing, herb mask",
             grass_greenup = "Grass green-up", grass_curing = "Grass curing", grass_cured = "Grass cured",
             lfmc_herb_peak = "LFMC herb peak", lfmc_woody_peak = "LFMC woody peak",
             inat_flower = "iNat flowering")
@@ -352,6 +356,29 @@ if (!is.null(es)) {
       sep = "\n")
 } else {
   cat('\n::: {.callout-note appearance="simple"}\n## Table pending\nScores at 7, 10 and 13 regions.\n:::\n\n')
+}
+```
+
+```{r tbl-eval-diff}
+#| results: asis
+ed <- NULL
+for (pr in c("full", "dev")) {
+  f <- sprintf("figs/eval_diff_%s.csv", pr)
+  if (file.exists(f)) { ed <- utils::read.csv(f, stringsAsFactors = FALSE); break }
+}
+if (!is.null(ed)) {
+  ed$cell <- sprintf("%+.2f (%+.2f to %+.2f)", ed$diff, ed$lo, ed$hi)
+  w <- stats::reshape(ed[, c("set", "comparison", "k", "cell")], idvar = c("set", "comparison"),
+                      timevar = "k", direction = "wide")
+  names(w) <- sub("^cell\\.", "", names(w))
+  names(w)[1:2] <- c("Observations", "Comparison")
+  names(w)[-(1:2)] <- paste(names(w)[-(1:2)], "regions")
+  cat('\n::: {.callout-note appearance="simple" collapse="true"}\n## How sure are these differences?\n',
+      'Differences in adjusted R-squared between two sets of regions, scored on the same resampled sites. ',
+      'Sites are resampled in 2-degree blocks, because nearby sites are not independent; the range covers ',
+      '90 % of 500 resamples. A range that spans zero means the observations cannot tell the two apart.\n\n', sep = "")
+  cat(knitr::kable(w, row.names = FALSE, align = c("l", "l", rep("r", ncol(w) - 2))), sep = "\n")
+  cat("\n:::\n\n")
 }
 ```
 

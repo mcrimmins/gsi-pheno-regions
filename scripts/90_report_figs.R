@@ -24,6 +24,8 @@
 #   eval_obs        adjusted R^2 of observed site dates on region vs k (eval/obs/obs_r2.csv
 #                   from 31_obs_regions.R; sets in config report: eval_sets)
 #   obs_sites       observation sites (eval/obs/sites.csv)
+# eval_obs adds bootstrap ranges at report_k when eval/obs/obs_r2_boot.csv exists, and
+# eval_diff_<profile>.csv (paired differences, from obs_r2_diff.csv) is written for the page.
 # Also writes <fig_dir>/eval_summary_<profile>.csv (scores at evaluation: report_k), which the
 # page shows as a table.
 # The evaluation figures need 31's output, which is made on the laptop: run the full profile
@@ -458,13 +460,19 @@ if (do("regions") && length(rm_)) {
 rc_file <- file.path(eval_dir, "ab", "r2_curves.csv")
 if (do("eval_curves") && have(rc_file)) {
   rc <- utils::read.csv(rc_file, stringsAsFactors = FALSE)
+  if (is.null(rc$features)) rc$features <- "level_shape"
   parts <- intersect(names(part_lab), unique(rc$partition))
-  plot_png("eval_curves", all_years, 2400, 1000, function() {
-    par(mfrow = c(1, 2), mar = c(4.2, 4.4, 3.6, 1), oma = c(0, 0, 2.2, 0))
-    k_panel(rc[rc$domain == "all", ], "r2", "All land cells",
-            "NDVI + NDII7 median seasonal curves", c(0, 1), "share of variance explained", parts)
-    k_panel(rc[rc$domain == "herb", ], "r2", "Strict herbaceous mask",
-            "Grass- and shrub-dominated cells", c(0, 1), "share of variance explained", parts)
+  fsets <- intersect(c("level_shape", "timing"), unique(rc$features))
+  fs_lab <- c(level_shape = "Curves as observed (level + shape)", timing = "Timing only (curves scaled by amplitude)")
+  plot_png("eval_curves", all_years, 2400, 230 + 770 * length(fsets), function() {
+    par(mfrow = c(length(fsets), 2), mar = c(4.2, 4.4, 3.6, 1), oma = c(0, 0, 2.2, 0))
+    for (fs in fsets) {
+      d <- rc[rc$features == fs, ]
+      k_panel(d[d$domain == "all", ], "r2", paste0(fs_lab[[fs]], ": all land cells"),
+              "NDVI + NDII7 median seasonal curves", c(0, 1), "share of variance explained", parts)
+      k_panel(d[d$domain == "herb", ], "r2", paste0(fs_lab[[fs]], ": herbaceous mask"),
+              "Grass- and shrub-dominated cells", c(0, 1), "share of variance explained", parts)
+    }
     legend_row(parts)
   })
 }
@@ -473,9 +481,11 @@ if (do("eval_curves") && have(rc_file)) {
 or_file <- file.path(eval_dir, "obs", "obs_r2.csv")
 if (do("eval_obs") && have(or_file)) {
   orr <- utils::read.csv(or_file, stringsAsFactors = FALSE)
+  bfile <- file.path(eval_dir, "obs", "obs_r2_boot.csv")
+  bo <- if (file.exists(bfile)) utils::read.csv(bfile, stringsAsFactors = FALSE) else NULL
   sets <- intersect(unlist(rep$eval_sets %||% unique(orr$set)), unique(orr$set))
   parts <- intersect(names(part_lab), unique(orr$partition))
-  yl <- range(c(0, 0.2, orr$adj_r2[orr$set %in% sets]), na.rm = TRUE)
+  yl <- range(c(0, 0.2, orr$adj_r2[orr$set %in% sets], if (!is.null(bo)) unlist(bo[bo$set %in% sets, c("lo", "hi")])), na.rm = TRUE)
   yl <- c(min(0, floor(yl[1] * 10) / 10), ceiling(yl[2] * 10) / 10)
   nc <- min(3, length(sets)); nr <- ceiling(length(sets) / nc)
   plot_png("eval_obs", "site medians across years", 800 * nc, 230 + 640 * nr, function() {
@@ -484,6 +494,13 @@ if (do("eval_obs") && have(or_file)) {
       d <- orr[orr$set == st, ]
       k_panel(d, "adj_r2", lab_of(st, set_lab), sprintf("%d sites", max(d$n, na.rm = TRUE)),
               yl, "adjusted R-squared (dates ~ region)", parts)
+      if (!is.null(bo)) {                      # bootstrap ranges at report_k, offset per partition
+        b <- bo[bo$set == st & bo$partition %in% parts, ]
+        off <- setNames(seq(-0.36, 0.36, length.out = length(parts)), parts)
+        segments(b$k + off[b$partition], b$lo, b$k + off[b$partition], b$hi,
+                 col = grDevices::adjustcolor(part_col[b$partition], 0.8), lwd = 2)
+        points(b$k + off[b$partition], b$adj_r2, pch = 16, cex = 0.6, col = part_col[b$partition])
+      }
     }
     legend_row(parts)
   })
@@ -517,9 +534,11 @@ if (any(c("eval_curves", "eval_obs") %in% want) && (file.exists(rc_file) || file
   tab <- expand.grid(partition = names(part_lab), k = rk, stringsAsFactors = FALSE)
   if (file.exists(rc_file)) {
     rc <- utils::read.csv(rc_file, stringsAsFactors = FALSE)
-    for (dn in c("all", "herb")) {
-      d <- rc[rc$domain == dn, ]
-      tab[[paste0("curves_", dn)]] <- d$r2[match(paste(tab$partition, tab$k), paste(d$partition, d$k))]
+    if (is.null(rc$features)) rc$features <- "level_shape"
+    for (fs in intersect(c("level_shape", "timing"), unique(rc$features))) for (dn in c("all", "herb")) {
+      d <- rc[rc$domain == dn & rc$features == fs, ]
+      cn <- if (fs == "level_shape") paste0("curves_", dn) else paste0("timing_", dn)
+      tab[[cn]] <- d$r2[match(paste(tab$partition, tab$k), paste(d$partition, d$k))]
     }
   }
   if (file.exists(or_file)) {
@@ -533,6 +552,18 @@ if (any(c("eval_curves", "eval_obs") %in% want) && (file.exists(rc_file) || file
   tab <- tab[order(tab$k, match(tab$partition, names(part_lab))), ]
   utils::write.csv(tab, file.path(fig_dir, sprintf("eval_summary_%s.csv", profile)), row.names = FALSE)
   log_msg("wrote eval_summary_", profile, ".csv")
+  dfile <- file.path(eval_dir, "obs", "obs_r2_diff.csv")
+  if (file.exists(dfile)) {
+    dd <- utils::read.csv(dfile, stringsAsFactors = FALSE)
+    dd <- dd[dd$set %in% unlist(rep$eval_sets), ]
+    short <- c(A1_groups = "A1", A2_groups = "A2", B_raw = "Satellite (level + shape)",
+               B_shape = "Satellite (timing)", geo = "location only")
+    dd$comparison <- paste(lab_of(dd$first, short), "minus", lab_of(dd$second, short))
+    dd$set <- lab_of(dd$set, set_lab)
+    utils::write.csv(dd[, c("set", "comparison", "k", "diff", "lo", "hi", "share_above_0")],
+                     file.path(fig_dir, sprintf("eval_diff_%s.csv", profile)), row.names = FALSE)
+    log_msg("wrote eval_diff_", profile, ".csv")
+  }
 }
 
 log_msg("=== done | figures in ", fig_dir)

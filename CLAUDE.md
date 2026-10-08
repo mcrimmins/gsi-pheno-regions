@@ -224,7 +224,9 @@ Deferred: fire data, gridMET, ERA5-Land.
    - `scripts/30_compare_ab.R`: share of the Cut B curve variance (and of single metrics:
      amplitude, green-up, peak, end, season length, curing) explained by each partition per k,
      all cells and strict herb mask -> `eval/ab/`. Cut B = upper reference (fitted to the
-     curves); geo = what any compact regions give. Minutes.
+     curves); geo = what any compact regions give. Two curve feature sets (config
+     `curve_features`): `level_shape` (b_raw) and `timing` (b_shape: curves scaled by their
+     amplitude), column `features` in r2_curves.csv. Minutes.
    - `scripts/31_obs_regions.R`: ground check from the GSI study tables
      (`GrowingSeasonIndex/study/data/derived/*.rds`; config `evaluation: study_dir` or
      `GSI_STUDY_DIR`): NPN graminoid % green (green-up / curing / cured), NPN herbaceous
@@ -232,6 +234,10 @@ Deferred: fire data, gridMET, ERA5-Land.
      flowering onset. Site = place x plant type (NPN site x species, LFMC series, iNat point x
      genus), median date across years, then adjusted R^2 on region per partition and k, plus
      sites per region -> `eval/obs/`. Run on the laptop (study data live there).
+     Spatial-block bootstrap at report_k (config `evaluation: boot`; 2-degree blocks, 500
+     resamples, ~5 min): `obs_r2_boot.csv` (range per score), `obs_r2_diff.csv` (paired
+     differences, e.g. A2 - A1). Gotcha: a YAML key named `n` reads as FALSE (YAML 1.1); use
+     `n_boot`.
 9. A3 (Block 3, GSI sub-indices): not started.
 
 ## Project page (report/)

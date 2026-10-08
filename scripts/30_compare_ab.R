@@ -5,7 +5,9 @@
 # only) and every k:
 #   r2_curves   share of the Cut B curve variance explained by the regions: between-region
 #               sum of squares / total, on the Cut B PCA features (NDVI and NDII7 curves, each
-#               index weighted equally; from 07_cutb_regions.R)
+#               index weighted equally; from 07_cutb_regions.R), for each feature set in config
+#               `evaluation: curve_features`: level_shape (curves as they are) and timing (each
+#               curve scaled by its own amplitude: seasonal timing only)
 #   r2_<metric> the same for single phenology metrics (across-year medians from 06): green-up,
 #               peak, end of season, season length, curing, amplitudes
 # Each for all cells with curves and for the strict herbaceous mask. Cut B partitions are the
@@ -42,9 +44,16 @@ t0 <- Sys.time()
 log_msg("=== 30_compare_ab | profile: ", profile, " | k ", min(ks), "-", max(ks))
 
 grid <- terra::rast(file.path(static_dir(cfg), "grid_mask.tif"))
-ff <- file.path(cfg$run_dir, "clusters", ev$curve_features)
-if (!file.exists(ff)) stop("missing ", ff, " (run 07_cutb_regions.R)")
-Y <- land_values(terra::rast(ff), grid)
+cf <- ev$curve_features
+if (!is.list(cf)) cf <- list(level_shape = cf)
+Ys <- list()
+for (fs in names(cf)) {
+  ff <- file.path(cfg$run_dir, "clusters", cf[[fs]])
+  if (!file.exists(ff)) { log_warn("curve features ", fs, ": missing ", ff, " (run 07_cutb_regions.R)"); next }
+  Ys[[fs]] <- land_values(terra::rast(ff), grid)
+}
+if (!length(Ys)) stop("no curve features found (run 07_cutb_regions.R)")
+Y <- Ys[[1]]
 mf <- summary_file(cfg, "cutb_metrics", "median")
 M <- land_values(terra::rast(mf), grid, intersect(unlist(ev$metrics), names(terra::rast(mf))))
 hm <- land_values(terra::rast(file.path(static_dir(cfg), "herb_mask.tif")), grid)[, 1]
@@ -58,16 +67,20 @@ for (nm in names(P)) for (kn in colnames(P[[nm]])) {
   k <- as.integer(sub("k", "", kn)); g <- P[[nm]][, kn]
   for (dn in names(domains)) {
     u <- domains[[dn]]
-    rc <- rbind(rc, data.frame(partition = nm, k = k, domain = dn, r2 = r2_groups(Y[u, , drop = FALSE], g[u])))
+    for (fs in names(Ys)) {
+      uf <- u & stats::complete.cases(Ys[[fs]])
+      rc <- rbind(rc, data.frame(features = fs, partition = nm, k = k, domain = dn,
+                                 r2 = r2_groups(Ys[[fs]][uf, , drop = FALSE], g[uf])))
+    }
     for (mn in colnames(M)) rm_ <- rbind(rm_, data.frame(partition = nm, k = k, domain = dn, metric = mn,
                                                          r2 = r2_groups(M[u, mn, drop = FALSE], g[u])))
   }
 }
 utils::write.csv(rc, file.path(out_dir, "r2_curves.csv"), row.names = FALSE)
 utils::write.csv(rm_, file.path(out_dir, "r2_metrics.csv"), row.names = FALSE)
-for (k in intersect(unlist(ev$report_k), ks)) {
-  d <- rc[rc$k == k, ]
-  log_msg(sprintf("  k=%2d  curve R^2 (all / herb mask): %s", k,
+for (fs in names(Ys)) for (k in intersect(unlist(ev$report_k), ks)) {
+  d <- rc[rc$k == k & rc$features == fs, ]
+  log_msg(sprintf("  %-11s k=%2d  curve R^2 (all / herb mask): %s", fs, k,
                   paste(sprintf("%s %.2f/%.2f", unique(d$partition),
                                 d$r2[d$domain == "all"], d$r2[d$domain == "herb"]), collapse = "; ")))
 }
@@ -76,12 +89,12 @@ for (k in intersect(unlist(ev$report_k), ks)) {
 pal <- c("#2a78d6", "#1a7f37", "#eb6834", "#c0392b", "#7b4fb3", "#888888")
 pn <- names(P); pcol <- setNames(pal[seq_along(pn)], pn); pcol["geo"] <- "#888888"
 plty <- setNames(ifelse(grepl("^B_", pn), 2, 1), pn); plty["geo"] <- 3
-png(file.path(fig_dir, "r2_curves.png"), 1800, 750, res = 150)
-par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2.5, 1), las = 1)
-for (dn in names(domains)) {
-  d <- rc[rc$domain == dn, ]
+png(file.path(fig_dir, "r2_curves.png"), 1800, 750 * length(Ys), res = 150)
+par(mfrow = c(length(Ys), 2), mar = c(4.5, 4.5, 2.5, 1), las = 1)
+for (fs in names(Ys)) for (dn in names(domains)) {
+  d <- rc[rc$domain == dn & rc$features == fs, ]
   plot(NA, xlim = range(ks), ylim = c(0, 1), xlab = "number of regions (k)", ylab = "share of curve variance explained",
-       main = if (dn == "all") "Satellite curves, all cells" else "Satellite curves, strict herbaceous mask")
+       main = sprintf("%s curves, %s", fs, if (dn == "all") "all cells" else "strict herbaceous mask"))
   for (nm in pn) { e <- d[d$partition == nm, ]; lines(e$k, e$r2, col = pcol[nm], lty = plty[nm], lwd = 2) }
   if (dn == "all") legend("bottomright", pn, col = pcol, lty = plty, lwd = 2, bty = "n", cex = 0.8)
 }

@@ -152,8 +152,11 @@ default:
     k: [4, 20]
     report_k: [7, 10, 13]
     # 30: how much of the satellite curve variance (Cut B PCA features, and single metrics)
-    # each partition explains, all cells and the strict herbaceous mask.
-    curve_features: b_raw/b_features.tif
+    # each partition explains, all cells and the strict herbaceous mask. Two feature sets:
+    # level_shape (curves as they are) and timing (each curve scaled by its own amplitude).
+    curve_features:
+      level_shape: b_raw/b_features.tif
+      timing: b_shape/b_features.tif
     metrics: [ndvi_amp, sos20, ndvi_peak_doy, eos20, gsl20, cure50, ndii_amp]
     # 31: observations from the GSI study exploration (derived .rds tables). GSI_STUDY_DIR
     # overrides. Sites are reduced to their median date across years first.
@@ -161,6 +164,18 @@ default:
       windows: "C:/Users/Crimmins/RProjects/GrowingSeasonIndex/study"
       linux: "~/RProjects/GrowingSeasonIndex/study"
     min_years_site: 1
+    # 31: spatial-block bootstrap of the observation scores at report_k (sites resampled in
+    # block_deg x block_deg blocks, since nearby sites are not independent). Paired: every
+    # partition is scored on the same resample, so differences get their own range.
+    boot:
+      n_boot: 500
+      block_deg: 2
+      probs: [0.05, 0.95]
+      pairs:                    # differences first - second
+        - [A2_groups, A1_groups]
+        - [A1_groups, geo]
+        - [A2_groups, geo]
+        - [B_shape, A2_groups]
 
   # Cut A feature blocks. Year label Y: water year Oct(Y-1)-Sep(Y) for precipitation,
   # temperature and aridity; calendar year Y for freeze dates and GDD (fall freezes fall
