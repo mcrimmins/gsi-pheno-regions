@@ -81,7 +81,10 @@ for (nm in names(P)) for (kn in colnames(P[[nm]])) {
   reg <- P[[nm]][S$cells$row, kn]
   for (r in sort(unique(reg[!is.na(reg)]))) units[[length(units) + 1]] <- list(partition = nm, k = as.integer(sub("k", "", kn)), region = r, idx = which(reg == r))
 }
-sub_drv <- function(idx) lapply(S$drv, function(m) m[idx, , drop = FALSE])
+# drivers for a set of cells; `need` = only those a form uses (keeps forked workers small:
+# each fit copies its cells' series, ~0.11 GB per 1,000 cells per series on CONUS)
+sub_drv <- function(idx, need = names(S$drv)) lapply(S$drv[need], function(m) m[idx, , drop = FALSE])
+drv_need <- function(mo) c("tmin", "vpd_pa", "photo_s", if (!is.null(gm_moist[[mo]])) gm_moist[[mo]]$drv)
 sub_obs <- function(idx, yi) list(sos = S$obs$sos[idx, yi, drop = FALSE], cure = S$obs$cure[idx, yi, drop = FALSE])
 fems <- g$param_sets$fems
 start_for <- function(mo, cr) {
@@ -104,13 +107,24 @@ for (f in names(folds)) for (i in seq_len(nrow(forms))) {
   jobs[[length(jobs) + 1]] <- c(base, list(partition = "conus", k = 1L, region = 1L, idx = conus_idx))
   for (u in units) if (length(u$idx) >= gmc$min_cells) jobs[[length(jobs) + 1]] <- c(base, u)
 }
-jobs <- jobs[order(-vapply(jobs, function(j) length(j$idx), 0))]      # largest first
+# largest first, but no more than max_big CONUS-sized fits at once (memory): interleave them
+# with the regional fits
+jobs <- jobs[order(-vapply(jobs, function(j) length(j$idx), 0))]
+big <- vapply(jobs, function(j) j$partition == "conus", TRUE); mb <- gmc$max_big %||% 8
+if (sum(big) > mb && any(!big)) {
+  sm <- jobs[!big]; bg <- jobs[big]; step <- max(1, floor(length(sm) / ceiling(length(bg) / mb)))
+  out <- list(); while (length(bg) || length(sm)) {
+    out <- c(out, bg[seq_len(min(mb, length(bg)))], sm[seq_len(min(step, length(sm)))])
+    bg <- bg[-seq_len(min(mb, length(bg)))]; sm <- sm[-seq_len(min(step, length(sm)))]
+  }
+  jobs <- out
+}
 log_msg(length(units), " regions in ", length(P), " partition(s) x ", length(gmc$k), " k; ", length(jobs),
-        " fits (maxit ", gmc$maxit, ", restarts ", gmc$restarts %||% 0, ")")
+        " fits (maxit ", gmc$maxit, ", restarts ", gmc$restarts %||% 0, "); at most ", mb, " CONUS fits at once")
 notify("35_gsi_curing started", sprintf("%d fits, %d workers", length(jobs), nw), priority = 2, tags = "hourglass")
 fits <- pmap(jobs, function(j) {
   tr <- folds[[j$fold]]
-  ft <- tryCatch(gm_fit(sub_drv(j$idx), sub_obs(j$idx, tr), S$dates, years[tr], g, gmc, start_for(j$moisture, j$cross)),
+  ft <- tryCatch(gm_fit(sub_drv(j$idx, drv_need(j$moisture)), sub_obs(j$idx, tr), S$dates, years[tr], g, gmc, start_for(j$moisture, j$cross)),
                  error = function(e) list(error = conditionMessage(e)))
   c(j[c("fold", "form", "moisture", "cross", "partition", "k", "region")], list(fit = ft, n = length(j$idx)))
 })
@@ -136,7 +150,7 @@ best_fit <- function(f, p, k, r) {
 
 # ---- predictions on held-out years and scores ---------------------------------------------
 empty <- function() list(sos = matrix(NA_real_, n, nY), eos = matrix(NA_real_, n, nY))
-pred_par <- function(par, idx) gm_predict(sub_drv(idx), par, gmc$smooth, S$dates, years, g)
+pred_par <- function(par, idx) gm_predict(sub_drv(idx, drv_need(par$moisture)), par, gmc$smooth, S$dates, years, g)
 cross_pred <- function(get_groups) {
   out <- empty()
   for (f in names(folds)) {

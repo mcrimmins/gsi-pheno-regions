@@ -225,7 +225,8 @@ default:
     reference_form: kbdi-rel      # the 34 v2 form most regions picked
     partitions: [A2_groups]
     k: [7, 13]
-    workers: 38                   # forked; 40 physical cores
+    workers: 24                   # forked; run alone, not next to another big job
+    max_big: 8                    # CONUS-sized fits running at once (~2 GB each; Oct 9 OOM with 32)
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
