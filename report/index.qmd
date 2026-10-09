@@ -441,6 +441,31 @@ show_fig("gsi_model",
   "Four charts comparing GSI model versions by number of regions: green-up and curing date error, and correlation of yearly departures.")
 ```
 
+**Reading the first model test.**
+
+- **Tuning by region pays off against the national defaults.** For green-up, thresholds
+  fitted per region miss by 28–31 days on average (median 14–17), against 33 days for one
+  CONUS-wide fit and 37–41 days for the FEMS and NFDRS defaults (median 23–29). For curing
+  the gain is smaller: about 52–56 days against 59–62.
+- **The number of regions makes almost no difference.** Errors at 7, 10 and 13 regions are
+  within a day of each other for A1 and A2. The extra regions do not buy better
+  predictions in this test.
+- **None of the GSI versions beats a cell's typical date.** Simply predicting each cell's
+  usual green-up (from the fitting years) misses by 27 days and its usual curing date by
+  48 days. The GSI in this form adds little about whether a year is early or late:
+  correlations of yearly departures are about 0.3 for green-up and under 0.1 for curing.
+- **What that means.** Changing the thresholds of the current GSI shifts its average
+  timing toward the observed season (that is where the regional gain comes from), but it
+  does not let the index follow year-to-year swings, especially in curing. Part of that is
+  noise in the satellite dates themselves, and the synchrony results above show that
+  much of the yearly variation is local. Part is probably the model's form: curing in the
+  GSI comes from the same ramps as green-up, with only a short precipitation window for
+  moisture.
+
+These are first results. The threshold search stopped at its iteration limit in most
+regions, so the fits can probably improve somewhat, and only the 28-day precipitation
+ramp was tried for moisture.
+
 ```{r fig-obs-sites}
 #| results: asis
 show_fig("obs_sites",
@@ -709,6 +734,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-08 | First GSI-per-region model test: fitted thresholds vs defaults and typical dates |
 | 2026-10-08 | Year-to-year synchrony of satellite season dates by region |
 | 2026-10-08 | GSI (Block 3) built: two parameter sets, three moisture options, no-VPD runs |
 | 2026-10-08 | Herbaceous-weighted A2 regions added to the comparisons and profiles |
