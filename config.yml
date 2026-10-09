@@ -147,6 +147,9 @@ default:
       A1_groups: a1_groups/a1_kmeans.tif
       A2_groups: a2_groups/a1_kmeans.tif
       A2_herbw: a2_groups_herbw/a1_kmeans.tif
+      A3_groups: a3_groups/a1_kmeans.tif
+      A3_novpd: a3_groups_novpd/a1_kmeans.tif
+      A3_kbdi: a3_groups_kbdi/a1_kmeans.tif
       B_raw: b_raw/b_kmeans.tif
       B_shape: b_shape/b_kmeans.tif
     geo_baseline: true
@@ -178,6 +181,9 @@ default:
         - [A2_groups, geo]
         - [B_shape, A2_groups]
         - [A2_herbw, A2_groups]
+        - [A3_groups, A2_groups]
+        - [A3_novpd, A3_groups]
+        - [A3_kbdi, A3_groups]
 
   # Year-to-year synchrony (33_synchrony.R, P720): share of the cells' yearly anomalies in
   # the satellite season metrics explained by their region's mean anomaly.
@@ -208,6 +214,18 @@ default:
     cap_days: 90                # errors capped (season jumps, e.g. spring vs monsoon), as in 33
     workers: 36                 # forked on Linux (shared memory); sequential on Windows
     seed: 20261008
+
+  # GSI curing forms (35_gsi_curing.R, P720; Oct 9 2026): same sample, folds, loss and scores
+  # as gsi_model (unset keys come from there), but the model's form varies: moisture memory x
+  # how season dates are read from the index (R/gsi_model.R gm_moist, gm_cross). Every
+  # combination is fitted CONUS-wide and per region for the working regions (A2, k 7 and 13).
+  gsi_curing:
+    moisture: [kbdi, kbdi30, precip60, precip90]
+    cross: [rel, rel_split, abs_nfdrs4, abs_split]
+    reference_form: kbdi-rel      # the 34 v2 form most regions picked
+    partitions: [A2_groups]
+    k: [7, 13]
+    workers: 38                   # forked; 40 physical cores
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
@@ -349,7 +367,7 @@ default:
       #   groups: Block 1 split into feature groups that share the block's variance equally
       #           (null = one group, i.e. temperature dominates by feature count).
       #   cell_weight: weight cells by a herb_share.tif layer: floor + (1 - floor) * share.
-      default_variants: [a2_groups, a2_groups_herbw]   # A1 variants (groups, groups_herbw) ran Oct 7
+      default_variants: [a3_groups, a3_groups_novpd, a3_groups_kbdi]   # A1 ran Oct 7, A2 Oct 7
       variants:
         base:
           groups: null
@@ -385,6 +403,49 @@ default:
           groups: *b1_groups
           cell_weight: {layer: open_herb_share, floor: 0.1}
           block2: *b2_block
+        # A3 = A2 (groups) + Block 3: GSI features from 12_gsi.R as a third equally weighted
+        # block (Oct 9 2026). Sources g3med / g3iqr = across-year median / IQR of the GSI variant
+        # named in gsi_variant (summaries/gsi_<variant>_*). Primary: FEMS operational settings
+        # with the 28-day precipitation ramp (the GSI as run today); sensitivity runs without
+        # the VPD ramp (PRISM VPD least reliable) and with the KBDI ramp (best moisture option in
+        # the Oct 8-9 model test). Constant features (lim_vpd without VPD) are dropped.
+        a3_groups:
+          out: a3_groups
+          compare_to: a2_groups
+          groups: *b1_groups
+          cell_weight: null
+          block2: *b2_block
+          block3:
+            gsi_variant: fems_precip
+            weight: 1
+            log1p: &b3_log ["g3med:n_pulses"]
+            groups: &b3_groups
+              timing: ["g3med:sos20", "g3med:peak_doy", "g3med:eos50"]
+              spread: ["g3iqr:sos20", "g3iqr:eos50"]
+              activity: ["g3med:gsi_mean", "g3med:green_days", "g3med:n_pulses"]
+              limiting: ["g3med:lim_tmin", "g3med:lim_vpd", "g3med:lim_photo", "g3med:lim_moist"]
+        a3_groups_novpd:
+          out: a3_groups_novpd
+          compare_to: a3_groups
+          groups: *b1_groups
+          cell_weight: null
+          block2: *b2_block
+          block3:
+            gsi_variant: fems_precip_novpd
+            weight: 1
+            log1p: *b3_log
+            groups: *b3_groups
+        a3_groups_kbdi:
+          out: a3_groups_kbdi
+          compare_to: a3_groups
+          groups: *b1_groups
+          cell_weight: null
+          block2: *b2_block
+          block3:
+            gsi_variant: fems_kbdi
+            weight: 1
+            log1p: *b3_log
+            groups: *b3_groups
     # Sites used to check region boundaries (which region each falls in, per k).
     check_points:
       - {name: "Santa Rita (AZ desert grassland)", lon: -110.88, lat: 31.80}
@@ -471,6 +532,11 @@ dev:
     conus_fit_cells: 150
     maxit: 30
     restarts: 1
+    workers: 2
+  gsi_curing:
+    moisture: [kbdi, precip60]
+    cross: [rel, abs_nfdrs4]
+    k: [7]
     workers: 2
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).

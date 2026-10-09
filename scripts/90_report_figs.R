@@ -50,7 +50,7 @@ source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -372,12 +372,12 @@ clus_dir <- file.path(cfg$run_dir, "clusters")
 eval_dir <- file.path(cfg$run_dir, "eval")
 part_file <- function(nm) file.path(clus_dir, ev$partitions[[nm]] %||% "none")
 part_lab <- c(A1_groups = "Climate A1 (seasonal climate)", A2_groups = "Climate A2 (+ timing, variability)",
-              A2_herbw = "Climate A2, herbaceous-weighted",
+              A2_herbw = "Climate A2, herbaceous-weighted", A3_groups = "Climate A3 (+ GSI features)",
               B_raw = "Satellite curves (level + shape)", B_shape = "Satellite curves (timing only)",
               geo = "Location only (baseline)")
-part_col <- c(A1_groups = terra_col, A2_groups = "#1a7f37", A2_herbw = "#7b4fb3", B_raw = aqua_col, B_shape = "#c0392b",
+part_col <- c(A1_groups = terra_col, A2_groups = "#1a7f37", A2_herbw = "#7b4fb3", A3_groups = "#b7791f", B_raw = aqua_col, B_shape = "#c0392b",
               geo = "#8a8985")
-part_lty <- c(A1_groups = 1, A2_groups = 1, A2_herbw = 1, B_raw = 2, B_shape = 2, geo = 3)
+part_lty <- c(A1_groups = 1, A2_groups = 1, A2_herbw = 1, A3_groups = 1, B_raw = 2, B_shape = 2, geo = 3)
 set_lab <- c(grass_greenup = "NPN grasses: green-up (50 % green)",
              grass_curing = "NPN grasses: curing (below 50 % green)",
              grass_cured = "NPN grasses: cured",
@@ -603,6 +603,75 @@ if (do("gsi_model") && have(gm_file)) {
   }
 }
 
+# gsi_curing: GSI curing forms (35_gsi_curing.R): every form (moisture memory x how the
+# season dates are read), fitted CONUS-wide and per working region; held-out-year scores
+gc_file <- file.path(eval_dir, "gsi_curing", "scores.csv")
+if (do("gsi_curing") && have(gc_file)) {
+  gc <- utils::read.csv(gc_file, stringsAsFactors = FALSE)
+  clim_r <- gc[gc$model == "climatology", ]
+  fit <- gc[gc$model != "climatology", ]
+  mo_l <- c(kbdi = "KBDI", kbdi30 = "KBDI, 30-day mean", precip = "28-day precip", precip60 = "60-day precip",
+            precip90 = "90-day precip")
+  cr_l <- c(rel = "share of season (20 / 50 %)", rel_split = "share of season, fitted",
+            abs_nfdrs4 = "NFDRS4 levels (GU, (1+GU)/2)", abs_split = "GSI levels, fitted")
+  forms <- unique(fit$form[fit$form != "best"])
+  fo <- do.call(rbind, strsplit(forms, "-", fixed = TRUE))
+  forms <- forms[order(match(fo[, 2], names(cr_l)), match(fo[, 1], names(mo_l)))]
+  forms <- c(forms, "best")
+  flab <- vapply(forms, function(f) if (f == "best") "Best form per region" else {
+    x <- strsplit(f, "-", fixed = TRUE)[[1]]; paste0(mo_l[[x[1]]] %||% x[1], "; ", cr_l[[x[2]]] %||% x[2]) }, "")
+  sets <- unique(fit[, c("model", "partition", "k")]); sets <- sets[order(sets$model != "conus", sets$k), ]
+  set_id <- ifelse(sets$model == "conus", "conus", paste(sets$partition, sets$k))
+  set_lab <- ifelse(sets$model == "conus", "Fitted once for CONUS",
+                    paste0("Per region: ", lab_of(sets$partition, part_lab), ", ", sets$k))
+  set_pch <- c(4, 1, 16, 17)[seq_len(nrow(sets))]
+  set_colr <- c(ink, part_col[["A2_groups"]] %||% "#1a7f37", part_col[["A2_groups"]] %||% "#1a7f37", "#b7791f")[seq_len(nrow(sets))]
+  val <- function(col, i) { m <- fit[fit$model == sets$model[i] & (is.na(sets$partition[i]) | fit$partition %in% sets$partition[i]) &
+                                       (is.na(sets$k[i]) | fit$k %in% sets$k[i]), ]
+    m[[col]][match(forms, m$form)] }
+  nf <- length(forms); yy <- rev(seq_len(nf))
+  dpanel <- function(col, main, sub, xlab, ref = NULL) {
+    v <- unlist(lapply(seq_len(nrow(sets)), function(i) val(col, i))); v <- c(v[is.finite(v)], ref)
+    xl <- range(v); xl <- xl + c(-1, 1) * 0.05 * diff(xl)
+    plot(NA, xlim = xl, ylim = c(0.5, nf + 0.5), yaxt = "n", xlab = xlab, ylab = "", bty = "n", cex.axis = 0.85)
+    abline(h = yy, col = "#ecebe7"); abline(h = 1.5, col = ink2, lty = 3)
+    if (!is.null(ref)) { abline(v = ref, col = "#8a8985", lty = 2, lwd = 1.8) }
+    for (i in seq_len(nrow(sets))) points(val(col, i), yy, pch = set_pch[i], col = set_colr[i], cex = 1.15, lwd = 1.6)
+    mtext(main, side = 3, line = 1.4, adj = 0, cex = 0.85, font = 2, col = ink)
+    mtext(sub, side = 3, line = 0.3, adj = 0, cex = 0.68, col = ink2)
+  }
+  plot_png("gsi_curing", all_years, 2600, 1500, function() {
+    layout(matrix(1:4, 1), widths = c(1.45, 1, 1, 1))
+    par(mar = c(4.2, 0.5, 3.6, 0.5), oma = c(0, 0, 3, 0))
+    plot(NA, xlim = c(0, 1), ylim = c(0.5, nf + 0.5), axes = FALSE, xlab = "", ylab = "")
+    text(1, yy, flab, adj = 1, cex = 0.82, col = ink, font = ifelse(forms == "best", 2, 1))
+    mtext("Moisture term; how dates are read", side = 3, line = 0.3, adj = 1, cex = 0.68, col = ink2)
+    par(mar = c(4.2, 1, 3.6, 1.2))
+    dpanel("sos_mae", "Green-up date: error", "Held-out years; lower is better", "mean absolute error (days)", clim_r$sos_mae)
+    dpanel("cure_mae", "Curing date: error", "Held-out years; lower is better", "mean absolute error (days)", clim_r$cure_mae)
+    dpanel("cure_anom_r", "Curing: early vs late years", "Correlation of yearly departures; higher is better", "correlation", 0)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+    plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("top", legend = c(set_lab, "Cell's typical date (no weather)"), pch = c(set_pch, NA), lty = c(rep(NA, nrow(sets)), 2),
+           col = c(set_colr, "#8a8985"), lwd = 1.8, ncol = nrow(sets) + 1, bty = "n", cex = 0.85, text.col = ink2)
+  })
+  tb <- data.frame(Form = c(flab, "Cell's typical date (no weather)"))
+  for (i in seq_len(nrow(sets))) {
+    tb[[paste(set_lab[i], "(green-up / curing MAE, days)")]] <- c(sprintf("%.0f / %.0f", val("sos_mae", i), val("cure_mae", i)),
+                                                                   sprintf("%.0f / %.0f", clim_r$sos_mae, clim_r$cure_mae))
+    tb[[paste(set_lab[i], "(curing r)")]] <- c(sprintf("%.2f", val("cure_anom_r", i)), "")
+    tb[[paste(set_lab[i], "(curing dates produced)")]] <- c(sprintf("%.0f %%", 100 * val("cure_coverage", i)), "")
+  }
+  utils::write.csv(tb, file.path(fig_dir, sprintf("gsi_curing_%s.csv", profile)), row.names = FALSE)
+  bf <- file.path(eval_dir, "gsi_curing", "best_form.csv")
+  if (file.exists(bf)) {
+    b <- utils::read.csv(bf, stringsAsFactors = FALSE)
+    w <- as.data.frame(table(Form = b$form), stringsAsFactors = FALSE); w <- w[order(-w$Freq), ]
+    w$Form <- vapply(w$Form, function(f) flab[[f]] %||% f, ""); names(w)[2] <- "Region-folds where it fits best"
+    utils::write.csv(w, file.path(fig_dir, sprintf("gsi_curing_best_%s.csv", profile)), row.names = FALSE)
+  }
+}
+
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------
 # Per region set (config region_profiles: sets): prof_map_<id> (numbered region map),
 # prof_heat_<id> (features x regions, coloured by standardized median, labelled with the
@@ -797,7 +866,8 @@ if (any(c("eval_curves", "eval_obs") %in% want) && (file.exists(rc_file) || file
   if (file.exists(dfile)) {
     dd <- utils::read.csv(dfile, stringsAsFactors = FALSE)
     dd <- dd[dd$set %in% unlist(rep$eval_sets), ]
-    short <- c(A1_groups = "A1", A2_groups = "A2", A2_herbw = "A2 herb-weighted", B_raw = "Satellite (level + shape)",
+    short <- c(A1_groups = "A1", A2_groups = "A2", A2_herbw = "A2 herb-weighted", A3_groups = "A3",
+               A3_novpd = "A3 no VPD", A3_kbdi = "A3 KBDI", B_raw = "Satellite (level + shape)",
                B_shape = "Satellite (timing)", geo = "location only")
     dd$comparison <- paste(lab_of(dd$first, short), "minus", lab_of(dd$second, short))
     dd$set <- lab_of(dd$set, set_lab)

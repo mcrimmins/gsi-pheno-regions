@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
-# Step 20 (Cut A, run A1): cluster CONUS land cells on Block 1 across-year medians +
-# static (elevation, latitude). Config `clustering:`.
+# Step 20 (Cut A, runs A1 / A2 / A3): cluster CONUS land cells on Block 1 across-year
+# medians + static (elevation, latitude), plus Block 2 (A2) and Block 3 GSI features (A3) as
+# their own equally weighted blocks. Config `clustering:`.
 #
 # Features: the Block 1 medians in clustering: a1: block1 (freeze threshold 0 C only; ffs
 #   dropped as fff - lsf - 1; t_ann / t_range dropped as linear in the seasonal means),
@@ -115,12 +116,16 @@ if (!is.null(cp_df)) {
 feature_sources <- list(b1med = summary_file(cfg, "block1", "median"), b1iqr = summary_file(cfg, "block1", "iqr"),
                         b2med = summary_file(cfg, "block2", "median"), b2iqr = summary_file(cfg, "block2", "iqr"),
                         b2var = summary_file(cfg, "block2", "var"))
-src_values <- function(names_) {
+# Block 3 (A3): sources g3med / g3iqr = across-year median / IQR of one GSI variant from
+# 12_gsi.R (summaries/gsi_<variant>_{median,iqr}.tif), named in the variant's block3: gsi_variant.
+gsi_sources <- function(gv) list(g3med = summary_file(cfg, paste0("gsi_", gv), "median"),
+                                 g3iqr = summary_file(cfg, paste0("gsi_", gv), "iqr"))
+src_values <- function(names_, sources = feature_sources) {
   sp <- do.call(rbind, strsplit(names_, ":", fixed = TRUE))
-  bad <- setdiff(unique(sp[, 1]), names(feature_sources))
+  bad <- setdiff(unique(sp[, 1]), names(sources))
   if (length(bad)) stop("unknown feature source(s): ", paste(bad, collapse = ", "))
   X <- do.call(cbind, lapply(unique(sp[, 1]), function(s) {
-    f <- feature_sources[[s]]
+    f <- sources[[s]]
     if (!file.exists(f)) stop("missing ", f, " (run the block's feature script first)")
     r <- terra::rast(f); b <- sp[sp[, 1] == s, 2]
     miss <- setdiff(b, names(r)); if (length(miss)) stop(basename(f), " lacks: ", paste(miss, collapse = ", "))
@@ -146,20 +151,34 @@ run_variant <- function(vname) {
   colnames(rst$scores) <- paste0("static_PC", seq_len(ncol(rst$scores)))
   Z <- cbind(rb1$scores, rst$scores)
   Z0 <- rb1$scores                                                     # sensitivity: no static
-  if (!is.null(v$block2)) {                                            # A2: Block 2 as its own block
-    b2 <- v$block2
+  # A2: Block 2 as its own block; A3: plus Block 3 (GSI features of one GSI variant).
+  # Each extra block has equal weight (config weight) split equally among its groups.
+  Zx <- NULL
+  for (bn in c("block2", "block3")) {
+    b2 <- v[[bn]]; if (is.null(b2)) next
+    tag <- if (bn == "block2") "b2" else "b3"
+    srcs <- if (bn == "block3") gsi_sources(b2$gsi_variant) else feature_sources
     nm2 <- unique(unlist(b2$groups))
-    X2 <- src_values(nm2)[ok, , drop = FALSE]
+    X2 <- src_values(nm2, srcs)[ok, , drop = FALSE]
     for (cn in intersect(unlist(b2$log1p), colnames(X2))) X2[, cn] <- log10(pmax(X2[, cn], 0) + 1)
-    nna <- colSums(is.na(X2))
+    nna <- colSums(is.na(X2)); nna <- nna[nna < nrow(X2)]                # all-NA columns dropped below
     for (cn in names(nna)[nna > 0]) X2[is.na(X2[, cn]), cn] <- stats::median(X2[, cn], na.rm = TRUE)
-    if (any(nna > 0)) log_warn("  block 2: NA filled with column medians: ", paste(sprintf("%s (%d)", names(nna)[nna > 0], nna[nna > 0]), collapse = ", "))
+    if (any(nna > 0)) log_warn("  ", bn, ": NA filled with column medians: ", paste(sprintf("%s (%d)", names(nna)[nna > 0], nna[nna > 0]), collapse = ", "))
+    sds <- apply(X2, 2, stats::sd, na.rm = TRUE)
+    flat <- names(which(!is.finite(sds) | sds < 1e-9))
+    if (length(flat)) {                                               # e.g. lim_vpd in a no-VPD run
+      log_warn("  ", bn, ": constant or empty feature(s) dropped: ", paste(flat, collapse = ", "))
+      b2$groups <- Filter(length, lapply(b2$groups, function(g) setdiff(unlist(g), flat)))
+      X2 <- X2[, setdiff(colnames(X2), flat), drop = FALSE]
+    }
+    if (bn == "block3") log_msg("  block 3: GSI variant ", b2$gsi_variant)
     rb2 <- groups_reduce(X2, b2$groups, b2$weight %||% 1, cc$pca_var)
-    colnames(rb2$scores) <- paste0("b2_", colnames(rb2$scores))
-    names(rb2$parts) <- paste0("b2_", names(rb2$parts))
-    Z <- cbind(rb1$scores, rb2$scores, rst$scores); Z0 <- cbind(Z0, rb2$scores)
+    colnames(rb2$scores) <- paste0(tag, "_", colnames(rb2$scores))
+    names(rb2$parts) <- paste0(tag, "_", names(rb2$parts))
+    Zx <- cbind(Zx, rb2$scores); Z0 <- cbind(Z0, rb2$scores)
     rb1$parts <- c(rb1$parts, rb2$parts)                               # report all groups below
   }
+  if (!is.null(Zx)) Z <- cbind(rb1$scores, Zx, rst$scores)
   if (a1$sensitivity_static_weight > 0) {
     Z0 <- cbind(Z0, block_reduce(XS[ok, , drop = FALSE], a1$sensitivity_static_weight, 1)$scores)
   }
@@ -323,7 +342,8 @@ run_variant <- function(vname) {
           file.path(out_dir, "a1_run.rds"))
 
   # ---- Figures ---------------------------------------------------------------------------
-  vlab <- if (vname == "base") "A1" else if (!is.null(v$block2)) paste0("A2 (", vname, ")") else paste0("A1 (", vname, ")")
+  vlab <- if (vname == "base") "A1" else if (!is.null(v$block3)) paste0("A3 (", vname, ")") else
+    if (!is.null(v$block2)) paste0("A2 (", vname, ")") else paste0("A1 (", vname, ")")
   map_cat <- function(lbl, col, title) {
     terra::plot(lab_rast(lbl), col = col, breaks = seq(0.5, length(col) + 0.5), legend = FALSE,
                 axes = FALSE, mar = c(2.5, 0.5, 2, 0.5), main = title, cex.main = 1.1)

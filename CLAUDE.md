@@ -72,6 +72,7 @@ Deferred: fire data, gridMET, ERA5-Land.
   year onward); that is download order, not a study-period decision.
 - Block 2 thresholds: decided Oct 7 (see pipeline step 5b); don't change without asking.
 - Block 3 / GSI: decided Oct 8 (step 5c); don't change variants without asking.
+- Working regions: decided Oct 9 (A2 k13 nested in k7; step 9).
 - P720 disk space and any existing local PRISM archive.
 
 ## Compute workflow
@@ -288,7 +289,26 @@ Deferred: fire data, gridMET, ERA5-Land.
      lowest fitting-year loss per region and fold), maxit 250 + 1 restart, k 7 and 13, 36
      workers; the cache is extended with tmax and map_mm (no re-sampling). First run (v1,
      precip only, maxit 150, k 7/10/13): regional 28-31 d green-up vs climatology 27; k flat.
-9. A3 (Block 3, GSI features): after 12_gsi.R.
+   - `scripts/35_gsi_curing.R` (P720, ~3-4 h with 38 forked workers; config `gsi_curing:`,
+     unset keys from `gsi_model:`; needs 34's sample cache): GSI curing forms = moisture
+     {kbdi, kbdi30 (30-day mean), precip60, precip90} x crossing {rel (20/50 % of amplitude,
+     as 34), rel_split (fractions fitted), abs_nfdrs4 (absolute: green-up at GU, 50 % cured at
+     (1+GU)/2 as NFDRS4 Cure()), abs_split (levels fitted)}, CONUS + A2 k7/k13, same folds and
+     loss; "best" = lowest fitting-year loss per region and fold -> `eval/gsi_curing/`
+     (scores, region_scores, params, best_form). Page figure `gsi_curing` (+ tables), shown on
+     the page only when the full version exists. `R/gsi_model.R` gm_moist / gm_cross /
+     gm_season_dates / gm_predict; cross = "rel" reproduces gsi_season_from_G exactly (checked).
+9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
+   Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
+   and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
+   (summaries/gsi_<variant>_{median,iqr}); groups timing (sos20, peak_doy, eos50), spread
+   (IQR sos20, eos50), activity (gsi_mean, green_days, log n_pulses), limiting (lim_*).
+   All-NA / constant features are dropped (lim_vpd without VPD). Cells with no GSI season
+   (e.g. KBDI in the low desert, ~8 % of the dev box) get median dates; the activity group
+   marks them. Evaluation partitions A3_groups / A3_novpd / A3_kbdi; boot pairs vs A2 / A3.
+   Dev (Oct 9): stability lower than A2 (~0.55 at k 7-13). ~25-30 min per variant on the P720.
+   **Working regions (decided Oct 9): A2 at k 13, nested into A2 k 7** for fitting where data
+   are thin; A2 herb-weighted k 13 as western sensitivity. A1 k 10 was the Oct 7 working set.
    Note: `clusters/a2_groups` was made in the cloud workspace and lives on the laptop only;
    copy it to the P720 before running 30/33 there or A2 is silently skipped.
 
