@@ -464,7 +464,22 @@ show_fig("gsi_model",
 
 These are first results. The threshold search stopped at its iteration limit in most
 regions, so the fits can probably improve somewhat, and only the 28-day precipitation
-ramp was tried for moisture.
+ramp was tried for moisture. A second run with a longer search and three moisture options
+(28-day precipitation, the Keetch-Byram Drought Index, and none) is under way.
+
+```{r tbl-gsi-moist}
+#| results: asis
+gmf <- NULL
+for (pr in c("full", "dev")) {
+  f <- sprintf("figs/gsi_model_moist_%s.csv", pr)
+  if (file.exists(f)) { gmf <- utils::read.csv(f, check.names = FALSE, stringsAsFactors = FALSE); break }
+}
+if (!is.null(gmf)) {
+  cat(knitr::kable(gmf, align = c("l", rep("r", ncol(gmf) - 1)),
+                   caption = "Mean absolute error on held-out years, green-up / curing (days), by moisture option"), sep = "\n")
+  cat("\n\n")
+}
+```
 
 ```{r fig-obs-sites}
 #| results: asis

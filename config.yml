@@ -199,12 +199,14 @@ default:
     min_cells: 25               # regions with fewer sampled cells use the CONUS fit
     conus_fit_cells: 1500       # subsample for the CONUS-wide fit
     partitions: [A1_groups, A2_groups, A2_herbw]
-    k: [7, 10, 13]
+    k: [7, 13]                  # (Oct 8 first run: 7, 10 and 13 within ~1 day)
+    moisture: [precip, kbdi, none]   # fitted separately; "best" = lowest fitting-year error
     smooth: 28                  # fitted models: FEMS smoothing
-    maxit: 150                  # Nelder-Mead evaluations per fit
+    maxit: 250                  # Nelder-Mead evaluations per search (first run: 150, mostly hit)
+    restarts: 1                 # extra searches from the best point (kept only while improving)
     penalty_days: 60            # missing GSI date where the satellite has one
     cap_days: 90                # errors capped (season jumps, e.g. spring vs monsoon), as in 33
-    workers: 24                 # forked on Linux (shared memory); sequential on Windows
+    workers: 36                 # forked on Linux (shared memory); sequential on Windows
     seed: 20261008
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
@@ -467,7 +469,8 @@ dev:
     min_sat_years: 2
     min_cells: 15
     conus_fit_cells: 150
-    maxit: 40
+    maxit: 30
+    restarts: 1
     workers: 2
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).

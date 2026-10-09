@@ -284,6 +284,10 @@ Deferred: fire data, gridMET, ERA5-Land.
      held-out years: MAE, median error, share within 30 d, anomaly correlation ->
      `scores.csv`, `region_scores.csv`, `params.csv`. Uses forked workers (parallel::mclapply)
      on Linux so the cached series are shared; sequential on Windows. Page figure `gsi_model`.
+     v2 (Oct 8 evening): moisture options precip / kbdi / none fitted separately ("best" =
+     lowest fitting-year loss per region and fold), maxit 250 + 1 restart, k 7 and 13, 36
+     workers; the cache is extended with tmax and map_mm (no re-sampling). First run (v1,
+     precip only, maxit 150, k 7/10/13): regional 28-31 d green-up vs climatology 27; k flat.
 9. A3 (Block 3, GSI features): after 12_gsi.R.
    Note: `clusters/a2_groups` was made in the cloud workspace and lives on the laptop only;
    copy it to the P720 before running 30/33 there or A2 is silently skipped.

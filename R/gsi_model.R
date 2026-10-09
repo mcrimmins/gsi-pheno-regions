@@ -1,39 +1,50 @@
 # GSI-per-region model test (scripts/34_gsi_model.R): fit GSI ramp thresholds to satellite
 # green-up and curing dates, per region, CONUS-wide, or not at all (defaults), and score each on
 # held-out years. Works on a sample of cells with their full daily series (cells x days).
+# Moisture options: "precip" (28-day precipitation sum ramp), "kbdi" (KBDI ramp, decreasing),
+# "none". Each has its own pair of fitted moisture thresholds (none: no moisture ramp).
 
-# Fitted parameters and their bounds (logistic transform keeps the search inside them).
-gm_bounds <- list(tmin_lo = c(-8, 5), tmin_w = c(1, 15), vpd_lo = c(0, 4000), vpd_w = c(200, 6000),
-                  photo_lo_h = c(8, 13), prec_lo = c(0, 40), prec_w = c(1, 60))
-gm_decode <- function(th) {
-  b <- gm_bounds
+gm_bounds_base <- list(tmin_lo = c(-8, 5), tmin_w = c(1, 15), vpd_lo = c(0, 4000), vpd_w = c(200, 6000),
+                       photo_lo_h = c(8, 13))
+gm_bounds_moist <- list(precip = list(m_lo = c(0, 40), m_w = c(1, 60)),
+                        kbdi = list(m_lo = c(0, 700), m_w = c(50, 800)),
+                        none = list())
+gm_bounds <- function(moisture) c(gm_bounds_base, gm_bounds_moist[[moisture]])
+
+gm_decode <- function(th, moisture) {
+  b <- gm_bounds(moisture)
   v <- vapply(seq_along(b), function(i) b[[i]][1] + (b[[i]][2] - b[[i]][1]) / (1 + exp(-th[i])), 0)
   names(v) <- names(b)
-  list(tmin = c(v[["tmin_lo"]], v[["tmin_lo"]] + v[["tmin_w"]]),
-       vpd = c(v[["vpd_lo"]], v[["vpd_lo"]] + v[["vpd_w"]]),
-       photo_h = c(v[["photo_lo_h"]], v[["photo_lo_h"]] + 1),
-       prec = c(v[["prec_lo"]], v[["prec_lo"]] + v[["prec_w"]]))
+  par <- list(moisture = moisture,
+              tmin = c(v[["tmin_lo"]], v[["tmin_lo"]] + v[["tmin_w"]]),
+              vpd = c(v[["vpd_lo"]], v[["vpd_lo"]] + v[["vpd_w"]]),
+              photo_h = c(v[["photo_lo_h"]], v[["photo_lo_h"]] + 1))
+  if (moisture != "none") par$moist <- c(v[["m_lo"]], v[["m_lo"]] + v[["m_w"]])
+  par
 }
 gm_encode <- function(par) {
+  b <- gm_bounds(par$moisture)
   v <- c(tmin_lo = par$tmin[1], tmin_w = diff(par$tmin), vpd_lo = par$vpd[1], vpd_w = diff(par$vpd),
-         photo_lo_h = par$photo_h[1], prec_lo = par$prec[1], prec_w = diff(par$prec))
-  b <- gm_bounds
+         photo_lo_h = par$photo_h[1])
+  if (par$moisture != "none") v <- c(v, m_lo = par$moist[1], m_w = diff(par$moist))
   vapply(seq_along(b), function(i) {
-    p <- (v[[i]] - b[[i]][1]) / (b[[i]][2] - b[[i]][1]); p <- min(max(p, 1e-4), 1 - 1e-4)
+    p <- (v[[names(b)[i]]] - b[[i]][1]) / (b[[i]][2] - b[[i]][1]); p <- min(max(p, 1e-4), 1 - 1e-4)
     log(p / (1 - p))
   }, 0)
 }
 gm_par_vec <- function(par) c(tmin_lo = par$tmin[1], tmin_hi = par$tmin[2], vpd_lo = par$vpd[1],
                               vpd_hi = par$vpd[2], photo_lo_h = par$photo_h[1], photo_hi_h = par$photo_h[2],
-                              prec_lo = par$prec[1], prec_hi = par$prec[2])
+                              moist_lo = if (is.null(par$moist)) NA else par$moist[1],
+                              moist_hi = if (is.null(par$moist)) NA else par$moist[2])
 
-# Smoothed GSI (cells x days) for one parameter set. drv: list(tmin, vpd_pa, ppt, photo_s),
-# each cells x days (full series). prec = NULL: no moisture ramp.
-gm_gsi <- function(drv, par, smooth, prec_window = 28) {
+# Smoothed GSI (cells x days). drv: list(tmin, vpd_pa, photo_s, prec28 = 28-day precipitation
+# sum, kbdi), each cells x days (full series). par$vpd = NULL: no VPD ramp.
+gm_gsi <- function(drv, par, smooth) {
   ig <- m_ramp(drv$tmin, par$tmin[1], par$tmin[2]) *
     m_ramp(drv$photo_s, par$photo_h[1] * 3600, par$photo_h[2] * 3600)
   if (!is.null(par$vpd)) ig <- ig * m_ramp(drv$vpd_pa, par$vpd[1], par$vpd[2], decreasing = TRUE)
-  if (!is.null(par$prec)) ig <- ig * m_ramp(m_roll_sum(drv$ppt, prec_window), par$prec[1], par$prec[2])
+  if (identical(par$moisture, "precip")) ig <- ig * m_ramp(drv$prec28, par$moist[1], par$moist[2])
+  if (identical(par$moisture, "kbdi")) ig <- ig * m_ramp(drv$kbdi, par$moist[1], par$moist[2], decreasing = TRUE)
   m_roll_mean(ig, smooth)
 }
 
@@ -61,15 +72,22 @@ gm_loss <- function(pred, obs, penalty, cap = 90) {
   mean(pmin(e, cap))
 }
 
-# Fit thresholds on the given cells (rows) and years (columns of the obs matrices).
+# Fit thresholds for one moisture option on the given cells and years: Nelder-Mead from the
+# start values, then `restarts` more searches from the best point so far (a restart re-forms
+# the simplex, which often gets Nelder-Mead out of a stall).
 gm_fit <- function(drv, obs, dates, years, g, gmc, start) {
+  mo <- start$moisture
   fn <- function(th) {
-    par <- gm_decode(th)
-    pr <- gm_seasons(gm_gsi(drv, par, gmc$smooth), dates, years, g)
+    pr <- gm_seasons(gm_gsi(drv, gm_decode(th, mo), gmc$smooth), dates, years, g)
     gm_loss(pr, obs, gmc$penalty_days, gmc$cap_days)
   }
-  o <- stats::optim(gm_encode(start), fn, method = "Nelder-Mead", control = list(maxit = gmc$maxit))
-  list(par = gm_decode(o$par), loss = o$value, evals = o$counts[[1]])
+  th <- gm_encode(start); best <- Inf; evals <- 0
+  for (r in 0:(gmc$restarts %||% 0)) {
+    o <- stats::optim(th, fn, method = "Nelder-Mead", control = list(maxit = gmc$maxit))
+    evals <- evals + o$counts[[1]]
+    if (o$value < best - 1e-6) { best <- o$value; th <- o$par } else break
+  }
+  list(par = gm_decode(th, mo), loss = best, evals = evals)
 }
 
 # Scores for predictions vs observations on test cell-years: MAE (days; errors capped at `cap`,

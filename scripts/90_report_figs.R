@@ -547,12 +547,16 @@ if (do("eval_sync") && have(sy_file)) {
 # gsi_model: GSI-per-region model test (34_gsi_model.R)
 gm_file <- file.path(eval_dir, "gsi_model", "scores.csv")
 if (do("gsi_model") && have(gm_file)) {
-  gm <- utils::read.csv(gm_file, stringsAsFactors = FALSE)
+  gm_all <- utils::read.csv(gm_file, stringsAsFactors = FALSE)
+  if (is.null(gm_all$moisture)) gm_all$moisture <- NA
+  # figure: best moisture option per region (or the only one, first run)
+  gm <- gm_all[is.na(gm_all$moisture) | gm_all$moisture == "best" |
+                 !any(gm_all$moisture %in% "best", na.rm = TRUE), ]
   reg <- gm[gm$model == "regional", ]; ref <- gm[gm$model != "regional", ]
   parts <- intersect(names(part_lab), unique(reg$partition))
   refc <- c(climatology = "#8a8985", default_fems = "#c0392b", default_nfdrs = aqua_col, conus = ink)
   refl <- c(climatology = "Cell's typical date (no weather)", default_fems = "GSI, FEMS defaults",
-            default_nfdrs = "GSI, NFDRS defaults", conus = "GSI fitted once for CONUS")
+            default_nfdrs = "GSI, NFDRS defaults", conus = "GSI fitted once for CONUS (best moisture option)")
   refy <- c(climatology = 3, default_fems = 2, default_nfdrs = 2, conus = 1)
   panel <- function(col, main, sub, ylab, ylim) {
     plot(NA, xlim = c(6.5, 13.5), ylim = ylim, xlab = "number of regions (fitted per region)", ylab = ylab,
@@ -577,13 +581,26 @@ if (do("gsi_model") && have(gm_file)) {
     par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
     plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
     rm_ <- intersect(names(refc), ref$model)
-    legend("top", legend = c(paste("Fitted per region:", lab_of(parts, part_lab)), refl[rm_]),
+    legend("top", legend = c(paste("Fitted per region (best moisture option):", lab_of(parts, part_lab)), refl[rm_]),
            col = c(part_col[parts], refc[rm_]), lty = c(rep(1, length(parts)), refy[rm_]),
            pch = c(rep(16, length(parts)), rep(NA, length(rm_))), lwd = 2, ncol = 3, bty = "n", cex = 0.8, text.col = ink2)
   })
   tb <- gm; tb$model <- ifelse(tb$model == "regional", paste0("Per region: ", lab_of(tb$partition, part_lab), ", ", tb$k), refl[tb$model])
   utils::write.csv(tb[, c("model", "sos_mae", "sos_mdae", "sos_within30", "sos_anom_r", "cure_mae", "cure_mdae", "cure_within30", "cure_anom_r")],
                    file.path(fig_dir, sprintf("gsi_model_%s.csv", profile)), row.names = FALSE)
+  # moisture comparison: green-up / curing MAE per fitted model and moisture option
+  fm <- gm_all[gm_all$model %in% c("conus", "regional") & !is.na(gm_all$moisture), ]
+  if (nrow(fm)) {
+    fm$row <- ifelse(fm$model == "conus", "Fitted once for CONUS",
+                     paste0("Per region: ", lab_of(fm$partition, part_lab), ", ", fm$k))
+    fm$cell <- sprintf("%.0f / %.0f", fm$sos_mae, fm$cure_mae)
+    mo_lab <- c(precip = "28-day precipitation", kbdi = "KBDI", none = "No moisture ramp", best = "Best per region")
+    w <- stats::reshape(fm[, c("row", "moisture", "cell")], idvar = "row", timevar = "moisture", direction = "wide")
+    names(w) <- sub("^cell\\.", "", names(w))
+    w <- w[, c("row", intersect(names(mo_lab), names(w)))]
+    names(w) <- c("Model", mo_lab[names(w)[-1]])
+    utils::write.csv(w, file.path(fig_dir, sprintf("gsi_model_moist_%s.csv", profile)), row.names = FALSE)
+  }
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------
