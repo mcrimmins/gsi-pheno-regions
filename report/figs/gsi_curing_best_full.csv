@@ -1,0 +1,14 @@
+"Form","Region-folds where it fits best"
+"90-day precip; GSI levels, fitted",8
+"KBDI; share of season, fitted",5
+"KBDI, 30-day mean; GSI levels, fitted",4
+"60-day precip; GSI levels, fitted",3
+"90-day precip; share of season, fitted",3
+"KBDI; GSI levels, fitted",2
+"KBDI, 30-day mean; share of season, fitted",2
+"90-day precip; NFDRS4 levels (GU, (1+GU)/2)",2
+"KBDI; NFDRS4 levels (GU, (1+GU)/2)",1
+"KBDI; share of season (20 / 50 %)",1
+"60-day precip; share of season (20 / 50 %)",1
+"60-day precip; share of season, fitted",1
+"90-day precip; share of season (20 / 50 %)",1

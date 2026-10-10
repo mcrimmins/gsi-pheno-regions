@@ -84,10 +84,10 @@ models. Where they disagree is where to look for what's missing.
 | Cut A, Block 1: seasonal climate features | Done (CONUS, water years 2002–2025) |
 | Cut A, Block 2: timing and variability features | Done (CONUS) |
 | Cut A, Block 3: GSI | Done (CONUS, 8 variants; checked against the GSI Scout model) |
-| Cut A clustering: A1 (Block 1) and A2 (Blocks 1 + 2) | Done; A3 (Blocks 1–3) next |
+| Cut A clustering: A1, A2 and A3 (Blocks 1–3) | Done; A3 adds little to A2 |
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
-| GSI model tests by region | Threshold tuning done; tests of the model's curing form next |
+| GSI model tests by region | Threshold tuning and a first test of curing forms done; rerun with fairer scoring next |
 
 : Pipeline status {.striped}
 
@@ -256,7 +256,7 @@ tuning the regions are meant for.
 
 PRISM has no soil moisture, so the soil-moisture option of GSI Scout is not used here.
 
-**A3 regions (next).** A3 adds the GSI as a third block of equal weight to A2's climate
+**A3 regions.** A3 adds the GSI as a third block of equal weight to A2's climate
 and timing features. It is clustered with the FEMS operational settings and the 28-day
 precipitation ramp (the GSI as run today), and repeated without the VPD ramp and with the
 KBDI ramp. Four GSI feature groups share the block equally:
@@ -268,6 +268,21 @@ KBDI ramp. Four GSI feature groups share the block equally:
 
 If A3 explains the satellite curves and ground dates better than A2, the GSI is adding
 something the climate features miss. If not, its thresholds may be steering the regions.
+
+**What A3 shows (October 10).** The GSI features neither add to nor steer the regions much:
+
+- A3 and A2 draw largely the same regions (adjusted Rand index 0.71–0.80 at 7, 10 and 13
+  regions).
+- On the timing of the satellite curves in herbaceous cells they are tied (A3 51, 54, 57 %
+  at 7, 10, 13 regions; A2 49, 53, 55 %). On the curves as observed, A3 is lower at 13
+  regions (42 against 50 %).
+- Against the ground observations, every A3-minus-A2 range spans zero except a small gain
+  for the woody live fuel moisture peak at 7 regions. Year-to-year synchrony is the same.
+- A3 is less stable than A2 (0.74 against 0.83 at 7 regions). Dropping the VPD ramp or
+  using KBDI changes little.
+
+The GSI is built from the same temperature, daylength and precipitation the climate blocks
+already describe, so it mostly repeats them. A2 stays the working set of regions.
 
 ## Cut B: satellite seasonal curves
 
@@ -531,6 +546,44 @@ if (file.exists("figs/gsi_curing_full.png")) {
   }
 } else cat("*Results to come.*\n\n")
 ```
+
+**Reading the first curing test.** This is a first pass, and one part of the scoring needs
+fixing before the national numbers can be trusted.
+
+- **A scoring flaw favours forms that skip curing dates.** A missing curing date counts as a
+  60-day miss. Where any guess misses by more than that, the fits learned to stop producing
+  curing dates: with fixed GSI levels, curing dates come out for only 50–70 % of cell-years
+  nationally and for 3–4 % in the monsoon Southwest and the mid-South. Those forms' errors
+  look better than they are. The forms that read curing as a share of the season almost
+  always give a date (90–99 %), and their best regional errors are 50–53 days, against 48
+  for the cell's typical date.
+- **Longer moisture memory helps green-up.** With a 90-day precipitation sum, regional fits
+  slightly beat the typical green-up date (about 26–27 days against 27) and track early and
+  late years best (correlations up to 0.5).
+- **Curing skill depends on the region.** At 13 regions, with honest forms:
+
+| Region | Curing error, GSI vs typical date (days) | Correlation of yearly departures |
+|---|---|---|
+| 10, northern and central Great Plains | 16 vs 20 | 0.71 |
+| 12, southern Great Basin and Colorado Plateau | 20 vs 23 | 0.33 |
+| 6, Snake River Plain and northern Great Basin | 40 vs 45 | 0.37 |
+| 1, Gulf and south Atlantic coastal plain | 43 vs 45 | 0.24 |
+| 2, southern Plains | 32 vs 25 | 0.17 |
+| 11, California annual grasslands | 57 vs 38 | about 0 |
+| 3, monsoon Southwest | no usable dates | |
+
+: Curing by region, first curing test {.striped}
+
+- **What that means.** The GSI follows curing where there is one growing season that ends
+  as it dries out: the Great Plains and the Great Basin. It fails where the season does not
+  follow its logic. In the monsoon Southwest grasses can green up twice a year, so the
+  satellite curing date itself jumps between spring and late summer (the typical date
+  misses by 64 days there). In the California annual grasslands growth comes in the cool
+  season, which the temperature and daylength ramps hold back. That is a reason to give
+  some regions a different model form, not just different thresholds.
+- **Caveats.** Almost all fits used their full search, so these are lower bounds on skill.
+  A rerun will score a missing date as the cell's typical-date error, report coverage
+  separately and search longer.
 
 ```{r fig-obs-sites}
 #| results: asis
@@ -796,8 +849,9 @@ models, not by clustering scores alone.
 ## Open questions for the team
 
 - **Study period:** use all of 2001–2025, or a fixed recent window?
-- **Curing:** which form of the GSI (moisture memory, how curing is read from the index)
-  tracks herbaceous curing? Tests under way.
+- **Curing:** which form of the GSI tracks herbaceous curing? First test: it works in the
+  Great Plains and Great Basin and fails in the monsoon Southwest and the California annual
+  grasslands. Should those regions get different model forms?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -810,6 +864,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-10 | A3 regions (with GSI features) compared: little change from A2; first test of GSI curing forms by region |
 | 2026-10-09 | Working regions chosen (A2, 13 nested in 7); A3 regions and a test of GSI curing forms set up |
 | 2026-10-09 | GSI model test rerun: longer search, three moisture options (KBDI best in most regions) |
 | 2026-10-08 | First GSI-per-region model test: fitted thresholds vs defaults and typical dates |
