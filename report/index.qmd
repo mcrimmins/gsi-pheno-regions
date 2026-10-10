@@ -218,8 +218,8 @@ show_fig("block1_iqr",
 - Where no freeze occurs, the freeze-free season is set to the full year. Along the
   California coast, south Texas and Florida, years with and without a freeze mix, which
   shows up as a large year-to-year spread in freeze-free season length.
-- The aridity index is very skewed (most of the West is well below 1), so it will be
-  log- or rank-transformed before clustering.
+- The aridity index is very skewed (most of the West is well below 1), so it is
+  log-transformed before clustering (as are annual precipitation and warm-season aridity).
 :::
 
 ### Block 2: timing and variability (built)
@@ -234,7 +234,7 @@ median, the year-to-year spread, and coefficients of variation.
 | Rain pulses | Days with at least 5 mm in the warm (Apr–Sep) and cool (Oct–Mar) seasons; 2.5 and 10 mm as sensitivity checks |
 | Dry spells | Longest warm-season run of days under 1 mm, and the number of warm-season dry spells of 20 days or more |
 | False starts | Growing degree days (base 5 °C) accumulated before the last spring hard freeze (≤ −2.2 °C) |
-| Limiting factor | Share of the year that is cold-limited (30-day mean temperature under 5 °C) or moisture-limited (30-day precipitation under half of potential evapotranspiration) |
+| Limiting factor | Share of the water year's days that are cold-limited (daily mean temperature under 5 °C) or, on the other days, moisture-limited (precipitation over the past 30 days under half of potential evapotranspiration over the same days) |
 | Year-to-year variability | Coefficient of variation of annual and warm-season precipitation; standard deviation of Apr–Jun temperature |
 
 : Block 2 features {.striped}
@@ -321,11 +321,12 @@ how green and when) and on curves rescaled by their own amplitude (**timing only
 
 Both cuts were clustered with k-means for 4 to 20 regions (Cut A up to 30). Within a block,
 features are grouped (for Block 1: temperature, moisture amount, seasonality) and each
-group gets equal weight, so the eight temperature features don't outvote the rest. The
-number of regions is **not chosen yet**; the comparisons below are what that choice will
-rest on. Seven regions is where the A2 climate regions are most stable under resampling;
-around 13 the climate regions begin to split the tallgrass prairie from the northern
-Midwest and the California annual grasslands from the Mojave.
+group gets equal weight, so the eight temperature features don't outvote the rest. Seven
+regions is where the A2 climate regions are most stable under resampling; around 13 the
+climate regions begin to split the tallgrass prairie from the northern Midwest and the
+California annual grasslands from the Mojave. The comparisons below led to the working
+regions chosen on October 9: **A2 at 13 regions, nested into A2 at 7** (see
+[What the candidate regions look like](#what-the-candidate-regions-look-like)).
 
 ```{r fig-regions}
 #| results: asis
@@ -377,7 +378,8 @@ for (pr in c("full", "dev")) {
   if (file.exists(f)) { es <- utils::read.csv(f, stringsAsFactors = FALSE); break }
 }
 if (!is.null(es)) {
-  plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", A2_herbw = "Climate A2, herb-weighted", B_raw = "Satellite (level + shape)",
+  plab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", A2_herbw = "Climate A2, herb-weighted",
+            A3_groups = "Climate A3 (+ GSI)", B_raw = "Satellite (level + shape)",
             B_shape = "Satellite (timing only)", geo = "Location only")
   clab <- c(curves_all = "Curves, all cells", curves_herb = "Curves, herb mask",
             timing_all = "Timing, all cells", timing_herb = "Timing, herb mask",
@@ -457,11 +459,12 @@ show_fig("eval_sync",
 ### Does tuning the GSI by region predict green-up and curing better?
 
 This is the test the regions are for. On a sample of 4,000 grass- and shrub-dominated cells,
-the GSI's thresholds (minimum temperature, VPD, the start of the daylength ramp and the
-28-day precipitation ramp) are fitted to the satellite green-up and curing dates: once for
-all of CONUS, and separately for each region at 7, 10 and 13 regions. The fits use half of
-the years and are scored on the other half, against the national default settings and
-against simply predicting each cell's typical date.
+the GSI's thresholds (minimum temperature, VPD, the start of the daylength ramp and a
+moisture ramp) are fitted to the satellite green-up and curing dates: once for all of
+CONUS, and separately for each region (the first run at 7, 10 and 13 regions, the second at
+7 and 13). The fits use half of the years and are scored on the other half, against the
+national default settings and against simply predicting each cell's typical date. Tab 10
+of [How the numbers work](#how-the-numbers-work) shows the scores on a small example.
 
 ```{r fig-gsi-model}
 #| results: asis
@@ -582,8 +585,10 @@ fixing before the national numbers can be trusted.
   season, which the temperature and daylength ramps hold back. That is a reason to give
   some regions a different model form, not just different thresholds.
 - **Caveats.** Almost all fits used their full search, so these are lower bounds on skill.
-  A rerun will score a missing date as the cell's typical-date error, report coverage
-  separately and search longer.
+  A rerun is under way (October 10): a missing GSI date takes the cell's typical date, so
+  skipping can no longer pay; coverage and a head-to-head comparison on the years the GSI
+  dates are reported separately; the search is longer; and the two moisture terms that never
+  won (30-day mean KBDI, 60-day precipitation) are dropped.
 
 ```{r fig-obs-sites}
 #| results: asis
@@ -616,7 +621,8 @@ show_fig("obs_sites",
 - **Number of regions:** about 13 regions describes herbaceous timing best, but several of
   those regions have fewer than five grass sites and no herbaceous fuel moisture sites,
   so fitting phenology models in every region is not yet possible. About 7 regions, the
-  most stable level of A2, is what today's observations can support.
+  most stable level of A2, is what today's observations can support. This led to the
+  decision to use 13 regions nested into 7 (below).
 :::
 
 ## What the candidate regions look like
@@ -735,7 +741,7 @@ Northeast) are about as uniform in season timing as their parts at 13 regions.
 
 ```{r prof-a1-10}
 #| results: asis
-show_fig("prof_map_A1_groups_k10", "Climate A1 (Block 1 only) at 10 regions, the current working set.", "Map of CONUS with 10 numbered climate regions.")
+show_fig("prof_map_A1_groups_k10", "Climate A1 (Block 1 only) at 10 regions, the working set from October 7 to 9.", "Map of CONUS with 10 numbered climate regions.")
 show_prof_table("A1_groups_k10", "Climate A1, 10 regions: median climate and satellite season by region")
 show_fig("prof_heat_A1_groups_k10", "Region medians of the climate features and satellite season metrics (all cells).", "Heatmap of features by region with median values.")
 show_fig("prof_curves_A1_groups_k10", "Median NDVI and NDII7 seasonal curves per region.", "Ten small charts of seasonal NDVI and NDII7 curves, one per region.")
@@ -807,23 +813,30 @@ The herbaceous-weighted 13 regions stay as a sensitivity check for western fuels
 add western detail but lose the tallgrass and upper Midwest splits.
 :::
 
+{{< include _worked_examples.qmd >}}
+
 ## Clustering and evaluation plan
 
 Methods will be judged by how well the regions work as domains for regional phenology
 models, not by clustering scores alone.
 
-- **First runs (Cut A):** k-means as a baseline, Gaussian mixtures (soft membership
-  shows transition zones), and Ward hierarchical clustering (nested regions: fine for
-  modeling, coarse for operational roll-up). A spatially constrained version tests how
-  much is lost by requiring contiguous regions.
-- **Cut B:** functional PCA of the seasonal curves, then mixtures on the scores.
-- **Linking A and B:** cluster the curves, then predict those regions from the climate
-  features with random forests. This gives a wall-to-wall map and shows which climate
-  features separate phenology regions.
-- **Evaluation:** stability under resampling of years and space; agreement between
-  the A1, A2, A3 and Cut B partitions; comparison with EPA ecoregions and operational
-  units (Predictive Service Areas, NFDRS climate classes); and whether NPN and
-  iNaturalist phenophase dates differ more between regions than within them.
+- **Cut A (done for A1, A2, A3):** k-means as the baseline, Gaussian mixtures and Ward
+  hierarchical clustering (nested regions: fine for modeling, coarse for operational
+  roll-up). The Gaussian mixtures are overconfident so far (almost every cell gets a
+  membership near 1) and need retuning before they can map transition zones.
+  **Still to do:** a spatially constrained version, to test how much is lost by requiring
+  contiguous regions.
+- **Cut B (done):** principal components of the seasonal curves (on smooth, regularly
+  spaced curves this is functional PCA), then k-means, for the curves as observed and for
+  timing only.
+- **Evaluation (done):** stability under spatial resampling; agreement between partitions;
+  share of the satellite curves explained; ground observations with block-bootstrap
+  ranges; year-to-year synchrony; and the GSI fitted per region.
+  **Still to do:** stability under resampling of years, and comparison with EPA ecoregions
+  and operational units (Predictive Service Areas, NFDRS climate classes).
+- **Still to do, linking A and B:** cluster the curves, then predict those regions from
+  the climate features with random forests. This gives a wall-to-wall map and shows which
+  climate features separate phenology regions.
 
 ## Decisions so far
 
@@ -843,6 +856,7 @@ models, not by clustering scores alone.
 | Oct 7 2026 | Working climate regions: A1 at 10 regions, pending the comparison with satellite curves and ground observations (replaced Oct 9) | Stable, and separates the main grassland types |
 | Oct 9 2026 | **Working regions: A2 at 13 regions, nested into A2 at 7** for fitting where data are thin; herbaceous-weighted 13 as a western sensitivity check | Skill is flat between 7 and 13; 13 keeps three western splits (monsoon Southwest vs southern Plains, California grasslands vs low deserts, northern Plains vs upper Midwest) |
 | Oct 9 2026 | A3 = A2 + GSI features (FEMS operational settings with the 28-day precipitation ramp; without VPD and with KBDI as sensitivity runs) | Tests whether the GSI as run today adds to, or steers, the regions |
+| Oct 10 2026 | A2 stays the working set after A3: the GSI features add little to the regions and make them less stable | A3 vs A2 within noise on satellite timing, ground observations and synchrony; stability 0.74 against 0.83 at 7 regions |
 
 : Analysis decisions {.striped}
 
@@ -864,6 +878,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-10 | Worked examples of every step ("How the numbers work"); page checked for consistency (decision, Block 2 definition, plan status) |
 | 2026-10-10 | A3 regions (with GSI features) compared: little change from A2; first test of GSI curing forms by region |
 | 2026-10-09 | Working regions chosen (A2, 13 nested in 7); A3 regions and a test of GSI curing forms set up |
 | 2026-10-09 | GSI model test rerun: longer search, three moisture options (KBDI best in most regions) |

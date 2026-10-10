@@ -342,6 +342,11 @@ manifest. Workflow from Oct 7: Mike runs the analyses on his machines; agents up
 page (text + figure code) and read results from the laptop. When a decision
 changes, also update the page's Decisions / Open questions / Status / Changelog sections.
 The page is public-facing: no machine names, paths, credentials or ntfy topics.
+`report/_worked_examples.qmd` (included in index.qmd as "How the numbers work", added Oct 10)
+walks through each step on toy data with visible code, sourcing the pipeline's own functions
+from `R/` (features, cluster, evaluate, gsi, gsi_model, cutb_curves; `sync_r2` is copied from
+33). Numbers from random toy data are inline R, so the text follows the output. If a metric's
+definition changes in `R/`, check the matching tab.
 `scripts/91_sync_from_p720.R` (laptop) pulls `*_full.png` + merged manifest (and optionally
 summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`. It also renders the page
 (`render`) and uploads `index.html` to S3 with the AWS CLI (`publish`, only when asked;

@@ -1,0 +1,446 @@
+## How the numbers work
+
+Each tab below walks through one step of the analysis on a few rows of toy data: the
+input, the code that turns it into a score, the output, and how to read it. The code calls
+the same functions the analysis scripts use (from the project's `R/` folder), so the
+arithmetic is the real thing; only the data are made up and small enough to check by hand.
+
+```{r we-setup}
+#| include: false
+# Worked examples: load the pipeline's own functions (no data needed).
+for (f in c("features.R", "cluster.R", "evaluate.R", "gsi.R", "gsi_model.R", "cutb_curves.R"))
+  sys.source(file.path("..", "R", f), envir = globalenv())
+options(digits = 3, width = 100)
+we_ok <- exists("r2_groups") && exists("gm_score") && exists("whit_fit")
+```
+
+::: {.panel-tabset}
+
+### 1. Per-year features
+
+**What it is for.** Every climate feature is computed for each year first and only then
+summarized across years, as the median (typical value) and the interquartile range (IQR,
+year-to-year spread). Averaging the climate first would give the wrong answer for anything
+nonlinear, such as a threshold or a ramp.
+
+**Input.** One grid cell, eight years of last spring freeze dates (day of year) and
+water-year precipitation.
+
+```{r we-1a}
+#| echo: true
+yr  <- data.frame(year = 2018:2025,
+                  last_freeze_doy = c(98, 112, 105, 87, 120, 101, 95, 109),
+                  p_ann_mm = c(310, 190, 420, 260, 150, 390, 280, 230))
+yr
+# summary across years, as in summaries/block1_median.tif and block1_iqr.tif
+sapply(yr[-1], function(v) c(median = median(v), IQR = IQR(v)))
+```
+
+**Why not average the climate first?** A GSI-style ramp is 0 below a threshold and 1 above
+it. Here is a 28-day precipitation ramp (10 to 20 mm, the FEMS setting) applied to three
+years, then to their average:
+
+```{r we-1b}
+#| echo: true
+p28 <- c(dry = 4, normal = 12, wet = 35)          # 28-day precipitation (mm) in three years
+ramp <- m_ramp(p28, 10, 20)                       # the pipeline's ramp function
+ramp
+c(mean_of_ramp = mean(ramp), ramp_of_mean = m_ramp(mean(p28), 10, 20))
+```
+
+The average year (17 mm) scores 0.70, but the three years average 0.40: one year
+switched the index off completely. That is why the GSI is run every year and then
+summarized.
+
+**Aridity index.** Precipitation divided by Hargreaves potential evapotranspiration (PET),
+which needs only daily minimum and maximum temperature and the latitude:
+
+```{r we-1c}
+#| echo: true
+ra <- ra_matrix(lat = 31.8, doy = 182)            # top-of-atmosphere radiation, July 1, SE Arizona
+pet <- hargreaves(tmin = 21, tmax = 37, ra = ra)  # mm/day
+c(Ra_MJ = ra, PET_mm_per_day = pet)
+# a water year with 330 mm of rain and ~1,700 mm of PET
+c(aridity_index = 330 / 1700)
+```
+
+Values below 0.65 are drylands; most of the West is well below that, so the index is
+log-transformed before clustering.
+
+### 2. Rain onset
+
+**What it is for.** Block 2 records when the warm-season rains start, because monsoon
+grasses green up after the first soaking rains, not on a calendar date. The rule: the first
+wet day (at least 1 mm) from May 1 that starts a 10-day total of at least 20 mm, with no dry
+spell of 20 days or more in the following 30 days (a false start).
+
+**Input.** Daily rain for one toy summer: a false start in mid June, then the real onset in
+early July.
+
+```{r we-2a}
+#| echo: true
+doy <- 121:273                                     # May 1 .. Sep 30
+ppt <- setNames(rep(0, length(doy)), doy)
+ppt[as.character(c(165, 166, 168))] <- c(12, 9, 6) # mid-June storms (27 mm in 4 days) ...
+                                                   # ... then 25 dry days
+ppt[as.character(c(194, 195, 197, 199, 203, 206, 210, 214, 218))] <- c(8, 14, 5, 11, 7, 9, 12, 6, 10)
+onset <- function(ppt, doy, wet = 1, window = 10, total = 20, check = 30, max_dry = 20) {
+  for (i in seq_along(ppt)) {
+    if (ppt[i] < wet) next
+    if (sum(ppt[i:min(length(ppt), i + window - 1)]) < total) next
+    nxt <- ppt[(i + 1):min(length(ppt), i + check)] < wet          # dry days in the next 30
+    runs <- rle(nxt); if (any(runs$values & runs$lengths >= max_dry)) next   # false start
+    return(doy[i])
+  }
+  max(doy) + 1                                     # no onset: censored at Oct 1
+}
+onset(ppt, doy)
+```
+
+Day 165 (June 14) starts 27 mm in ten days but is followed by a 25-day dry spell, so it is
+rejected. Day 194 (July 13) is the onset. Years with no onset are recorded as October 1,
+and the share of years with an onset is a feature of its own.
+
+### 3. The GSI
+
+**What it is for.** The Growing Season Index multiplies daily ramps (0 = fully limiting,
+1 = not limiting) for minimum temperature, vapor pressure deficit (VPD), daylength and,
+optionally, moisture, then averages the product over 21 or 28 days.
+
+**One day, FEMS settings.** Minimum temperature −2 to 5 °C, VPD 3,882 down to 1,956 Pa,
+daylength 11 to 12 h, 28-day precipitation 10.16 to 20.32 mm.
+
+```{r we-3a}
+#| echo: true
+day <- c(tmin = 3.5, vpd_pa = 2600, daylength_h = 13.2, p28_mm = 14)
+sub <- c(tmin  = m_ramp(day[["tmin"]], -2, 5),
+         vpd   = m_ramp(day[["vpd_pa"]], 1956, 3882, decreasing = TRUE),
+         photo = m_ramp(day[["daylength_h"]], 11, 12),
+         moist = m_ramp(day[["p28_mm"]], 10.16, 20.32))
+round(sub, 2)
+round(prod(sub), 2)                               # the day's index (iGSI)
+names(which.min(sub))                             # limiting factor
+```
+
+The day's index is 0.20, and moisture is the limiting factor (the smallest ramp). Block 3's
+*limiting factor* features count the share of days each ramp is the smallest one below 1.
+
+**Season dates from a smoothed index.** A toy year: dormant in winter, a green season in
+summer, a dry spell in between. The dates are read the same way as for the satellite curves:
+green-up when the index rises past 20 % of the season's range, curing when it falls below
+50 % (relative). The NFDRS4 reading uses fixed levels instead: green-up at the threshold GU
+and half cured at (1 + GU) / 2.
+
+```{r we-3b}
+#| echo: true
+d <- 1:365
+igsi <- pmax(0, sin((d - 120) / 160 * pi)) * ifelse(d %in% 200:215, 0.3, 1)   # daily iGSI
+G <- matrix(m_roll_mean(matrix(igsi, 1), 28), 1)                              # 28-day mean
+Gweak <- G * 0.5                                                              # a poor year
+g <- list(season_halfwidth_days = 183, min_amp = 0.05)
+rbind(relative_20_50      = gm_season_dates(G, d, d, g, "rel")[1, ],
+      nfdrs4_gu0.3        = gm_season_dates(G, d, d, g, "abs_nfdrs4", c(gu = 0.3))[1, ],
+      nfdrs4_gu0.6        = gm_season_dates(G, d, d, g, "abs_nfdrs4", c(gu = 0.6))[1, ],
+      weak_relative_20_50 = gm_season_dates(Gweak, d, d, g, "rel")[1, ],
+      weak_nfdrs4_gu0.3   = gm_season_dates(Gweak, d, d, g, "abs_nfdrs4", c(gu = 0.3))[1, ])
+```
+
+Two things to notice. With fixed levels, the mid-summer dry spell already counts as curing
+(day 213 with GU 0.3), while the relative reading waits for the real decline (day 269). And
+in the poor year the index never reaches the NFDRS4 curing level, so there is no curing
+date at all, while the relative reading still gives one. That difference is behind the
+scoring issue in the curing test (tab 10).
+
+**KBDI.** The Keetch–Byram Drought Index is a running soil-moisture deficit (0 = saturated,
+800 = maximum drought). It climbs with heat and drops with rain, so it remembers dry spells
+longer than a 28-day rain sum.
+
+```{r we-3c}
+#| echo: true
+days <- 120
+P  <- matrix(c(rep(0, 60), 25, rep(0, 29), 40, rep(0, 29)), 1)   # mm/day: two storms
+TX <- matrix(rep(35, days), 1)                                     # hot: 35 C every day
+k <- m_kbdi(P, TX, R_in = 12)                                      # mean annual rain 12 in
+round(k[1, c(1, 30, 60, 61, 90, 91, 120)])          # days 1, 30, 60, 61, 90, 91, 120
+```
+
+The index climbs from 10 to about 415 over 60 hot, dry days; the 25 mm storm on day 61
+takes off about 70, the 40 mm storm on day 91 about 130, and it climbs again after each.
+
+### 4. Satellite curves
+
+**What it is for.** Cut B describes each cell's season from MODIS. Composites with clouds
+or snow read too low, so the smoother is fitted, the points well below the curve are given
+less weight, and it is fitted again (an *upper envelope*). Season dates are then read from
+the smooth curve.
+
+**Input.** A toy year of NDVI every 8 days with two cloudy composites.
+
+```{r we-4a}
+#| echo: true
+set.seed(4)
+node <- seq(1, 361, by = 8)
+true <- 0.25 + 0.35 * exp(-((node - 200) / 45)^2)                   # green peak near July 19
+obs <- true + rnorm(length(node), 0, 0.015)
+obs[c(20, 27)] <- obs[c(20, 27)] - 0.20                             # two cloudy composites
+fit <- whit_envelope(matrix(obs, 1), matrix(1, 1, length(node)), lambda = 30, iter = 1, below_weight = 0.2)
+round(rbind(observed = obs, smoothed = fit[1, ])[, 17:30], 2)       # May to August
+```
+
+```{r we-4b}
+#| echo: true
+z <- fit; pk <- which.max(z); base <- min(z); amp <- max(z) - base
+m4 <- c(peak_doy = node[pk], base = base, amplitude = amp,
+  sos20 = cc_crossing(z, pk, base + 0.2 * amp, node, 30, TRUE),    # green-up: 20 % up the rise
+  eos50 = cc_crossing(z, pk, base + 0.5 * amp, node, 30, FALSE))   # end: 50 % down the fall
+round(m4, 2)
+```
+
+The two cloudy composites (`r sprintf("%.2f and %.2f", obs[20], obs[27])`) barely pull the
+smooth curve down (`r sprintf("%.2f and %.2f", fit[1, 20], fit[1, 27])`). Green-up (sos20) is
+where the curve passes 20 % of the way from its base to its peak, here about day
+`r round(m4[["sos20"]])`; the end of season (eos50) is where it falls back below 50 %, about
+day `r round(m4[["eos50"]])`.
+Curing (cure50) is read the same way from the NDII7 curve, at 50 % of its decline after its
+peak.
+
+### 5. Feature groups
+
+**What it is for.** Before clustering, every feature is standardized, then reduced by
+principal components within its group, and each group is scaled to the same total variance.
+Otherwise the group with the most features dominates: Block 1 has eight temperature
+features but only three for moisture amount.
+
+**Input.** Six cells: eight nearly identical temperature features and three moisture
+features (cells 1–3 are wet, 4–6 dry).
+
+```{r we-5a}
+#| echo: true
+set.seed(5)
+t0 <- c(8, 9, 10, 8, 9, 10)                       # temperature signal
+m0 <- c(2.9, 3.0, 2.8, 2.3, 2.2, 2.4)             # log10 precipitation signal
+X <- cbind(sapply(1:8, function(i) t0 + rnorm(6, 0, 0.1)), sapply(1:3, function(i) m0 + rnorm(6, 0, 0.02)))
+colnames(X) <- c(paste0("temp", 1:8), paste0("moist", 1:3))
+one  <- groups_reduce(X, NULL, 1, 0.99)                                   # one group
+two  <- groups_reduce(X, list(temperature = paste0("temp", 1:8), moisture = paste0("moist", 1:3)), 1, 0.99)
+share <- function(r) { v <- colSums(r$scores^2); round(v / sum(v), 2) }
+share(one); share(two)
+```
+
+As one group, the first component is mostly temperature and moisture comes second. In two
+groups, each gets half of the variance, so the clustering sees the wet/dry split as clearly
+as the warm/cool one. Blocks are weighted the same way (Block 1 and Block 2 equal; elevation
+and latitude at a quarter).
+
+### 6. Stability
+
+**What it is for.** A set of regions is only useful if it does not change much when the
+data change. Stability fits k-means twice on two different random halves of the map (drawn
+as 2-degree blocks), labels the same evaluation cells with both, and compares the two
+labellings with the **adjusted Rand index** (ARI): 1 = identical regions, about 0 = no more
+alike than chance.
+
+```{r we-6a}
+#| echo: true
+a <- c(1, 1, 1, 2, 2, 2, 3, 3, 3)
+c(same_regions_renumbered = ari(a, c(3, 3, 3, 1, 1, 1, 2, 2, 2)),
+  one_cell_moved          = ari(a, c(1, 1, 2, 2, 2, 2, 3, 3, 3)),
+  unrelated               = ari(a, c(1, 2, 3, 1, 2, 3, 1, 2, 3)))
+```
+
+Numbering does not matter, only who is grouped with whom. Moving one of nine cells already
+drops the index to 0.64, and an unrelated grouping can go below zero. A2's stability of 0.83
+at 7 regions means two fits on different halves of the country agree more closely than that. The same index compares two different sets of regions (A3 vs A2:
+0.71–0.80).
+
+### 7. Curve variance
+
+**What it is for.** How much of the variation in the satellite seasonal curves lies between
+regions rather than within them. It is an R-squared: 1 − (within-region sum of squares) /
+(total sum of squares), summed over all curve features (the principal-component scores of
+the NDVI and NDII7 curves).
+
+**Input.** Six cells with two curve features, and two ways of grouping them.
+
+```{r we-7a}
+#| echo: true
+Y <- cbind(pc1 = c(2.0, 1.8, 2.2, -1.9, -2.1, -2.0), pc2 = c(0.3, -0.2, 0.1, 0.4, -0.1, -0.5))
+climate_regions  <- c(1, 1, 1, 2, 2, 2)       # follows the curves
+location_regions <- c(1, 1, 2, 2, 3, 3)       # compact blobs that cut across them
+c(climate = r2_groups(Y, climate_regions), location = r2_groups(Y, location_regions))
+```
+
+The *location only* baseline is the second kind: compact regions of the same number with no
+climate information. A set of climate regions earns its keep by beating it, which A1, A2 and
+A3 do on timing (about 0.55 against 0.47 at 13 regions in herbaceous cells).
+
+### 8. Ground observations
+
+**What it is for.** Whether observed dates at NPN, live fuel moisture and iNaturalist sites
+differ more between regions than within them. Each site is first reduced to its median date
+across years. The score is the **adjusted R-squared** of those dates on region, which
+subtracts what any random grouping into that many regions would explain by chance:
+adj = 1 − (1 − R²)(n − 1)/(n − m), with n sites and m regions.
+
+```{r we-8a}
+#| echo: true
+sites <- data.frame(site = 1:12,
+                    green_doy = c(95, 102, 99, 110, 160, 171, 158, 166, 120, 131, 125, 140),
+                    region = c(1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
+                    lon = c(-104, -104, -103, -102, -111, -111, -110, -110, -97, -97, -96, -96),
+                    lat = c(40, 41, 41, 40, 32, 32, 33, 33, 39, 39, 38, 36))
+r2_adj(sites$green_doy, sites$region)
+r2_adj(sites$green_doy, rep(1:6, 2))                     # 6 arbitrary groups
+```
+
+The real regions explain 95 % of the spread (adjusted 0.93). Six arbitrary groups still
+explain 32 % by chance, and the adjustment takes that away (−0.24).
+
+**How sure is a difference?** Nearby sites are not independent, so sites are resampled in
+2-degree blocks (whole blocks in or out), 500 times, and both sets of regions are scored on
+each resample. The table on the page reports the difference with the range covering 90 % of
+resamples; a range that spans zero means the observations cannot tell the two apart.
+
+```{r we-8b}
+#| echo: true
+set.seed(8)
+blk <- paste(floor(sites$lon / 2), floor(sites$lat / 2)); idx <- split(seq_len(nrow(sites)), blk)
+other <- c(1, 1, 3, 3, 2, 2, 2, 2, 3, 3, 3, 1)           # a second, worse set of regions
+d <- replicate(500, { pick <- unlist(idx[sample(names(idx), length(idx), TRUE)])
+  r2_adj(sites$green_doy[pick], sites$region[pick])[["adj_r2"]] - r2_adj(sites$green_doy[pick], other[pick])[["adj_r2"]] })
+b8 <- c(difference = r2_adj(sites$green_doy, sites$region)[["adj_r2"]] - r2_adj(sites$green_doy, other)[["adj_r2"]],
+        quantile(d, c(0.05, 0.95), na.rm = TRUE), share_above_0 = mean(d > 0, na.rm = TRUE))
+round(b8, 2)
+```
+
+The first set of regions scores `r sprintf("%.2f", b8[["difference"]])` higher, and
+`r sprintf("%.0f %%", 100 * b8[["share_above_0"]])` of resamples favour it, but the range
+(`r sprintf("%+.2f", b8[[2]])` to `r sprintf("%+.2f", b8[[3]])`)
+`r if (b8[[2]] < 0) "spans zero: with twelve sites in a handful of blocks the difference is not established" else "stays above zero"`. That is the situation for most of the grass comparisons on the page.
+
+### 9. Synchrony
+
+**What it is for.** Whether a region's cells green up and cure early or late *in the same
+years*. Each cell's yearly date becomes a departure from its own median; the score is the
+share of all departures that the region's mean departure in the same year explains.
+Departures over 90 days are dropped as season jumps (for example a monsoon cell whose peak
+switches to spring).
+
+**Input.** Departures (days) for four cells over five years, in two regions. The function is
+copied from the synchrony script.
+
+```{r we-9a}
+#| echo: true
+sync_r2 <- function(a, g) {                       # as in scripts/33_synchrony.R
+  ok <- !is.na(g); a <- a[ok, , drop = FALSE]; g <- g[ok]
+  tot <- sum(a^2, na.rm = TRUE); res <- 0
+  for (j in seq_len(ncol(a))) {                   # each year: departures from the region mean
+    x <- a[, j]; u <- !is.na(x); mu <- tapply(x[u], g[u], mean)
+    res <- res + sum((x[u] - mu[as.character(g[u])])^2)
+  }
+  1 - res / tot
+}
+A <- rbind(c(-10, 5, 12, -3, -4),    # region 1: cells move together
+           c(-8, 7, 10, -6, -3),
+           c(6, -9, 2, 11, -10),     # region 2: cells move independently
+           c(-7, 4, -8, -2, 13))
+c(two_regions = sync_r2(A, c(1, 1, 2, 2)), one_conus_region = sync_r2(A, c(1, 1, 1, 1)))
+```
+
+Region 1 is almost perfectly in step, region 2 not at all, and the total lands in between.
+Across CONUS at 13 regions the real values are about 0.25 for green-up and 0.15 for curing.
+
+### 10. GSI model test
+
+**What it is for.** Whether a GSI fitted to a region predicts the satellite green-up and
+curing dates in years it has not seen. Thresholds are fitted on odd years and scored on even
+years, then the reverse. Scores:
+
+- **MAE**, mean absolute error in days, each error capped at 90 days (season jumps);
+- **within 30 days**, the share of years predicted within a month;
+- **anomaly correlation**, whether the model's early and late years match the observed ones
+  (each cell's dates minus its own mean);
+- **coverage**, the share of observed dates for which the GSI gives a date at all;
+- the **typical date** (the cell's median date in the fitting years) as the baseline to beat.
+
+**Input.** Observed and predicted green-up and curing dates for three cells over five
+held-out years. The GSI tracks the first two cells; in the third (think monsoon Southwest)
+it gives a curing date in only two years.
+
+```{r we-10a}
+#| echo: true
+obs <- list(sos  = rbind(c(100, 110, 95, 120, 105), c(150, 160, 170, 140, 155), c(160, 175, 150, 185, 165)),
+            cure = rbind(c(200, 215, 190, 230, 205), c(250, 262, 240, 270, 255), c(180, 240, 175, 235, 185)))
+gsi <- list(sos  = rbind(c(104, 112, 100, 115, 101), c(155, 150, 168, 150, 158), c(170, 168, 160, 175, 171)),
+            eos  = rbind(c(205, 220, 196, 228, 200), c(255, 250, 247, 265, 258), c(NA, 232, NA, 241, NA)))
+typical <- list(sos = rbind(rep(106, 5), rep(155, 5), rep(166, 5)),       # median of the fitting years
+                eos = rbind(rep(209, 5), rep(255, 5), rep(200, 5)))
+sc <- rbind(gsi_penalty  = gm_score(gsi, obs, penalty = 60, cap = 90),                   # first curing test
+            gsi_fallback = gm_score(gsi, obs, penalty = 60, cap = 90, fill = typical),   # rerun
+            typical_date = gm_score(typical, obs, penalty = 60, cap = 90, anom = FALSE))
+round(sc[, c("sos_mae", "sos_anom_r", "cure_mae", "cure_within30", "cure_coverage",
+             "cure_anom_r", "cure_paired_mae", "cure_paired_fill_mae")], 2)
+```
+
+```{r we-10-text}
+#| include: false
+r10 <- round(sc, 1)
+```
+
+Reading the curing columns:
+
+- With the **fixed penalty** (first curing test) each of the three missing years counts as a
+  60-day miss, and the GSI scores `r r10["gsi_penalty", "cure_mae"]` days against
+  `r r10["typical_date", "cure_mae"]` for the typical date. In a cell where any guess would
+  miss by more than 60 days, a fit can score better by giving no date at all: that is what
+  happened in the monsoon Southwest.
+- With the **fallback** (the rerun) a missing year takes the cell's typical date, so
+  skipping can never beat the baseline: the GSI scores `r r10["gsi_fallback", "cure_mae"]`
+  days. **Coverage** (`r r10["gsi_fallback", "cure_coverage"]`) shows how often the GSI dated
+  the year itself, and the **paired** columns compare GSI and typical date only on the years
+  the GSI dated: `r r10["gsi_fallback", "cure_paired_mae"]` against
+  `r r10["gsi_fallback", "cure_paired_fill_mae"]` days. That paired comparison is the
+  honest test of skill.
+- The **anomaly correlation** uses only the years the GSI dated, and asks whether its early
+  and late years line up with the observed ones. The typical date has none by definition:
+  it predicts the same date every year.
+
+**Fitting.** The thresholds are found by minimizing the same capped error over the fitting
+years with a simplex search (Nelder–Mead), started from the FEMS values. A one-parameter
+version: find the precipitation threshold whose green-up dates best match the observed ones.
+
+```{r we-10b}
+#| echo: true
+p28 <- c(0, 0, 1, 3, 6, 9, 12, 15, 18, 22, 25, 28)        # 28-day rain, 12 ten-day steps
+obs_day <- 70                                              # observed green-up
+loss <- function(th) { first <- which(p28 >= th)[1]; if (is.na(first)) 60 else abs(first * 10 - obs_day) }
+sapply(c(5, 10, 13, 20), loss)                             # error (days) for four thresholds
+optimize(loss, c(0, 30))$minimum                           # a best threshold
+```
+
+Any threshold between 9 and 12 mm puts green-up on day 70. The error changes in steps (a
+date moves a whole day or not at all), which is why a search that compares points
+(Nelder–Mead) is used rather than one that follows slopes. With five to nine thresholds at
+once, the search has to stop somewhere; the first curing test stopped at 250 tries per
+search in almost every fit, the rerun allows 600.
+
+### 11. Profiles
+
+**What it is for.** The profile tables summarize each region by the median and IQR of its
+cells, and the crosswalk shows how fine regions sit inside coarse ones (the share of each
+fine region's cells in each coarse region).
+
+```{r we-11a}
+#| echo: true
+fine   <- c(1, 1, 1, 1, 2, 2, 2, 3, 3, 3)
+coarse <- c(1, 1, 1, 2, 2, 2, 2, 2, 2, 1)
+tab <- table(fine = fine, coarse = coarse)
+round(prop.table(tab, 1), 2)                     # rows: share of each fine region's cells
+p_ann <- c(310, 280, 350, 330, 520, 610, 480, 900, 870, 950)
+t(sapply(split(p_ann, fine), function(v) c(median = median(v), IQR = IQR(v))))
+```
+
+Fine region 1 sits mostly (75 %) in coarse region 1; fine region 2 entirely in coarse 2.
+The page's crosswalk lists every coarse region that holds at least 5 % of a fine region.
+
+:::
