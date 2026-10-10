@@ -301,6 +301,14 @@ Deferred: fire data, gridMET, ERA5-Land.
      Memory (Oct 9): running it next to 20 with 36 workers and 32 CONUS fits at once ran the
      P720 out of memory and killed the tmux server; workers now copy only the 4 driver series
      their form needs and at most `max_big` (8) CONUS fits run at once.
+     v1 results (Oct 10, eval/gsi_curing_v1 on the P720 after the v2 run): best regional curing
+     ~48 d = climatology, but the fixed 60-day penalty let fits skip curing dates (coverage
+     3-4 % in monsoon SW / mid-South). Honest forms: GSI beats the typical curing date in the
+     northern Plains (16 vs 20 d, r 0.71), southern Great Basin, Snake River Plain; fails in the
+     monsoon SW and California annual grasslands. 99 % of fits hit maxit 250.
+     v2 (Oct 10): `missing: fallback` = a missing GSI date takes the cell's typical date from
+     the fitting years (fits and scores); paired_* scores compare on the cell-years the GSI
+     dates; maxit 600; moisture kbdi + precip90 only; each fit logs "fit i/n done".
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

@@ -145,7 +145,12 @@ gm_predict <- function(drv, par, smooth, dates, years, g)
 # Loss: mean absolute error (days) over green-up and curing, each error capped at `cap` days
 # (a satellite season that jumps to another time of year, e.g. spring vs monsoon, would
 # otherwise dominate); a missing GSI date where the satellite has one counts `penalty` days.
+# obs$fill_sos / obs$fill_cure (optional, cells x years): dates used where the GSI gives none
+# (e.g. the cell's typical date), so that skipping a date never scores better than the
+# fallback; the penalty then only applies where the fallback is missing too.
+gm_fill <- function(p, f) { if (is.null(f)) return(p); i <- is.na(p); p[i] <- f[i]; p }
 gm_loss <- function(pred, obs, penalty, cap = 90) {
+  pred$sos <- gm_fill(pred$sos, obs$fill_sos); pred$eos <- gm_fill(pred$eos, obs$fill_cure)
   e <- c(abs(pred$sos - obs$sos)[!is.na(obs$sos)], abs(pred$eos - obs$cure)[!is.na(obs$cure)])
   e[is.na(e)] <- penalty
   mean(pmin(e, cap))
@@ -174,19 +179,30 @@ gm_fit <- function(drv, obs, dates, years, g, gmc, start) {
 # of observed dates with a prediction, and the correlation of yearly anomalies (each cell's
 # dates minus that cell's mean over the years; anom = FALSE for predictions with no year-to-year
 # variation, e.g. climatology).
-gm_score <- function(pred, obs, penalty, cap = 90, anom = TRUE) {
-  one <- function(p, o) {
-    has <- !is.na(o); if (!any(has)) return(c(mae = NA, mdae = NA, within30 = NA, coverage = NA, anom_r = NA))
-    e <- abs(p - o)[has]; cov <- mean(!is.na(e)); e[is.na(e)] <- penalty
+# fill (optional): list(sos, eos) of fallback dates (cells x years), used where the model gives
+# no date (coverage is counted before the fill). With fill, also the paired comparison on the
+# cell-years where the model gives a date: model MAE and the fallback's MAE there.
+gm_score <- function(pred, obs, penalty, cap = 90, anom = TRUE, fill = NULL) {
+  one <- function(p, o, f) {
+    has <- !is.na(o)
+    if (!any(has)) return(c(mae = NA, mdae = NA, within30 = NA, coverage = NA, anom_r = NA, paired_mae = NA, paired_fill_mae = NA))
+    cov <- mean(!is.na(p[has]))
+    pm <- pf <- NA
+    if (!is.null(f)) {
+      u <- has & !is.na(p) & !is.na(f)
+      if (any(u)) { pm <- mean(pmin(abs(p - o)[u], cap)); pf <- mean(pmin(abs(f - o)[u], cap)) }
+    }
+    p0 <- p; p <- gm_fill(p, f)
+    e <- abs(p - o)[has]; e[is.na(e)] <- penalty
     mdae <- stats::median(e); w30 <- mean(e <= 30); e <- pmin(e, cap)
-    ok <- !is.na(p) & !is.na(o)
-    pa <- p; oa <- o; pa[!ok] <- NA; oa[!ok] <- NA
+    ok <- !is.na(p0) & !is.na(o)                 # anomaly skill on the model's own dates
+    pa <- p0; oa <- o; pa[!ok] <- NA; oa[!ok] <- NA
     pa <- pa - rowMeans(pa, na.rm = TRUE); oa <- oa - rowMeans(oa, na.rm = TRUE)
     u <- !is.na(pa) & !is.na(oa)
     r <- if (anom && sum(u) > 10 && stats::sd(pa[u]) > 0) stats::cor(pa[u], oa[u]) else NA
-    c(mae = mean(e), mdae = mdae, within30 = w30, coverage = cov, anom_r = r)
+    c(mae = mean(e), mdae = mdae, within30 = w30, coverage = cov, anom_r = r, paired_mae = pm, paired_fill_mae = pf)
   }
-  s <- one(pred$sos, obs$sos); c_ <- one(pred$eos, obs$cure)
+  s <- one(pred$sos, obs$sos, fill$sos); c_ <- one(pred$eos, obs$cure, fill$eos)
   out <- c(s, c_); names(out) <- c(paste0("sos_", names(s)), paste0("cure_", names(c_)))
   out
 }

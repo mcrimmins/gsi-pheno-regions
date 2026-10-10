@@ -17,6 +17,12 @@
 #   curing (cure50) dates. "best" = per region and fold, the form with the lowest error in the
 #   fitting years. Reference: each cell's median date in the fitting years (climatology).
 # Needs the sample cache from 34 (eval/gsi_model/sample_<profile>.rds, with tmax): run 34 first.
+# Missing dates (v2, Oct 10): where a fitted GSI gives no green-up or curing date, the cell's
+#   typical date in the fitting years is used instead, in the fits and in the scores (config
+#   `missing: fallback`; "penalty" = v1's fixed penalty_days). Scores also report coverage
+#   (share of observed dates the GSI dates itself) and a paired comparison on the cell-years
+#   the GSI does date: its error there and the typical date's error there (paired_*).
+#   Each fit logs a line when it finishes ("fit i/n done"), so progress shows in the log.
 # Outputs eval/gsi_curing/: scores.csv (model x form x partition x k), region_scores.csv (per
 # region: best form, kbdi-rel reference, conus best, climatology), params.csv (fitted values).
 # Parallel: forked workers on Linux (shared memory), sequential on Windows.
@@ -85,7 +91,18 @@ for (nm in names(P)) for (kn in colnames(P[[nm]])) {
 # each fit copies its cells' series, ~0.11 GB per 1,000 cells per series on CONUS)
 sub_drv <- function(idx, need = names(S$drv)) lapply(S$drv[need], function(m) m[idx, , drop = FALSE])
 drv_need <- function(mo) c("tmin", "vpd_pa", "photo_s", if (!is.null(gm_moist[[mo]])) gm_moist[[mo]]$drv)
-sub_obs <- function(idx, yi) list(sos = S$obs$sos[idx, yi, drop = FALSE], cure = S$obs$cure[idx, yi, drop = FALSE])
+# observations for fitting, with each cell's typical date in the fitting years as the fallback
+# where the GSI gives no date (v2, Oct 10: v1 counted a fixed 60 days, so fits in hard regions
+# learned to skip curing dates)
+fill_on <- !identical(gmc$missing, "penalty")
+sub_obs <- function(idx, yi) {
+  o <- list(sos = S$obs$sos[idx, yi, drop = FALSE], cure = S$obs$cure[idx, yi, drop = FALSE])
+  if (fill_on) {
+    rep_ <- function(m) matrix(apply(m, 1, stats::median, na.rm = TRUE), nrow(m), ncol(m))
+    o$fill_sos <- rep_(o$sos); o$fill_cure <- rep_(o$cure)
+  }
+  o
+}
 fems <- g$param_sets$fems
 start_for <- function(mo, cr) {
   p <- list(moisture = mo, cross = cr, tmin = unlist(fems$tmin), vpd = unlist(fems$vpd), photo_h = unlist(fems$photo_h))
@@ -122,10 +139,15 @@ if (sum(big) > mb && any(!big)) {
 log_msg(length(units), " regions in ", length(P), " partition(s) x ", length(gmc$k), " k; ", length(jobs),
         " fits (maxit ", gmc$maxit, ", restarts ", gmc$restarts %||% 0, "); at most ", mb, " CONUS fits at once")
 notify("35_gsi_curing started", sprintf("%d fits, %d workers", length(jobs), nw), priority = 2, tags = "hourglass")
-fits <- pmap(jobs, function(j) {
+nj <- length(jobs)
+fits <- pmap(seq_along(jobs), function(ji) {
+  j <- jobs[[ji]]; t1 <- Sys.time()
   tr <- folds[[j$fold]]
   ft <- tryCatch(gm_fit(sub_drv(j$idx, drv_need(j$moisture)), sub_obs(j$idx, tr), S$dates, years[tr], g, gmc, start_for(j$moisture, j$cross)),
                  error = function(e) list(error = conditionMessage(e)))
+  log_msg(sprintf("fit %d/%d done: %s %s %s k%d r%d, %d cells, %s evaluations, %.1f min", ji, nj, j$fold, j$form,
+                  j$partition, as.integer(j$k), as.integer(j$region), length(j$idx), ft$evals %||% "?",
+                  as.numeric(difftime(Sys.time(), t1, units = "mins"))))
   c(j[c("fold", "form", "moisture", "cross", "partition", "k", "region")], list(fit = ft, n = length(j$idx)))
 })
 fits <- lapply(fits, function(x) if (inherits(x, "try-error")) list(fit = list(error = as.character(x)), fold = "?",
@@ -170,7 +192,7 @@ for (f in names(folds)) {
   clim$eos[, te] <- apply(S$obs$cure[, tr, drop = FALSE], 1, stats::median, na.rm = TRUE)
 }
 obs_all <- list(sos = S$obs$sos, cure = S$obs$cure)
-sc <- function(m, anom = TRUE) gm_score(m, obs_all, gmc$penalty_days, gmc$cap_days, anom)
+sc <- function(m, anom = TRUE) gm_score(m, obs_all, gmc$penalty_days, gmc$cap_days, anom, if (fill_on && anom) clim)
 all_forms <- c(forms$form, "best")
 getter <- function(fm, p, k) function(f, r) {
   ft <- if (fm == "best") best_fit(f, p, k, r) else fit_of[[key(f, fm, p, k, r)]]
@@ -219,7 +241,8 @@ for (nm in names(P)) for (kn in colnames(P[[nm]])) {
                  conus_best = conus_m$best, climatology = clim)
     for (mn in names(mods)) if (!is.null(mods[[mn]]))
       rs[[length(rs) + 1]] <- data.frame(partition = nm, k = k, region = r, cells = length(i), fitted = length(i) >= gmc$min_cells,
-                                         model = mn, t(gm_score(subm(mods[[mn]]), ob, gmc$penalty_days, gmc$cap_days, mn != "climatology")))
+                                         model = mn, t(gm_score(subm(mods[[mn]]), ob, gmc$penalty_days, gmc$cap_days, mn != "climatology",
+                                                    if (fill_on && mn != "climatology") subm(clim))))
   }
 }
 utils::write.csv(do.call(rbind, rs), file.path(out_dir, "region_scores.csv"), row.names = FALSE)

@@ -219,9 +219,14 @@ default:
   # as gsi_model (unset keys come from there), but the model's form varies: moisture memory x
   # how season dates are read from the index (R/gsi_model.R gm_moist, gm_cross). Every
   # combination is fitted CONUS-wide and per region for the working regions (A2, k 7 and 13).
+  # v2 (Oct 10): fallback to the typical date where the GSI gives none (v1's fixed penalty let
+  # fits skip curing dates in hard regions), longer search, kbdi30 / precip60 dropped (v1: no
+  # better than kbdi / precip90).
   gsi_curing:
-    moisture: [kbdi, kbdi30, precip60, precip90]
+    moisture: [kbdi, precip90]
     cross: [rel, rel_split, abs_nfdrs4, abs_split]
+    missing: fallback             # or "penalty" (v1)
+    maxit: 600                    # v1: 250, 99 % of fits used it all
     reference_form: kbdi-rel      # the 34 v2 form most regions picked
     partitions: [A2_groups]
     k: [7, 13]
@@ -538,6 +543,7 @@ dev:
     moisture: [kbdi, precip60]
     cross: [rel, abs_nfdrs4]
     k: [7]
+    maxit: 30
     workers: 2
 
 # Few-minute smoke test of the whole chain (5 days, 2 variables, 1 year).

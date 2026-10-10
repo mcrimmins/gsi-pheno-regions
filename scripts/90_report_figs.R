@@ -626,7 +626,8 @@ if (do("gsi_curing") && have(gc_file)) {
                     paste0("Per region: ", lab_of(sets$partition, part_lab), ", ", sets$k))
   set_pch <- c(4, 1, 16, 17)[seq_len(nrow(sets))]
   set_colr <- c(ink, part_col[["A2_groups"]] %||% "#1a7f37", part_col[["A2_groups"]] %||% "#1a7f37", "#b7791f")[seq_len(nrow(sets))]
-  val <- function(col, i) { m <- fit[fit$model == sets$model[i] & (is.na(sets$partition[i]) | fit$partition %in% sets$partition[i]) &
+  val <- function(col, i) { if (!col %in% names(fit)) return(rep(NA_real_, length(forms)))
+    m <- fit[fit$model == sets$model[i] & (is.na(sets$partition[i]) | fit$partition %in% sets$partition[i]) &
                                        (is.na(sets$k[i]) | fit$k %in% sets$k[i]), ]
     m[[col]][match(forms, m$form)] }
   nf <- length(forms); yy <- rev(seq_len(nf))
@@ -661,6 +662,10 @@ if (do("gsi_curing") && have(gc_file)) {
                                                                    sprintf("%.0f / %.0f", clim_r$sos_mae, clim_r$cure_mae))
     tb[[paste(set_lab[i], "(curing r)")]] <- c(sprintf("%.2f", val("cure_anom_r", i)), "")
     tb[[paste(set_lab[i], "(curing dates produced)")]] <- c(sprintf("%.0f %%", 100 * val("cure_coverage", i)), "")
+    pm <- val("cure_paired_mae", i)
+    if (any(is.finite(pm)))
+      tb[[paste(set_lab[i], "(curing error where the GSI gives a date: GSI / typical date)")]] <-
+        c(ifelse(is.finite(pm), sprintf("%.0f / %.0f", pm, val("cure_paired_fill_mae", i)), ""), "")
   }
   utils::write.csv(tb, file.path(fig_dir, sprintf("gsi_curing_%s.csv", profile)), row.names = FALSE)
   bf <- file.path(eval_dir, "gsi_curing", "best_form.csv")
