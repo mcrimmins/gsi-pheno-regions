@@ -309,6 +309,12 @@ Deferred: fire data, gridMET, ERA5-Land.
      v2 (Oct 10): `missing: fallback` = a missing GSI date takes the cell's typical date from
      the fitting years (fits and scores); paired_* scores compare on the cell-years the GSI
      dates; maxit 600; moisture kbdi + precip90 only; each fit logs "fit i/n done".
+     v2 results (Oct 10, ~5 h; no fit hit 1200 evaluations): with the fallback, best fits
+     switch curing dates off (coverage < 1 %) in regions 2, 3, 4, 5, 11 at A2 k13, so national
+     curing MAE 47.8 vs climatology 48.3 is mostly fallback; paired (years the GSI dates) 40 vs
+     41. GSI beats the typical curing date in 10 (16 vs 20, r 0.71), 12 (20 vs 23), 6 (39 vs
+     45). Green-up: precip90 forms 25 vs 27 d (paired 23 vs 25, r ~0.4). KBDI wins curing in
+     25 of 34 region-folds. eval/gsi_curing_v1 keeps the first run (laptop and P720).
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
