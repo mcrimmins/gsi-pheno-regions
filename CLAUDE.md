@@ -324,6 +324,15 @@ Deferred: fire data, gridMET, ERA5-Land.
      best 29.2-29.3, paired 30 vs 30; curing anomaly r 0.36-0.37 (vs 0.15-0.21). Regions: GSI
      beats typical in 10 (15 vs 17, r 0.72) and 6 (33 vs 44); tie 12; switched off or worse in
      2, 3, 4, 5, 11 (CA 37 vs 24). Failures are the GSI's form, not the target.
+     New model forms (Oct 11; config `form_sets: newforms`, env GSI_CURING_FORMS=newforms ->
+     eval/gsi_curing[_eos50]_newforms/, page figures gsi_curing[_eos50]_newforms):
+     swb = soil-water bucket (`R/gsi_model.R` m_bucket; W += P - PET x W/wmax, Hargreaves PET
+     from the cached tmin/tmax and latitude; index = ramp(relative fill) x ramp(Tmin), no VPD or
+     daylength; fitted tmin_lo/w, wmax 10-400 mm, fill ramp; C++ via Rcpp when it compiles,
+     identical R loop otherwise); rel_anchor = rel_split with the peak searched within +/-
+     anchor_days (75) of the cell's usual mid-season from the fitting years (gm_anchor: midway
+     between median green-up and curing), for two-season climates. Dev with 2 years can't judge
+     rel_anchor (the "usual" season is one year).
    - `scripts/36_curing_target_check.R` (laptop, < 1 min; config `target_check:`; ground events
      from `R/obs.R` obs_events(), same sets as 31): satellite sos20 / cure50 / eos50 / eos20 vs
      NPN grass green-up / curing / cured and Globe-LFMC herb decline, site medians and (with

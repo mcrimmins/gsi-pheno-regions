@@ -50,12 +50,18 @@ log_file <- log_init("35_gsi_curing", profile)
 notify_init(cfg)
 gmc <- utils::modifyList(cfg$gsi_model, cfg$gsi_curing %||% list())
 g <- cfg$features$gsi
+g$anchor_halfwidth_days <- gmc$anchor_days %||% 75     # rel_anchor: peak search around the usual mid-season
 # Curing target (Oct 10): satellite NDII7 cure50 (default) or an NDVI end-of-season date
 # (eos50 / eos20), which matched ground curing with fewer season mismatches (36). Env
 # GSI_CURING_TARGET overrides config `target`; config `target_forms: <target>` limits the forms.
 target <- Sys.getenv("GSI_CURING_TARGET", gmc$target %||% "cure50")
 if (!target %in% c("cure50", "eos50", "eos20")) stop("curing target must be cure50, eos50 or eos20, not ", target)
-out_dir <- file.path(cfg$run_dir, "eval", if (target == "cure50") "gsi_curing" else paste0("gsi_curing_", target))
+# Named form set (Oct 11; config `form_sets`, env GSI_CURING_FORMS), e.g. "newforms" = the
+# soil-water bucket and the anchored (two-season) date reading; outputs get the set's name.
+fset <- Sys.getenv("GSI_CURING_FORMS", "")
+if (nzchar(fset) && is.null(gmc$form_sets[[fset]])) stop("no form set '", fset, "' in config gsi_curing: form_sets")
+out_dir <- file.path(cfg$run_dir, "eval", paste0("gsi_curing", if (target != "cure50") paste0("_", target) else "",
+                                                if (nzchar(fset)) paste0("_", fset) else ""))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 terra::terraOptions(progress = 0)
 t0 <- Sys.time()
@@ -88,13 +94,15 @@ S$drv$photo_s <- m_photoperiod(S$cells$lat, as.integer(format(S$dates, "%j")), g
 for (w in c(28, 60, 90)) S$drv[[paste0("prec", w)]] <- m_roll_sum(S$drv$ppt, w)
 S$drv$kbdi <- m_kbdi(S$drv$ppt, S$drv$tmax, S$cells$map_mm / 25.4, g$kbdi$interception_in)
 S$drv$kbdi30 <- m_roll_mean(S$drv$kbdi, 30)
-S$drv$ppt <- NULL; S$drv$tmax <- NULL; invisible(gc())
+S$drv$pet <- hargreaves(S$drv$tmin, S$drv$tmax, ra_matrix(S$cells$lat, as.integer(format(S$dates, "%j"))))   # bucket model
+S$drv$tmax <- NULL; invisible(gc())
+if (gm_bucket_init()) log_msg("soil-water bucket: compiled (C++)") else log_msg("soil-water bucket: R loop (no compiler)")
 log_msg(sprintf("sample: %d cells x %d days (%s .. %s), years %d-%d", n, length(S$dates), min(S$dates), max(S$dates),
                 min(years), max(years)))
 folds <- list(odd = which(years %% 2 == 1), even = which(years %% 2 == 0))
 
 forms <- expand.grid(moisture = unlist(gmc$moisture), cross = unlist(gmc$cross), stringsAsFactors = FALSE)
-tf <- unlist(gmc$target_forms[[target]])              # optional explicit list "moisture-cross"
+tf <- if (nzchar(fset)) unlist(gmc$form_sets[[fset]]) else unlist(gmc$target_forms[[target]])   # explicit "moisture-cross" list
 if (length(tf)) forms <- data.frame(do.call(rbind, strsplit(tf, "-", fixed = TRUE)), stringsAsFactors = FALSE) |>
   stats::setNames(c("moisture", "cross"))
 forms$form <- paste(forms$moisture, forms$cross, sep = "-")
@@ -113,7 +121,8 @@ for (nm in names(P)) for (kn in colnames(P[[nm]])) {
 # drivers for a set of cells; `need` = only those a form uses (keeps forked workers small:
 # each fit copies its cells' series, ~0.11 GB per 1,000 cells per series on CONUS)
 sub_drv <- function(idx, need = names(S$drv)) lapply(S$drv[need], function(m) m[idx, , drop = FALSE])
-drv_need <- function(mo) c("tmin", "vpd_pa", "photo_s", if (!is.null(gm_moist[[mo]])) gm_moist[[mo]]$drv)
+drv_need <- function(mo) if (mo == "swb") c("tmin", "ppt", "pet") else
+  c("tmin", "vpd_pa", "photo_s", if (!is.null(gm_moist[[mo]])) gm_moist[[mo]]$drv)
 # observations for fitting, with each cell's typical date in the fitting years as the fallback
 # where the GSI gives no date (v2, Oct 10: v1 counted a fixed 60 days, so fits in hard regions
 # learned to skip curing dates)
@@ -132,7 +141,9 @@ start_for <- function(mo, cr) {
   w <- c(precip = 28, precip60 = 60, precip90 = 90)
   if (mo %in% names(w)) p$moist <- c(fems$precip$lo, fems$precip$hi) * w[[mo]] / 28   # FEMS 28-day ramp, scaled
   if (mo %in% c("kbdi", "kbdi30")) p$moist <- c(g$kbdi$lo, g$kbdi$hi)
-  p$x <- switch(cr, rel = NULL, rel_split = list(up = 0.2, down = 0.5), abs_nfdrs4 = list(gu = fems$greenup),
+  if (mo == "swb") { p$vpd <- NULL; p$photo_h <- NULL; p$wmax <- 100; p$moist <- c(0.1, 0.4) }   # bucket 100 mm, ramp 10-40 % full
+  p$x <- switch(cr, rel = NULL, rel_split = list(up = 0.2, down = 0.5), rel_anchor = list(up = 0.2, down = 0.5),
+                abs_nfdrs4 = list(gu = fems$greenup),
                 abs_split = list(up = fems$greenup, down = (1 + fems$greenup) / 2))
   p
 }
@@ -195,14 +206,17 @@ best_fit <- function(f, p, k, r) {
 
 # ---- predictions on held-out years and scores ---------------------------------------------
 empty <- function() list(sos = matrix(NA_real_, n, nY), eos = matrix(NA_real_, n, nY))
-pred_par <- function(par, idx) gm_predict(sub_drv(idx, drv_need(par$moisture)), par, gmc$smooth, S$dates, years, g)
+# usual mid-season per cell from each fold's fitting years (rel_anchor forms)
+anc_f <- lapply(folds, function(tr) gm_anchor(S$obs$sos[, tr, drop = FALSE], S$obs$cure[, tr, drop = FALSE]))
+pred_par <- function(par, idx, anc = NULL) gm_predict(sub_drv(idx, drv_need(par$moisture)), par, gmc$smooth, S$dates, years, g,
+                                                       if (identical(par$cross, "rel_anchor")) anc[idx] else NULL)
 cross_pred <- function(get_groups) {
   out <- empty()
   for (f in names(folds)) {
     te <- setdiff(seq_len(nY), folds[[f]])
     for (gr in get_groups(f)) {
       if (is.null(gr$par)) next
-      pr <- pred_par(gr$par, gr$idx)
+      pr <- pred_par(gr$par, gr$idx, anc_f[[f]])
       out$sos[gr$idx, te] <- pr$sos[, te]; out$eos[gr$idx, te] <- pr$eos[, te]
     }
   }

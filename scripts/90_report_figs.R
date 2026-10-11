@@ -50,7 +50,8 @@ source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -606,23 +607,25 @@ if (do("gsi_model") && have(gm_file)) {
 # gsi_curing: GSI curing forms (35_gsi_curing.R): every form (moisture memory x how the
 # season dates are read), fitted CONUS-wide and per working region; held-out-year scores
 # gsi_curing_eos50: the same with the NDVI end of season (eos50) as the curing target.
-for (gcv in c("gsi_curing", "gsi_curing_eos50")) {
+for (gcv in c("gsi_curing", "gsi_curing_eos50", "gsi_curing_newforms", "gsi_curing_eos50_newforms")) {
 gc_file <- file.path(eval_dir, gcv, "scores.csv")
-cure_t <- if (gcv == "gsi_curing") "Curing date (NDII7)" else "Curing date (NDVI end of season)"
+cure_t <- if (grepl("eos50", gcv)) "Curing date (NDVI end of season)" else "Curing date (NDII7)"
 if (do(gcv) && have(gc_file)) {
   gc <- utils::read.csv(gc_file, stringsAsFactors = FALSE)
   clim_r <- gc[gc$model == "climatology", ]
   fit <- gc[gc$model != "climatology", ]
-  mo_l <- c(kbdi = "KBDI", kbdi30 = "KBDI, 30-day mean", precip = "28-day precip", precip60 = "60-day precip",
-            precip90 = "90-day precip")
+  mo_l <- c(kbdi = "GSI, KBDI", kbdi30 = "GSI, KBDI 30-day mean", precip = "GSI, 28-day precip", precip60 = "GSI, 60-day precip",
+            precip90 = "GSI, 90-day precip", swb = "Soil-water bucket")
   cr_l <- c(rel = "share of season (20 / 50 %)", rel_split = "share of season, fitted",
-            abs_nfdrs4 = "NFDRS4 levels (GU, (1+GU)/2)", abs_split = "GSI levels, fitted")
+            abs_nfdrs4 = "NFDRS4 levels (GU, (1+GU)/2)", abs_split = "index levels, fitted",
+            rel_anchor = "share of season, near usual timing")
   forms <- unique(fit$form[fit$form != "best"])
   fo <- do.call(rbind, strsplit(forms, "-", fixed = TRUE))
   forms <- forms[order(match(fo[, 2], names(cr_l)), match(fo[, 1], names(mo_l)))]
   forms <- c(forms, "best")
   flab <- vapply(forms, function(f) if (f == "best") "Best form per region" else {
-    x <- strsplit(f, "-", fixed = TRUE)[[1]]; paste0(mo_l[[x[1]]] %||% x[1], "; ", cr_l[[x[2]]] %||% x[2]) }, "")
+    x <- strsplit(f, "-", fixed = TRUE)[[1]]; lb <- function(v, k) if (k %in% names(v)) v[[k]] else k
+    paste0(lb(mo_l, x[1]), "; ", lb(cr_l, x[2])) }, "")
   sets <- unique(fit[, c("model", "partition", "k")]); sets <- sets[order(sets$model != "conus", sets$k), ]
   set_id <- ifelse(sets$model == "conus", "conus", paste(sets$partition, sets$k))
   set_lab <- ifelse(sets$model == "conus", "Fitted once for CONUS",
@@ -649,7 +652,7 @@ if (do(gcv) && have(gc_file)) {
     par(mar = c(4.2, 0.5, 3.6, 0.5), oma = c(0, 0, 3, 0))
     plot(NA, xlim = c(0, 1), ylim = c(0.5, nf + 0.5), axes = FALSE, xlab = "", ylab = "")
     text(1, yy, flab, adj = 1, cex = 0.82, col = ink, font = ifelse(forms == "best", 2, 1))
-    mtext("Moisture term; how dates are read", side = 3, line = 0.3, adj = 1, cex = 0.68, col = ink2)
+    mtext("Model and moisture term; how dates are read", side = 3, line = 0.3, adj = 1, cex = 0.68, col = ink2)
     par(mar = c(4.2, 1, 3.6, 1.2))
     dpanel("sos_mae", "Green-up date: error", "Held-out years; lower is better", "mean absolute error (days)", clim_r$sos_mae)
     dpanel("cure_mae", paste0(cure_t, ": error"), "Held-out years; lower is better", "mean absolute error (days)", clim_r$cure_mae)

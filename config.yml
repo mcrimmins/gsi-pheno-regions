@@ -230,6 +230,12 @@ default:
     target_forms:                 # forms for the other targets (the four that won most often at cure50)
       eos50: [kbdi-abs_nfdrs4, kbdi-rel_split, precip90-abs_split, precip90-rel]
       eos20: [kbdi-abs_nfdrs4, kbdi-rel_split, precip90-abs_split, precip90-rel]
+    form_sets:                    # GSI_CURING_FORMS=<name>: run only these forms (Oct 11)
+      # soil-water bucket (swb: no VPD or daylength) and the anchored reading (rel_anchor: the
+      # season nearest the cell's usual one, for two-season climates), with the GSI's best
+      # moisture terms for comparison
+      newforms: [swb-rel_split, swb-abs_split, swb-rel_anchor, kbdi-rel_anchor, precip90-rel_anchor]
+    anchor_days: 75               # rel_anchor: peak searched within +/- this of the usual mid-season
     maxit: 600                    # v1: 250, 99 % of fits used it all
     reference_form: kbdi-rel      # the 34 v2 form most regions picked
     partitions: [A2_groups]
