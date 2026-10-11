@@ -315,6 +315,11 @@ Deferred: fire data, gridMET, ERA5-Land.
      41. GSI beats the typical curing date in 10 (16 vs 20, r 0.71), 12 (20 vs 23), 6 (39 vs
      45). Green-up: precip90 forms 25 vs 27 d (paired 23 vs 25, r ~0.4). KBDI wins curing in
      25 of 34 region-folds. eval/gsi_curing_v1 keeps the first run (laptop and P720).
+     Curing target option (Oct 10): `GSI_CURING_TARGET=eos50` (or config `target`) scores curing
+     against NDVI eos50 instead of NDII7 cure50 (36 found eos matches ground curing with fewer
+     season mismatches); the sample cache is extended with the yearly target once (needs
+     cutb/metrics on the P720); config `target_forms` limits the forms (4 best at cure50);
+     outputs eval/gsi_curing_eos50/; page figure `gsi_curing_eos50`.
    - `scripts/36_curing_target_check.R` (laptop, < 1 min; config `target_check:`; ground events
      from `R/obs.R` obs_events(), same sets as 31): satellite sos20 / cure50 / eos50 / eos20 vs
      NPN grass green-up / curing / cured and Globe-LFMC herb decline, site medians and (with

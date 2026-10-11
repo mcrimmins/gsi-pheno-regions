@@ -226,6 +226,10 @@ default:
     moisture: [kbdi, precip90]
     cross: [rel, rel_split, abs_nfdrs4, abs_split]
     missing: fallback             # or "penalty" (v1)
+    target: cure50                # satellite curing target; GSI_CURING_TARGET=eos50 for the NDVI end of season
+    target_forms:                 # forms for the other targets (the four that won most often at cure50)
+      eos50: [kbdi-abs_nfdrs4, kbdi-rel_split, precip90-abs_split, precip90-rel]
+      eos20: [kbdi-abs_nfdrs4, kbdi-rel_split, precip90-abs_split, precip90-rel]
     maxit: 600                    # v1: 250, 99 % of fits used it all
     reference_form: kbdi-rel      # the 34 v2 form most regions picked
     partitions: [A2_groups]

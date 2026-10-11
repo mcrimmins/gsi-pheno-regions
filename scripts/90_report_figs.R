@@ -50,7 +50,7 @@ source(here::here("R", "evaluate.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
-              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing")
+              "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -605,8 +605,11 @@ if (do("gsi_model") && have(gm_file)) {
 
 # gsi_curing: GSI curing forms (35_gsi_curing.R): every form (moisture memory x how the
 # season dates are read), fitted CONUS-wide and per working region; held-out-year scores
-gc_file <- file.path(eval_dir, "gsi_curing", "scores.csv")
-if (do("gsi_curing") && have(gc_file)) {
+# gsi_curing_eos50: the same with the NDVI end of season (eos50) as the curing target.
+for (gcv in c("gsi_curing", "gsi_curing_eos50")) {
+gc_file <- file.path(eval_dir, gcv, "scores.csv")
+cure_t <- if (gcv == "gsi_curing") "Curing date (NDII7)" else "Curing date (NDVI end of season)"
+if (do(gcv) && have(gc_file)) {
   gc <- utils::read.csv(gc_file, stringsAsFactors = FALSE)
   clim_r <- gc[gc$model == "climatology", ]
   fit <- gc[gc$model != "climatology", ]
@@ -641,7 +644,7 @@ if (do("gsi_curing") && have(gc_file)) {
     mtext(main, side = 3, line = 1.4, adj = 0, cex = 0.85, font = 2, col = ink)
     mtext(sub, side = 3, line = 0.3, adj = 0, cex = 0.68, col = ink2)
   }
-  plot_png("gsi_curing", all_years, 2600, 1500, function() {
+  plot_png(gcv, all_years, 2600, 1500, function() {
     layout(matrix(1:4, 1), widths = c(1.45, 1, 1, 1))
     par(mar = c(4.2, 0.5, 3.6, 0.5), oma = c(0, 0, 3, 0))
     plot(NA, xlim = c(0, 1), ylim = c(0.5, nf + 0.5), axes = FALSE, xlab = "", ylab = "")
@@ -649,8 +652,8 @@ if (do("gsi_curing") && have(gc_file)) {
     mtext("Moisture term; how dates are read", side = 3, line = 0.3, adj = 1, cex = 0.68, col = ink2)
     par(mar = c(4.2, 1, 3.6, 1.2))
     dpanel("sos_mae", "Green-up date: error", "Held-out years; lower is better", "mean absolute error (days)", clim_r$sos_mae)
-    dpanel("cure_mae", "Curing date: error", "Held-out years; lower is better", "mean absolute error (days)", clim_r$cure_mae)
-    dpanel("cure_anom_r", "Curing: early vs late years", "Correlation of yearly departures; higher is better", "correlation", 0)
+    dpanel("cure_mae", paste0(cure_t, ": error"), "Held-out years; lower is better", "mean absolute error (days)", clim_r$cure_mae)
+    dpanel("cure_anom_r", paste0(sub(" date", "", cure_t), ": early vs late years"), "Correlation of yearly departures; higher is better", "correlation", 0)
     par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
     plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
     legend("top", legend = c(set_lab, "Cell's typical date (no weather)"), pch = c(set_pch, NA), lty = c(rep(NA, nrow(sets)), 2),
@@ -667,14 +670,15 @@ if (do("gsi_curing") && have(gc_file)) {
       tb[[paste(set_lab[i], "(curing error where the GSI gives a date: GSI / typical date)")]] <-
         c(ifelse(is.finite(pm), sprintf("%.0f / %.0f", pm, val("cure_paired_fill_mae", i)), ""), "")
   }
-  utils::write.csv(tb, file.path(fig_dir, sprintf("gsi_curing_%s.csv", profile)), row.names = FALSE)
-  bf <- file.path(eval_dir, "gsi_curing", "best_form.csv")
+  utils::write.csv(tb, file.path(fig_dir, sprintf("%s_%s.csv", gcv, profile)), row.names = FALSE)
+  bf <- file.path(eval_dir, gcv, "best_form.csv")
   if (file.exists(bf)) {
     b <- utils::read.csv(bf, stringsAsFactors = FALSE)
     w <- as.data.frame(table(Form = b$form), stringsAsFactors = FALSE); w <- w[order(-w$Freq), ]
     w$Form <- vapply(w$Form, function(f) flab[[f]] %||% f, ""); names(w)[2] <- "Region-folds where it fits best"
-    utils::write.csv(w, file.path(fig_dir, sprintf("gsi_curing_best_%s.csv", profile)), row.names = FALSE)
+    utils::write.csv(w, file.path(fig_dir, sprintf("%s_best_%s.csv", gcv, profile)), row.names = FALSE)
   }
+}
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------

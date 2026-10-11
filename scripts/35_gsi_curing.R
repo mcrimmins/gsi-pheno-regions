@@ -50,7 +50,13 @@ log_file <- log_init("35_gsi_curing", profile)
 notify_init(cfg)
 gmc <- utils::modifyList(cfg$gsi_model, cfg$gsi_curing %||% list())
 g <- cfg$features$gsi
-out_dir <- file.path(cfg$run_dir, "eval", "gsi_curing"); dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+# Curing target (Oct 10): satellite NDII7 cure50 (default) or an NDVI end-of-season date
+# (eos50 / eos20), which matched ground curing with fewer season mismatches (36). Env
+# GSI_CURING_TARGET overrides config `target`; config `target_forms: <target>` limits the forms.
+target <- Sys.getenv("GSI_CURING_TARGET", gmc$target %||% "cure50")
+if (!target %in% c("cure50", "eos50", "eos20")) stop("curing target must be cure50, eos50 or eos20, not ", target)
+out_dir <- file.path(cfg$run_dir, "eval", if (target == "cure50") "gsi_curing" else paste0("gsi_curing_", target))
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 terra::terraOptions(progress = 0)
 t0 <- Sys.time()
 grid <- terra::rast(file.path(static_dir(cfg), "grid_mask.tif"))
@@ -64,6 +70,19 @@ cache <- file.path(cfg$run_dir, "eval", "gsi_model", sprintf("sample_%s.rds", pr
 if (!file.exists(cache)) stop("no ", cache, ": run scripts/34_gsi_model.R ", profile, " first")
 S <- readRDS(cache)
 if (is.null(S$drv$tmax) || is.null(S$cells$map_mm)) stop("sample cache lacks tmax / map_mm: rerun 34 (it extends the cache)")
+if (target != "cure50") {
+  if (is.null(S$obs[[target]])) {                     # extend the cache with the target's yearly dates
+    mfile <- function(Y) file.path(cfg$run_dir, "cutb", "metrics", sprintf("metrics_%d.tif", Y))
+    miss <- S$years[!file.exists(vapply(S$years, mfile, ""))]
+    if (length(miss)) stop("per-year satellite metrics missing for ", paste(miss, collapse = ", "))
+    S$obs[[target]] <- vapply(S$years, function(Y) terra::extract(terra::rast(mfile(Y))[[target]], S$cells$cell)[, 1],
+                              numeric(nrow(S$cells)))
+    saveRDS(S, cache)
+    log_msg("sample cache extended with yearly ", target)
+  }
+  S$obs$cure <- S$obs[[target]]                       # the "curing" target from here on
+}
+log_msg("curing target: ", target, " (", round(100 * mean(!is.na(S$obs$cure)), 1), " % of cell-years dated); outputs ", out_dir)
 years <- S$years; nY <- length(years); n <- nrow(S$cells)
 S$drv$photo_s <- m_photoperiod(S$cells$lat, as.integer(format(S$dates, "%j")), g$photo_method)
 for (w in c(28, 60, 90)) S$drv[[paste0("prec", w)]] <- m_roll_sum(S$drv$ppt, w)
@@ -75,8 +94,12 @@ log_msg(sprintf("sample: %d cells x %d days (%s .. %s), years %d-%d", n, length(
 folds <- list(odd = which(years %% 2 == 1), even = which(years %% 2 == 0))
 
 forms <- expand.grid(moisture = unlist(gmc$moisture), cross = unlist(gmc$cross), stringsAsFactors = FALSE)
+tf <- unlist(gmc$target_forms[[target]])              # optional explicit list "moisture-cross"
+if (length(tf)) forms <- data.frame(do.call(rbind, strsplit(tf, "-", fixed = TRUE)), stringsAsFactors = FALSE) |>
+  stats::setNames(c("moisture", "cross"))
 forms$form <- paste(forms$moisture, forms$cross, sep = "-")
 ref_form <- gmc$reference_form %||% "kbdi-rel"
+if (!ref_form %in% forms$form) ref_form <- c(forms$form[startsWith(forms$cross, "rel")], forms$form)[1]   # a form that always dates
 log_msg(nrow(forms), " forms: ", paste(forms$form, collapse = ", "))
 
 P <- eval_partitions(cfg, grid, unlist(gmc$k))
@@ -138,7 +161,7 @@ if (sum(big) > mb && any(!big)) {
 }
 log_msg(length(units), " regions in ", length(P), " partition(s) x ", length(gmc$k), " k; ", length(jobs),
         " fits (maxit ", gmc$maxit, ", restarts ", gmc$restarts %||% 0, "); at most ", mb, " CONUS fits at once")
-notify("35_gsi_curing started", sprintf("%d fits, %d workers", length(jobs), nw), priority = 2, tags = "hourglass")
+notify("35_gsi_curing started", sprintf("target %s, %d fits, %d workers", target, length(jobs), nw), priority = 2, tags = "hourglass")
 nj <- length(jobs)
 fits <- pmap(seq_along(jobs), function(ji) {
   j <- jobs[[ji]]; t1 <- Sys.time()
