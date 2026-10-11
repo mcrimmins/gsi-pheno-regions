@@ -315,6 +315,17 @@ Deferred: fire data, gridMET, ERA5-Land.
      41. GSI beats the typical curing date in 10 (16 vs 20, r 0.71), 12 (20 vs 23), 6 (39 vs
      45). Green-up: precip90 forms 25 vs 27 d (paired 23 vs 25, r ~0.4). KBDI wins curing in
      25 of 34 region-folds. eval/gsi_curing_v1 keeps the first run (laptop and P720).
+   - `scripts/36_curing_target_check.R` (laptop, < 1 min; config `target_check:`; ground events
+     from `R/obs.R` obs_events(), same sets as 31): satellite sos20 / cure50 / eos50 / eos20 vs
+     NPN grass green-up / curing / cured and Globe-LFMC herb decline, site medians and (with
+     cutb/metrics/metrics_<Y>.tif copied from the P720 to the laptop) site-years; circular
+     differences, |d| > 90 = season mismatch; anomaly correlation -> `eval/target_check/`.
+     Oct 10 results (site-years): grass curing vs cure50 |d| 58, 26 % mismatch, anomaly r 0.73
+     (0.83 without mismatches); vs eos50 |d| 50, 21 %, 0.70; cured vs eos20 |d| 43, 14 %, 0.76;
+     green-up vs sos20 |d| 36, 7 %, 0.32; LFMC herb decline not comparable (71 % mismatch).
+     Target good in CA annual (86 % within 30 d) and mid-South (72 %); monsoon SW 34 % mismatch
+     (eos50 18 %); Snake River (6 sites) satellite ~4 months later than ground. NDVI end of
+     season is at least as good a curing target as NDII7, with fewer season mismatches.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

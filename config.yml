@@ -233,6 +233,21 @@ default:
     workers: 24                   # forked; run alone, not next to another big job
     max_big: 8                    # CONUS-sized fits running at once (~2 GB each; Oct 9 OOM with 32)
 
+  # Target check (36_curing_target_check.R, laptop; Oct 10 2026): are the satellite green-up
+  # and curing dates the GSI tests score against consistent with ground observations of the
+  # same events? Ground sets as in 31 (R/obs.R); satellite metrics from Cut B (06).
+  target_check:
+    partition: A2_groups
+    k: 13
+    min_years: 3                # site-years per site for the year-to-year (anomaly) comparison
+    pairs:
+      - {set: grass_greenup, metric: sos20, label: "NPN grass green-up vs NDVI green-up (sos20)"}
+      - {set: grass_curing, metric: cure50, label: "NPN grass curing (50 % green) vs NDII7 curing"}
+      - {set: grass_curing, metric: eos50, label: "NPN grass curing (50 % green) vs NDVI end (eos50)"}
+      - {set: grass_cured, metric: cure50, label: "NPN grass cured vs NDII7 curing"}
+      - {set: grass_cured, metric: eos20, label: "NPN grass cured vs NDVI end (eos20)"}
+      - {set: lfmc_herb_decline, metric: cure50, label: "Herb LFMC 50 % decline vs NDII7 curing"}
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a

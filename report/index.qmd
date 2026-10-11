@@ -606,6 +606,68 @@ precipitation). The two runs agree on where the GSI works.
   regions), most often read at NFDRS4's fixed levels or with fitted shares of the season. For
   green-up, the 90-day precipitation sum is best.
 
+### Is the satellite curing date the right target?
+
+The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.
+If those dates are wrong in a region, the GSI could be blamed for the target's errors. So
+the satellite dates were compared with ground observations of the same events at the same
+places and in the same years: NPN grass green-up, curing (below 50 % green) and cured dates,
+and herbaceous live fuel moisture decline dates. Dates are compared on a circular year, and a
+difference of more than 90 days is counted as a *season mismatch* (for example, the satellite
+picking the spring season and the ground the monsoon season).
+
+| Ground event vs satellite date (all site-years) | Site-years | Median difference (satellite − ground) | Mean absolute difference | Within 30 days | Season mismatch | Year-to-year correlation |
+|---|---|---|---|---|---|---|
+| Grass green-up vs NDVI green-up | 2,335 | −1 d | 36 d | 55 % | 7 % | 0.32 |
+| Grass curing vs NDII7 curing | 4,883 | +16 d | 58 d | 45 % | 26 % | 0.73 |
+| Grass curing vs NDVI end of season (50 %) | 4,928 | +20 d | 50 d | 48 % | 21 % | 0.70 |
+| Grass cured vs NDII7 curing | 3,471 | −13 d | 52 d | 47 % | 23 % | 0.70 |
+| Grass cured vs NDVI end of season (20 %) | 3,064 | +22 d | 43 d | 51 % | 14 % | 0.76 |
+| Herbaceous fuel moisture decline vs NDII7 curing | 385 | −101 d | 109 d | 6 % | 71 % | 0.43 |
+
+: Satellite season dates against ground observations, year by year (NPN grasses; Globe-LFMC herbaceous series). The year-to-year correlation compares each site's departures from its own average date. {.striped}
+
+| Region (13 regions) | Grass sites | NDII7 curing: within 30 days / season mismatch / correlation | NDVI end of season: within 30 days / season mismatch / correlation |
+|---|---|---|---|
+| 5, mid-South (with the tallgrass prairie) | 25 | 72 % / 9 % / 0.85 | 75 % / 8 % / 0.84 |
+| 11, California annual grasslands | 7 | 86 % / 2 % / 0.52 | 89 % / 0 % / 0.32 |
+| 2, southern Plains | 17 | 43 % / 21 % / 0.63 | 50 % / 25 % / 0.51 |
+| 10, northern and central Great Plains | 23 | 47 % / 30 % / 0.51 | 46 % / 14 % / 0.23 |
+| 3, monsoon Southwest | 30 | 30 % / 34 % / 0.69 | 45 % / 18 % / 0.54 |
+| 12, southern Great Basin and Colorado Plateau | 4 | 13 % / 44 % / 0.83 | 42 % / 7 % / 0.33 |
+| 6, Snake River Plain and northern Great Basin | 6 | 1 % / 84 % / 0.78 | 1 % / 80 % / 0.83 |
+
+: Grass curing (below 50 % green) against the satellite curing and end-of-season dates by region, year by year. The low deserts have two grass sites and are left out. {.striped}
+
+**Reading the target check.**
+
+- **The satellite curing date follows the ground from year to year.** Where both see the
+  same season, a site's early and late curing years on the ground are early and late in the
+  satellite record too (correlation 0.73, or 0.83 leaving out the season mismatches). The
+  GSI follows the satellite curing date much more weakly (correlations of 0.1–0.2), so
+  across CONUS the weak link is the GSI, not the target.
+- **Average timing and season matching are the weak points of the target.** The satellite
+  date is often a month or more from the ground date, and about a quarter of site-years pick
+  a different season. NDVI end of season matches the ground at least as well as NDII7 curing,
+  with fewer season mismatches: notably in the monsoon Southwest (18 against 34 %), the
+  northern Plains (14 against 30 %) and the southern Great Basin (7 against 44 %, with only
+  four sites).
+- **In the California grasslands and the mid-South the target is good**: 72–86 % of
+  site-years within 30 days and few mismatches. There the GSI's failure is real.
+- **In the monsoon Southwest the target is part of the problem.** A third of site-years
+  pick a different season from the ground, so some of the GSI's error there comes from
+  scoring it against the wrong season.
+- **At the six Snake River Plain sites the satellite curing date is about four months later
+  than the ground** (84 % mismatches), although both move together from year to year. The
+  GSI's apparent skill there is against a satellite date that does not match these grass
+  sites; with six sites, possibly in towns or irrigated land, this needs a closer look.
+- **Live fuel moisture decline dates are a different event.** They come 3–4 months before the
+  satellite curing date (71 % mismatches), so they cannot check it.
+- **Caveats.** Ground sites are points; the satellite date describes a 4 km cell that often
+  mixes grass with other cover. Using only cells in the strict herbaceous mask gives similar
+  results (curing correlation 0.64). Several regions have few sites, and the low deserts
+  have almost none.
+
 ```{r fig-obs-sites}
 #| results: asis
 show_fig("obs_sites",
@@ -896,6 +958,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-10 | Satellite green-up and curing dates checked against ground observations, year by year and by region |
 | 2026-10-10 | GSI curing-form test rerun with fair scoring: the GSI tracks curing in 3 western regions and should be switched off in 5 |
 | 2026-10-10 | Worked examples of every step ("How the numbers work"); page checked for consistency (decision, Block 2 definition, plan status) |
 | 2026-10-10 | A3 regions (with GSI features) compared: little change from A2; first test of GSI curing forms by region |
