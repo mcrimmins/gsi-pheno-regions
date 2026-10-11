@@ -320,6 +320,10 @@ Deferred: fire data, gridMET, ERA5-Land.
      season mismatches); the sample cache is extended with the yearly target once (needs
      cutb/metrics on the P720); config `target_forms` limits the forms (4 best at cure50);
      outputs eval/gsi_curing_eos50/; page figure `gsi_curing_eos50`.
+     eos50 results (Oct 10, 144 fits, ~2.5 h): climatology 29.3 d (vs 48 for cure50); regional
+     best 29.2-29.3, paired 30 vs 30; curing anomaly r 0.36-0.37 (vs 0.15-0.21). Regions: GSI
+     beats typical in 10 (15 vs 17, r 0.72) and 6 (33 vs 44); tie 12; switched off or worse in
+     2, 3, 4, 5, 11 (CA 37 vs 24). Failures are the GSI's form, not the target.
    - `scripts/36_curing_target_check.R` (laptop, < 1 min; config `target_check:`; ground events
      from `R/obs.R` obs_events(), same sets as 31): satellite sos20 / cure50 / eos50 / eos20 vs
      NPN grass green-up / curing / cured and Globe-LFMC herb decline, site medians and (with

@@ -13,6 +13,7 @@
 "eval_obs","full","CONUS","site medians across years","2026-10-10"
 "eval_sync","full","CONUS","2001-2025","2026-10-10"
 "gsi_curing","full","CONUS","2001-2025","2026-10-10"
+"gsi_curing_eos50","full","CONUS","2001-2025","2026-10-10"
 "gsi_model","full","CONUS","2001-2025","2026-10-09"
 "obs_sites","full","CONUS","site medians","2026-10-07"
 "prof_curves_A1_groups_k10","full","CONUS","2001-2025","2026-10-08"

@@ -87,7 +87,7 @@ models. Where they disagree is where to look for what's missing.
 | Cut A clustering: A1, A2 and A3 (Blocks 1–3) | Done; A3 adds little to A2 |
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
-| GSI model tests by region | Done: threshold tuning and two runs of the curing-form test; the GSI tracks curing in the Great Plains and Great Basin only |
+| GSI model tests by region | Done: threshold tuning, curing forms (two runs) and two curing targets; the GSI tracks curing in the Great Plains and Snake River Plain only |
 
 : Pipeline status {.striped}
 
@@ -606,6 +606,41 @@ precipitation). The two runs agree on where the GSI works.
   regions), most often read at NFDRS4's fixed levels or with fitted shares of the season. For
   green-up, the 90-day precipitation sum is best.
 
+### Does a different curing target change the picture?
+
+The target check below found that NDVI end of season (the date greenness falls back below
+half its seasonal range) matches ground curing at least as well as NDII7 curing, and picks
+the wrong season less often. So the curing test was run once more, scoring the GSI against
+NDVI end of season instead, with the four forms that won most often against NDII7.
+
+```{r fig-gsi-curing-eos50}
+#| results: asis
+if (file.exists("figs/gsi_curing_eos50_full.png")) {
+  show_fig("gsi_curing_eos50",
+    "As the figure above, with NDVI end of season as the curing target. Dashed line: each cell's typical date.",
+    "Dot charts comparing GSI forms against NDVI end of season: green-up error, curing error and correlation of yearly departures.")
+} else cat("*Results to come.*\n\n")
+```
+
+- **The target is steadier, but the GSI still only ties the typical date.** Each cell's
+  typical end-of-season date misses by 29 days (against 48 for NDII7 curing), so this target
+  varies less from year to year. The best regional fits also miss by 29 days, and on the
+  years they date themselves the GSI and the typical date are tied (30 against 30 days at 13
+  regions).
+- **The GSI tracks early and late years better against this target**: correlations of about
+  0.36–0.37 at 7 and 13 regions, against 0.15–0.21 for NDII7 curing. The GSI follows the
+  decline in greenness more closely than the decline in canopy water.
+- **The regional pattern holds.** Against NDVI end of season the GSI beats the typical date in
+  the northern and central Great Plains (15 against 17 days, correlation 0.72) and the Snake
+  River Plain (33 against 44, correlation 0.47), ties in the southern Great Basin (19 against
+  19), and the fits switch it off, or it does worse, in the southern Plains, mid-South,
+  low deserts, monsoon Southwest (46 against 38 days for the form that always dates) and the
+  California annual grasslands (37 against 24).
+- **What that means.** The failures are not an artifact of the satellite target: with either
+  target, the GSI's form does not fit the seasons of the monsoon Southwest, the deserts, the
+  California grasslands, the southern Plains and the mid-South. Those regions need a
+  different model form.
+
 ### Is the satellite curing date the right target?
 
 The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.
@@ -958,6 +993,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-10 | Curing test scored against NDVI end of season: steadier target, same regional pattern |
 | 2026-10-10 | Satellite green-up and curing dates checked against ground observations, year by year and by region |
 | 2026-10-10 | GSI curing-form test rerun with fair scoring: the GSI tracks curing in 3 western regions and should be switched off in 5 |
 | 2026-10-10 | Worked examples of every step ("How the numbers work"); page checked for consistency (decision, Block 2 definition, plan status) |
