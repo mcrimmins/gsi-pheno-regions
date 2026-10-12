@@ -333,6 +333,11 @@ Deferred: fire data, gridMET, ERA5-Land.
      anchor_days (75) of the cell's usual mid-season from the fitting years (gm_anchor: midway
      between median green-up and curing), for two-season climates. Dev with 2 years can't judge
      rel_anchor (the "usual" season is one year).
+     newforms results (Oct 11): bucket wins ~3/4 of region-folds; wmax median 180-205 mm. eos50
+     target, k13: best 28.2 vs typical 29.3 (k7 27.7), paired 27.5 vs 29.0, r 0.36-0.44;
+     cure50: 47.5 vs 48.3. Green-up 24.8-25.5 vs 27.2 (r ~0.5); gains in S Plains (30 vs 40)
+     and low deserts (27 vs 35). Curing still switched off / worse in regions 2, 3, 5, 11;
+     rel_anchor doesn't rescue the monsoon SW.
    - `scripts/36_curing_target_check.R` (laptop, < 1 min; config `target_check:`; ground events
      from `R/obs.R` obs_events(), same sets as 31): satellite sos20 / cure50 / eos50 / eos20 vs
      NPN grass green-up / curing / cured and Globe-LFMC herb decline, site medians and (with
