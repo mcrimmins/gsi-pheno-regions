@@ -373,6 +373,16 @@ Deferred: fire data, gridMET, ERA5-Land.
      Plains (2) 0.20, mostly greenup; monsoon SW (3) 0.13. cure50 lower (CONUS 0.06). sos20
      CONUS 0.05. Regions 1, 8, 9 too few cells. Reading: a rule is worth trying only in CA
      annual grasslands (open; Mike to decide).
+   - **REGION NUMBERING CORRECTION (Oct 12).** 34 and 35 label regions with the clustering's
+     internal labels (eval_partitions); the page, 32, 33, 36, 37, 38 use the map numbers
+     (region_display). The 35 region results above were read as map numbers and are WRONG
+     in their region names. A2 k13 internal -> map (from cell counts; 35 and 38 typical-date
+     MAE agree exactly): 1->4, 2->11, 3->12, 4->3, 5->6, 6->2, 9->10, 10->5, 11->7, 12->13
+     (7, 8: < 25 cells). Corrected: GSI / bucket beat the typical curing date in 2 (S
+     Plains) and 5 (mid-South), barely 3 (monsoon SW); nothing beats it in 11, 6, 12, 7, 10,
+     13, 4. Bucket green-up gains are in 11 (CA) and 3 (monsoon SW). 35 now writes a
+     `region_page` column (from region_display) next to `region`; any table of 34/35 region
+     results must use region_page.
    - `scripts/38_curing_adjust.R` (P720, minutes; config `curing_adjust:`; R/cues.R adj_cues /
      adj_fit). Decision Oct 12: one general rule, typical date (cell median over fitting years)
      + linear adjustment of <= 3 lead-time cue departures (no intercept, clamp +/- 60 d), fitted
@@ -383,6 +393,14 @@ Deferred: fire data, gridMET, ERA5-Land.
      table `curing_adjust` (90 writes curing_adjust[_ndii]_<profile>.csv). Synthetic check:
      recovers a planted -5 d/C heat effect (-4.6 to -4.9). Last curing experiment before the
      write-up. Worked-examples tab 16.
+     Oct 12 results (eos50, lead 14): typical 29.3 -> adjusted 27.2 nationally (lead 0 +2.3,
+     30 +1.8); beats typical in every region: 2 +4.6, 10 +4.5, 4 +3.1, 13 +2.8, 11 +2.7
+     (17 -> 14), 6 +1.6, 3 +1.2, 12 +1.1, 7 +0.6, 5 +0.3. Best approach in 8 of 10; bucket /
+     GSI better in 2 (33 vs 39) and 5 (14 vs 17); tie in 3 (28). Cues: Tmax 60 d (-5 to -6
+     d/C Great Plains, -2 to -3 CA), rain 30-90 d (+0.1-0.3 d/mm), dry days / days since rain
+     (earlier), green-up (later). Proposed decision (pending Mike): typical + adjustment
+     everywhere except bucket in 2 and 5; green-up bucket in 11, 3, 4, 2, typical elsewhere;
+     stop curing model work and write up.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

@@ -87,8 +87,8 @@ models. Where they disagree is where to look for what's missing.
 | Cut A clustering: A1, A2 and A3 (Blocks 1–3) | Done; A3 adds little to A2 |
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
-| Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket; curing beats the typical date only in the Great Plains and Snake River Plain |
-| Curing baseline and cue screening | Typical-date baseline decided for four regions; cue screening done (a usable cue only in the California annual grasslands); typical date plus weather adjustment being tested |
+| Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket; the GSI or bucket beats the typical curing date only in the southern Plains and the mid-South (region labels corrected October 12) |
+| Curing rule | Cue screening done; typical date plus a weather adjustment (weather known 14 days ahead) beats the typical date in every region and is best in 8 of 10; revised decision proposed |
 
 : Pipeline status {.striped}
 
@@ -575,34 +575,34 @@ precipitation). The two runs agree on where the GSI works.
 
 | Region (13 regions) | Curing: GSI vs typical date (days) | Curing dated by GSI | Curing correlation | Green-up: GSI vs typical date (days) |
 |---|---|---|---|---|
-| 10, northern and central Great Plains | **16 vs 20** | all years | 0.71 | 9 vs 7 |
-| 12, southern Great Basin and Colorado Plateau | **20 vs 23** | all years | 0.34 | **8 vs 9** |
-| 6, Snake River Plain and northern Great Basin | **39 vs 45** | 97 % | 0.34 | **25 vs 32** |
-| 1, Gulf and south Atlantic coastal plain | 42 vs 44 | 90 % | 0.23 | **40 vs 62** |
-| 9, Pacific Northwest | 44 vs 42 | 80 % | 0.14 | 12 vs 10 |
-| 2, southern Plains | switched off (36 vs 24) | 0 % | | **33 vs 40** |
-| 5, mid-South (with the tallgrass prairie) | switched off (78 vs 63) | 0 % | | 33 vs 30 |
-| 4, low deserts | switched off (58 vs 49) | 0 % | | 38 vs 6 |
-| 11, California annual grasslands | switched off (59 vs 38) | under 1 % | | 15 vs 13 |
-| 3, monsoon Southwest | switched off (72 vs 61) | under 1 % | | 56 vs 36 |
+| 2, southern Plains | **39 vs 45** | 97 % | 0.33 | **25 vs 32** |
+| 5, mid-South (with the tallgrass prairie) | **16 vs 20** | all years | 0.71 | 9 vs 7 |
+| 13, upper Midwest | **20 vs 23** | all years | 0.34 | **8 vs 9** |
+| 4, low deserts | 42 vs 44 | 90 % | 0.23 | **40 vs 62** |
+| 10, northern and central Great Plains | 44 vs 42 | 80 % | 0.14 | 12 vs 10 |
+| 3, monsoon Southwest | switched off (58 vs 49) | 0 % | | 38 vs 6 |
+| 12, southern Great Basin and Colorado Plateau | switched off (72 vs 61) | 0 % | | 56 vs 36 |
+| 11, California annual grasslands | switched off (36 vs 24) | 0 % | | **33 vs 40** |
+| 6, Snake River Plain and northern Great Basin | switched off (78 vs 63) | 0 % | | 33 vs 30 |
+| 7, Rockies | switched off (59 vs 38) | 0 % | | 14 vs 13 |
 
-: GSI vs each cell's typical date by region, on the years the GSI gives a date (rerun). Where the best fit gives no curing dates, the numbers in brackets are for the KBDI form that always gives one. Regions 7 and 8 have too few sampled cells for their own fit. {.striped}
+: GSI vs each cell's typical date by region, on the years the GSI gives a date (rerun). Where the best fit gives no curing dates, the numbers in brackets are for the KBDI form that always gives one. Regions 1, 8 and 9 have too few sampled cells for their own fit. Corrected October 12: this table first showed the clustering's internal region numbers under the map's region names. {.striped}
 
-- **What that means.** With tuned thresholds the GSI tracks curing where there is one
-  growing season that ends as the soil dries: the Great Plains, the Great Basin and the
-  Colorado Plateau, and the Snake River Plain. There it beats the typical date and follows
-  early and late years. Elsewhere it does worse than simply using the typical date, for
-  reasons the profiles explain:
-  - In the monsoon Southwest grasses can green up twice a year, so the satellite curing
-    date itself jumps between spring and late summer.
-  - In the California annual grasslands growth comes in the cool season, which the
-    temperature and daylength ramps hold back.
-  - In the low deserts the season is a small, short flush.
+- **What that means.** With tuned thresholds the GSI beats the typical NDII7 curing date and
+  follows early and late years in the southern Plains, the mid-South and the upper Midwest:
+  warm-season grasslands whose curing comes with late-summer drought or fall cold. It ties
+  in the low deserts and does worse in the Great Plains. Elsewhere the fits switch it off:
+  - in the monsoon Southwest grasses can green up twice a year, so the satellite curing
+    date itself jumps between spring and late summer;
+  - in the California annual grasslands growth comes in the cool season, which the
+    temperature and daylength ramps hold back;
+  - in the interior West (Snake River Plain, southern Great Basin and Colorado Plateau) and
+    the Rockies the season is short, and the target check below found that the NDII7 curing
+    date there often picks a different season from the ground (44–84 % of site-years at the
+    few grass sites).
 
-  For those regions a different model form, or the typical date as the baseline, is the
-  better starting point. Green-up follows a similar but not identical pattern: the GSI helps
-  most in the Southeast, the southern Plains and the Snake River Plain, and fails in the
-  deserts and the monsoon Southwest.
+  For green-up the GSI helps most in the low deserts, the California grasslands and the
+  southern Plains, and fails in the monsoon Southwest and the southern Great Basin.
 - **Which forms win.** For curing, KBDI wins most regions (25 of 34 region-folds at 7 and 13
   regions), most often read at NFDRS4's fixed levels or with fitted shares of the season. For
   green-up, the 90-day precipitation sum is best.
@@ -632,15 +632,14 @@ if (file.exists("figs/gsi_curing_eos50_full.png")) {
   0.36–0.37 at 7 and 13 regions, against 0.15–0.21 for NDII7 curing. The GSI follows the
   decline in greenness more closely than the decline in canopy water.
 - **The regional pattern holds.** Against NDVI end of season the GSI beats the typical date in
-  the northern and central Great Plains (15 against 17 days, correlation 0.72) and the Snake
-  River Plain (33 against 44, correlation 0.47), ties in the southern Great Basin (19 against
-  19), and the fits switch it off, or it does worse, in the southern Plains, mid-South,
-  low deserts, monsoon Southwest (46 against 38 days for the form that always dates) and the
-  California annual grasslands (37 against 24).
+  the mid-South (15 against 17 days, correlation 0.72) and the southern Plains (33 against
+  44), ties in the upper Midwest and the low deserts, does worse in the Great Plains (30
+  against 27) and the Rockies (37 against 24), and the fits switch it off in the monsoon
+  Southwest, the California annual grasslands, the Snake River Plain and the southern Great
+  Basin.
 - **What that means.** The failures are not an artifact of the satellite target: with either
-  target, the GSI's form does not fit the seasons of the monsoon Southwest, the deserts, the
-  California grasslands, the southern Plains and the mid-South. Those regions need a
-  different model form.
+  target, the GSI's form does not fit the seasons of the monsoon Southwest, the California
+  grasslands and the interior West. Those regions need a different model form.
 
 ### A different model form: a soil-water bucket
 
@@ -675,51 +674,54 @@ for (nm in c("gsi_curing_eos50_newforms", "gsi_curing_newforms")) if (file.exist
   GSI (correlation 0.36–0.44). Against NDII7 curing the gain is about one day (47.5 against
   48.3). The bucket wins about three of every four region-folds.
 - **It helps green-up most**: 25 days against 27 for the typical date and 26 for the GSI,
-  with a correlation of about 0.5 with early and late years. The gains are largest where the
-  GSI could not help: the southern Plains (30 against 40 days) and the low deserts (27
-  against 35).
-- **It does not fix curing in the hard regions.** Against NDVI end of season:
+  with a correlation of about 0.5 with early and late years. The gains are largest where
+  green-up follows rain rather than spring warmth: the California annual grasslands (30
+  against 40 days), the monsoon Southwest (27 against 35) and the southern Plains (24
+  against 33).
+- **For curing it helps where the GSI already did, and in the monsoon Southwest a little.**
+  Against NDVI end of season:
 
 | Region (13 regions) | Curing: typical / GSI / bucket (days) | Bucket dates curing | Green-up: typical / GSI / bucket (days) |
 |---|---|---|---|
-| 10, northern and central Great Plains | 17 / **15** / **14** | all years | 7 / 8 / 9 |
-| 6, Snake River Plain and northern Great Basin | 44 / **33** / **33** | 98 % | 33 / 26 / **24** |
-| 12, southern Great Basin and Colorado Plateau | 19 / 19 / 19 | all years | 9 / 8 / 8 |
-| 4, low deserts | 29 / off / 28 | all years | 35 / 35 / **27** |
-| 1, Gulf and south Atlantic coastal plain | 29 / 30 / 29 | 94 % | 62 / 39 / **38** |
-| 9, Pacific Northwest | 27 / 30 / 27 | all years | 10 / 11 / 13 |
-| 2, southern Plains | 17 / off / 21 | 93 % | 40 / off / **30** |
-| 5, mid-South | 26 / off / off | 0 % | 30 / 32 / 34 |
-| 11, California annual grasslands | 24 / 37 / 31 | 50 % | 13 / 14 / 18 |
-| 3, monsoon Southwest | 38 / off / off | 0 % | 44 / 44 / 44 |
+| 2, southern Plains | 44 / **33** / **33** | 98 % | 33 / 26 / **24** |
+| 3, monsoon Southwest | 29 / off / **28** | all years | 35 / 35 / **27** |
+| 4, low deserts | 29 / 30 / 29 | 94 % | 62 / 39 / **38** |
+| 5, mid-South (with the tallgrass prairie) | 17 / 15 / **14** | all years | **7** / 8 / 9 |
+| 6, Snake River Plain and northern Great Basin | 26 / off / off | 0 % | **30** / 32 / 34 |
+| 7, Rockies | 24 / 37 / 31 | 50 % | **13** / 14 / 18 |
+| 10, northern and central Great Plains | 27 / 30 / 27 | all years | **10** / 11 / 13 |
+| 11, California annual grasslands | 17 / off / 21 | 93 % | 40 / 40 / **30** |
+| 12, southern Great Basin and Colorado Plateau | 38 / off / off | 0 % | 44 / 44 / 44 |
+| 13, upper Midwest | 19 / 19 / 19 | all years | 9 / 8 / 8 |
 
-: Each cell's typical date, the best GSI form and the best new form, by region (error in days on held-out years, NDVI end of season as the curing target). "off" means the fits gave no dates and fell back to the typical date. Regions 7 and 8 have too few sampled cells. {.striped}
+: Each cell's typical date, the best GSI form and the best new form, by region (error in days on held-out years, NDVI end of season as the curing target). "off" means the fits gave no dates and fell back to the typical date. Regions 1, 8 and 9 have too few sampled cells. Corrected October 12 (map region numbers; see the note under the first curing table). {.striped}
 
-- **The season-aware reading does not rescue the monsoon Southwest.** There every form,
-  with either target, ends up switched off for curing and no better than the typical date
-  for green-up.
-- **What that means.** With weather alone, in these simple forms, curing in the monsoon
-  Southwest, the mid-South, the southern Plains and the California annual grasslands is
-  not predicted better than by each place's typical date. The likely reasons differ by region.
-  - California annual grasses senesce after setting seed, whatever the weather.
-  - In the mid-South and tallgrass prairie, curing comes with fall cold and short days, more
-    than with drought.
-  - In the monsoon Southwest, the season the satellite sees switches between spring and
-    summer.
+- **What that means.** With weather in these simple forms, curing is predicted better than
+  by each place's typical date only in the southern Plains and the mid-South (and barely in
+  the monsoon Southwest). In the California annual grasslands, the interior West, the
+  Rockies, the Great Plains, the upper Midwest and the low deserts the typical date is as
+  good or better. California annual grasses senesce after setting seed, which the GSI's
+  ramps do not represent; in the interior West the satellite target itself is often in a
+  different season from the ground.
 
-  For green-up, the bucket adds skill where the GSI had none (the southern Plains and the
-  low deserts).
+  For green-up, the bucket adds skill in the California grasslands, the monsoon Southwest,
+  the low deserts and the southern Plains; elsewhere the typical date is as good.
 
 ### Which weather cues go with early and late curing?
 
-**Decision (October 11).** Operational curing in the monsoon Southwest, the mid-South, the
-southern Plains and the California annual grasslands uses each place's **typical curing
-date** as the baseline, because no model tried beats it there. The GSI or the soil-water
-bucket is used where they beat it (the Great Plains and the Snake River Plain), and the bucket
-for green-up.
+**Decision (October 11), under revision.** The decision set each place's **typical curing
+date** as the baseline in the regions where no model beat it, and the GSI or bucket where
+they did. It named the regions from the model tables above before they were corrected
+(October 12): those tables had shown the clustering's internal region numbers under the
+map's names. With the map numbers, the GSI or bucket beats the typical date in the southern
+Plains and the mid-South (and barely in the monsoon Southwest); nothing beats it in the
+California annual grasslands, the interior West, the Rockies, the Great Plains, the upper
+Midwest or the low deserts. The cue screening and rule test below use the map numbers
+throughout. A revised decision is proposed under [Typical date plus a weather
+adjustment](#typical-date-plus-a-weather-adjustment).
 
-Region-specific curing rules might still do better in those four regions, but only if some
-weather cue explains early and late curing years there. Before building such rules, the
+Region-specific curing rules might still beat the typical date, but only if some weather cue
+explains early and late curing years. Before building such rules, the
 yearly departures of the satellite curing date from each cell's own mean are compared with
 the yearly departures of candidate cues, region by region:
 
@@ -759,8 +761,8 @@ their typical size falls by about a fifth (the square root of 0.67 is 0.82).
 
 - **Weather cues explain little of the early and late curing years.** Across CONUS a
   three-cue model predicts 10 % of the departures in held-out years; within regions, 8–33 %.
-  For comparison, where the GSI works it does better: in the Great Plains (region 10) its
-  curing dates correlate 0.72 with the satellite's departures (about half the variance), against
+  For comparison, where the bucket works best it does better: in the mid-South (5) its curing
+  dates correlate 0.76 with the satellite's departures (more than half the variance), against
   25 % for the best cues.
 - **The California annual grasslands (11) are the one clear case.** Cue models predict a
   third of the departures. A warm spring brings curing earlier (correlation −0.53); a wet
@@ -830,6 +832,50 @@ if (file.exists(f)) {
   cat("\n\n")
 } else cat("*Results to come.*\n\n")
 ```
+
+**Reading the rule test (October 12).**
+
+- **The adjustment beats the typical date in every region**, with weather that ends two
+  weeks before the date. Across CONUS the error falls from 29.3 to 27.2 days; the gain is
+  2.3 days with no lead and still 1.8 days with a 30-day lead, so most of the signal is in
+  weather well before curing. Nationally that is better than the best GSI or bucket form per
+  region (28 days). It does better than the cue screening suggested because its windows end
+  at each cell's own typical date instead of fixed calendar seasons.
+- **The gains are a few days**: largest in the southern Plains (4.6), the Great Plains (4.5),
+  the low deserts (3.1), the upper Midwest (2.8) and the California annual grasslands (2.7,
+  from 17 to 14 days); about a day in the monsoon Southwest, the southern Great Basin and the
+  Rockies; and 0.3 days in the mid-South. About half of the held-out cell-years get closer
+  and a third get further away; the adjusted dates follow early and late years with
+  correlations of about 0.5 where the gains are largest.
+- **The cues it picks make physical sense.** Warm weather in the last two months brings
+  curing earlier (about 5–6 days per degree in the Great Plains, 2–3 in the California
+  grasslands, 3–6 in the southern Plains); rain in the last one to three months delays it
+  (about 0.1–0.3 days per mm); a long dry spell or a long time since the last soaking rain
+  brings it earlier; and a late green-up means a late curing.
+- **Against the model forms** (curing error in days, NDVI end of season):
+
+| Region (13 regions) | Typical date | Best GSI | Best bucket | Typical date + adjustment (14-day lead) |
+|---|---|---|---|---|
+| 2, southern Plains | 44 | **33** | **33** | 39 |
+| 3, monsoon Southwest | 29 | off | **28** | **28** |
+| 4, low deserts | 29 | 30 | 29 | **26** |
+| 5, mid-South (with the tallgrass prairie) | 17 | 15 | **14** | 17 |
+| 6, Snake River Plain and northern Great Basin | 26 | off | off | **24** |
+| 7, Rockies | 24 | 37 | 31 | **24** |
+| 10, northern and central Great Plains | 27 | 30 | 27 | **22** |
+| 11, California annual grasslands | 17 | off | 21 | **14** |
+| 12, southern Great Basin and Colorado Plateau | 38 | off | off | **37** |
+| 13, upper Midwest | 19 | 19 | 19 | **16** |
+
+: Curing error on held-out years by approach and region (bold: best, where it beats the typical date). "off": the fits gave no dates. The rules in each column are fitted per region on the same years. {.striped}
+
+**Proposed decision (replacing October 11; for the team to confirm).** Operational curing
+uses **the typical date plus the weather adjustment** in every region except the southern
+Plains and the mid-South, where **the soil-water bucket** (or GSI) does better; in the
+monsoon Southwest the two tie. Green-up uses **the bucket** in the California annual
+grasslands, the monsoon Southwest, the low deserts and the southern Plains, and **the
+typical date** elsewhere. The model work on curing stops here; the next step is writing up
+this recommendation per region.
 
 ### Is the satellite curing date the right target?
 
@@ -1165,7 +1211,7 @@ models, not by clustering scores alone.
 | Oct 9 2026 | **Working regions: A2 at 13 regions, nested into A2 at 7** for fitting where data are thin; herbaceous-weighted 13 as a western sensitivity check | Skill is flat between 7 and 13; 13 keeps three western splits (monsoon Southwest vs southern Plains, California grasslands vs low deserts, northern Plains vs upper Midwest) |
 | Oct 9 2026 | A3 = A2 + GSI features (FEMS operational settings with the 28-day precipitation ramp; without VPD and with KBDI as sensitivity runs) | Tests whether the GSI as run today adds to, or steers, the regions |
 | Oct 10 2026 | A2 stays the working set after A3: the GSI features add little to the regions and make them less stable | A3 vs A2 within noise on satellite timing, ground observations and synchrony; stability 0.74 against 0.83 at 7 regions |
-| Oct 11 2026 | Curing baseline: each place's typical curing date in the monsoon Southwest, mid-South, southern Plains and California annual grasslands; GSI or soil-water bucket where they beat it (Great Plains, Snake River Plain); bucket for green-up | No model tried beats the typical curing date in those four regions, with either satellite target; region-specific rules are screened next |
+| Oct 11 2026 | Curing baseline (under revision October 12: the region names came from mislabeled tables): each place's typical curing date in the monsoon Southwest, mid-South, southern Plains and California annual grasslands; GSI or soil-water bucket where they beat it (Great Plains, Snake River Plain); bucket for green-up | No model tried beats the typical curing date in those four regions, with either satellite target; region-specific rules are screened next |
 | Oct 12 2026 | Curing rule test: one general rule (typical date plus a weather adjustment from weather known 14 days ahead), tested in every region and kept only where it beats the typical date | The cue screening found a usable cue only in the California annual grasslands and could see weather after curing; one rule for all regions avoids picking the winner in advance. This is the last curing experiment before the write-up |
 
 : Analysis decisions {.striped}
@@ -1173,12 +1219,10 @@ models, not by clustering scores alone.
 ## Open questions for the team
 
 - **Study period:** use all of 2001–2025, or a fixed recent window?
-- **Curing rules for the hard regions:** the typical curing date is now the baseline in the
-  monsoon Southwest, the mid-South, the southern Plains and the California annual grasslands.
-  The cue screening found a usable cue only in the California annual grasslands. A general
-  "typical date plus weather adjustment" rule is now being tested in every region; where it
-  does not beat the typical date, the typical date stays. Is a 14-day lead the right
-  operational case?
+- **Curing rule by region:** the proposed decision is the typical date plus a weather
+  adjustment in most regions, and the soil-water bucket in the southern Plains and the
+  mid-South. The gains are a few days. Is that worth the added complexity for managers, and
+  is a 14-day lead the right operational case?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -1191,14 +1235,16 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-12 | Curing rule test: typical date plus a weather adjustment beats the typical date in every region (29.3 to 27.2 days nationally) and is best in 8 of 10; revised curing decision proposed |
+| 2026-10-12 | Correction: the GSI and bucket region tables showed the clustering's internal region numbers under the map's names; tables, text and the October 11 decision corrected |
 | 2026-10-12 | Typical curing date plus a weather adjustment (weather known 14 days ahead) set up as the last curing test |
 | 2026-10-12 | Curing cue screening: weather cues predict 8–33 % of yearly curing departures by region; a usable cue only in the California annual grasslands |
 | 2026-10-12 | Target check year-to-year correlations revised (dates either side of January 1 unwrapped; season mismatches left out): 0.77 for curing overall, near 0.1 in the mid-South |
 | 2026-10-11 | Curing baseline decided (typical date in four regions); cue screening set up; worked examples for the target check, bucket, season-aware reading and cue screening |
-| 2026-10-11 | Soil-water bucket and season-aware forms: first narrow national gain over the typical date; best for green-up in the southern Plains and low deserts; hard regions unchanged for curing |
+| 2026-10-11 | Soil-water bucket and season-aware forms: first narrow national gain over the typical date; best for green-up in the California grasslands and monsoon Southwest (names corrected October 12) |
 | 2026-10-10 | Curing test scored against NDVI end of season: steadier target, same regional pattern |
 | 2026-10-10 | Satellite green-up and curing dates checked against ground observations, year by year and by region |
-| 2026-10-10 | GSI curing-form test rerun with fair scoring: the GSI tracks curing in 3 western regions and should be switched off in 5 |
+| 2026-10-10 | GSI curing-form test rerun with fair scoring: the GSI tracks curing in 3 regions (southern Plains, mid-South, upper Midwest; names corrected October 12) and should be switched off in 5 |
 | 2026-10-10 | Worked examples of every step ("How the numbers work"); page checked for consistency (decision, Block 2 definition, plan status) |
 | 2026-10-10 | A3 regions (with GSI features) compared: little change from A2; first test of GSI curing forms by region |
 | 2026-10-09 | Working regions chosen (A2, 13 nested in 7); A3 regions and a test of GSI curing forms set up |

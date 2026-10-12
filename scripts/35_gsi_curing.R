@@ -267,17 +267,22 @@ if (!is.null(win)) {
   log_msg("best form per region and fold: ", paste(sprintf("%s %d", names(tw), tw), collapse = ", "))
 }
 
-# per region: best form, reference form, CONUS best, climatology
+# per region: best form, reference form, CONUS best, climatology. `region` is the clustering's
+# internal label; `region_page` is the number on the project-page maps (region_display), which
+# is what the page, 36, 37 and 38 use (fixed Oct 12: the internal labels had been read as page
+# numbers).
 rs <- list()
 for (nm in names(P)) for (kn in colnames(P[[nm]])) {
   k <- as.integer(sub("k", "", kn)); reg <- P[[nm]][S$cells$row, kn]
+  Dp <- tryCatch(region_display(cfg, grid, list(list(partition = nm, k = k)))[[1]], error = function(e) NULL)
   for (r in sort(unique(reg[!is.na(reg)]))) {
     i <- which(reg == r); ob <- list(sos = obs_all$sos[i, , drop = FALSE], cure = obs_all$cure[i, , drop = FALSE])
+    pg <- if (is.null(Dp)) NA_integer_ else { v <- Dp$num[S$cells$row[i]]; v <- v[!is.na(v)]; if (length(v)) as.integer(names(which.max(table(v)))) else NA_integer_ }
     subm <- function(m) list(sos = m$sos[i, , drop = FALSE], eos = m$eos[i, , drop = FALSE])
     mods <- list(regional_best = reg_m[[paste(nm, k, "best", sep = "|")]], regional_ref = reg_m[[paste(nm, k, ref_form, sep = "|")]],
                  conus_best = conus_m$best, climatology = clim)
     for (mn in names(mods)) if (!is.null(mods[[mn]]))
-      rs[[length(rs) + 1]] <- data.frame(partition = nm, k = k, region = r, cells = length(i), fitted = length(i) >= gmc$min_cells,
+      rs[[length(rs) + 1]] <- data.frame(partition = nm, k = k, region = r, region_page = pg, cells = length(i), fitted = length(i) >= gmc$min_cells,
                                          model = mn, t(gm_score(subm(mods[[mn]]), ob, gmc$penalty_days, gmc$cap_days, mn != "climatology",
                                                     if (fill_on && mn != "climatology") subm(clim))))
   }
