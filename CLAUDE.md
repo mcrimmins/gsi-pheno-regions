@@ -349,6 +349,21 @@ Deferred: fire data, gridMET, ERA5-Land.
      Target good in CA annual (86 % within 30 d) and mid-South (72 %); monsoon SW 34 % mismatch
      (eos50 18 %); Snake River (6 sites) satellite ~4 months later than ground. NDVI end of
      season is at least as good a curing target as NDII7, with fewer season mismatches.
+     Oct 11 fix: anomalies unwrap ground dates around the site median (cdiff) so dates either
+     side of Jan 1 don't make huge departures; rerun to refresh anom r.
+   - **Curing baseline decision (Oct 11):** the typical (median) curing date is the curing
+     baseline in regions 3 (monsoon SW), 5 (mid-South), 2 (S Plains), 11 (CA annual), where no
+     model beat it; GSI / bucket where they beat it (10, 6); bucket for green-up.
+   - `scripts/37_curing_cues.R` (P720, minutes; config `curing_cues:`; `R/cues.R`): screens
+     weather cues for early / late curing years in the hard regions before building
+     region-specific rules. Uses sample_<profile>.rds (needs eos50, added by the eos50 run of
+     35). Cues per cell-year (cue_year: onset, rain_end, spring_rain, fall_frz0/2, tmax_spring /
+     summer, p_cool / spring / summer / fall, dry_spell; plus green-up departures for curing
+     targets), cached to eval/curing_cues/cues_<profile>.rds. Targets eos50, cure50, sos20 as
+     cell-demeaned departures, season jumps (> 90 d from the cell median) dropped. Per A2 k13
+     region: pooled r per cue and cv_r2 of a forward-selected <= 3-cue linear model (odd / even
+     years) -> cue_r.csv, cue_models.csv. Page figure `curing_cues` (heatmap of r, top row
+     cv_r2; CSV table).
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
@@ -384,9 +399,11 @@ changes, also update the page's Decisions / Open questions / Status / Changelog 
 The page is public-facing: no machine names, paths, credentials or ntfy topics.
 `report/_worked_examples.qmd` (included in index.qmd as "How the numbers work", added Oct 10)
 walks through each step on toy data with visible code, sourcing the pipeline's own functions
-from `R/` (features, cluster, evaluate, gsi, gsi_model, cutb_curves; `sync_r2` is copied from
-33). Numbers from random toy data are inline R, so the text follows the output. If a metric's
-definition changes in `R/`, check the matching tab.
+from `R/` (features, cluster, evaluate, gsi, gsi_model, cutb_curves, block2, cues; `sync_r2`
+is copied from 33). Numbers are inline R, so the text follows the output. Tabs 1-11: features
+to GSI model test and profiles; 12 target check (36: circular differences, mismatch, unwrapped
+anomaly r); 13 soil-water bucket; 14 season-aware reading (rel_anchor); 15 cue screening (37).
+If a metric's definition changes in `R/` or a script, check the matching tab.
 `scripts/91_sync_from_p720.R` (laptop) pulls `*_full.png` + merged manifest (and optionally
 summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`. It also renders the page
 (`render`) and uploads `index.html` to S3 with the AWS CLI (`publish`, only when asked;

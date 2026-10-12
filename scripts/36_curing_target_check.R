@@ -130,8 +130,12 @@ if (!length(have)) {
     a <- ok & cnt >= (tc$min_years %||% 3)
     y$g_anom <- NA_real_; y$s_anom <- NA_real_
     if (any(a)) {
-      sa <- y$doy + y$diff                                       # satellite aligned to ground's year
-      y$g_anom[a] <- y$doy[a] - stats::ave(y$doy[a], y$site[a])
+      # ground dates unwrapped around the site's median (Dec 20 and Jan 5 are 16 days apart,
+      # not 350), then the satellite aligned to the ground's year
+      gm <- stats::ave(y$doy, y$site, FUN = function(v) stats::median(v, na.rm = TRUE))
+      gu <- gm + cdiff(y$doy, gm)
+      sa <- gu + y$diff
+      y$g_anom[a] <- gu[a] - stats::ave(gu[a], y$site[a])
       y$s_anom[a] <- sa[a] - stats::ave(sa[a], y$site[a])
     }
     yr_out <- rbind(yr_out, data.frame(set = p$set, metric = p$metric,

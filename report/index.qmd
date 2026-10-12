@@ -88,6 +88,7 @@ models. Where they disagree is where to look for what's missing.
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
 | Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket; curing beats the typical date only in the Great Plains and Snake River Plain |
+| Curing baseline and cue screening | Typical-date baseline decided for four regions; cue screening next |
 
 : Pipeline status {.striped}
 
@@ -709,6 +710,48 @@ for (nm in c("gsi_curing_eos50_newforms", "gsi_curing_newforms")) if (file.exist
   For green-up, the bucket adds skill where the GSI had none (the southern Plains and the
   low deserts).
 
+### Which weather cues go with early and late curing?
+
+**Decision (October 11).** Operational curing in the monsoon Southwest, the mid-South, the
+southern Plains and the California annual grasslands uses each place's **typical curing
+date** as the baseline, because no model tried beats it there. The GSI or the soil-water
+bucket is used where they beat it (the Great Plains and the Snake River Plain), and the bucket
+for green-up.
+
+Region-specific curing rules might still do better in those four regions, but only if some
+weather cue explains early and late curing years there. Before building such rules, the
+yearly departures of the satellite curing date from each cell's own mean are compared with
+the yearly departures of candidate cues, region by region:
+
+- the green-up date: does curing follow a fixed lag after green-up, as seed set in annual
+  grasses would?
+- summer rain onset and end;
+- the last soaking spring rain;
+- the first fall frost and hard freeze;
+- spring and summer heat;
+- rain by season;
+- the longest summer dry spell.
+
+Daylength cannot be a cue, because it is the same every year. For each region the screening
+reports each cue's correlation, and the share of curing departures a small model of up to
+three cues predicts in held-out years. Tab 15 of [How the numbers work](#how-the-numbers-work)
+shows the calculation.
+
+```{r fig-curing-cues}
+#| results: asis
+if (file.exists("figs/curing_cues_full.png")) {
+  show_fig("curing_cues",
+    "Correlation of yearly curing departures (NDVI end of season) with each cue's departures, by working region, and the share of the departures a small cue model predicts in held-out years (top row).",
+    "Grid of correlations between curing departures and weather cues, one column per region, with a top row of predicted shares.")
+  f <- "figs/curing_cues_full.csv"
+  if (file.exists(f)) {
+    tb <- utils::read.csv(f, check.names = FALSE, stringsAsFactors = FALSE)
+    cat(knitr::kable(tb, align = c("l", "r", "r", "l"), caption = "Curing cue screening by region (NDVI end of season)"), sep = "\n")
+    cat("\n\n")
+  }
+} else cat("*Results to come.*\n\n")
+```
+
 ### Is the satellite curing date the right target?
 
 The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.
@@ -1038,18 +1081,18 @@ models, not by clustering scores alone.
 | Oct 9 2026 | **Working regions: A2 at 13 regions, nested into A2 at 7** for fitting where data are thin; herbaceous-weighted 13 as a western sensitivity check | Skill is flat between 7 and 13; 13 keeps three western splits (monsoon Southwest vs southern Plains, California grasslands vs low deserts, northern Plains vs upper Midwest) |
 | Oct 9 2026 | A3 = A2 + GSI features (FEMS operational settings with the 28-day precipitation ramp; without VPD and with KBDI as sensitivity runs) | Tests whether the GSI as run today adds to, or steers, the regions |
 | Oct 10 2026 | A2 stays the working set after A3: the GSI features add little to the regions and make them less stable | A3 vs A2 within noise on satellite timing, ground observations and synchrony; stability 0.74 against 0.83 at 7 regions |
+| Oct 11 2026 | Curing baseline: each place's typical curing date in the monsoon Southwest, mid-South, southern Plains and California annual grasslands; GSI or soil-water bucket where they beat it (Great Plains, Snake River Plain); bucket for green-up | No model tried beats the typical curing date in those four regions, with either satellite target; region-specific rules are screened next |
 
 : Analysis decisions {.striped}
 
 ## Open questions for the team
 
 - **Study period:** use all of 2001–2025, or a fixed recent window?
-- **Curing:** the GSI (and a soil-water bucket) track herbaceous curing in the Great Plains
-  and the Snake River Plain. In the monsoon Southwest, the mid-South, the southern Plains and
-  the California annual grasslands, nothing tried beats each place's typical date. Should
-  operational curing there use the typical date (with the bucket or GSI for green-up), or
-  is a region-specific curing rule worth building: seed-set timing for annual grasses,
-  fall cold and daylength for tallgrass, season switching for the monsoon?
+- **Curing rules for the hard regions:** the typical curing date is now the baseline in the
+  monsoon Southwest, the mid-South, the southern Plains and the California annual grasslands.
+  If the cue screening finds a cue that explains early and late years there, is a
+  region-specific rule worth building: seed-set timing for annual grasses, fall cold for
+  tallgrass, season switching for the monsoon?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -1062,6 +1105,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-11 | Curing baseline decided (typical date in four regions); cue screening set up; worked examples for the target check, bucket, season-aware reading and cue screening |
 | 2026-10-11 | Soil-water bucket and season-aware forms: first narrow national gain over the typical date; best for green-up in the southern Plains and low deserts; hard regions unchanged for curing |
 | 2026-10-10 | Curing test scored against NDVI end of season: steadier target, same regional pattern |
 | 2026-10-10 | Satellite green-up and curing dates checked against ground observations, year by year and by region |

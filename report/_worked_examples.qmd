@@ -8,7 +8,7 @@ arithmetic is the real thing; only the data are made up and small enough to chec
 ```{r we-setup}
 #| include: false
 # Worked examples: load the pipeline's own functions (no data needed).
-for (f in c("features.R", "cluster.R", "evaluate.R", "gsi.R", "gsi_model.R", "cutb_curves.R"))
+for (f in c("features.R", "cluster.R", "evaluate.R", "gsi.R", "gsi_model.R", "cutb_curves.R", "block2.R", "cues.R"))
   sys.source(file.path("..", "R", f), envir = globalenv())
 options(digits = 3, width = 100)
 we_ok <- exists("r2_groups") && exists("gm_score") && exists("whit_fit")
@@ -442,5 +442,168 @@ t(sapply(split(p_ann, fine), function(v) c(median = median(v), IQR = IQR(v))))
 
 Fine region 1 sits mostly (75 %) in coarse region 1; fine region 2 entirely in coarse 2.
 The page's crosswalk lists every coarse region that holds at least 5 % of a fine region.
+
+### 12. Target check
+
+**What it is for.** The model tests score against satellite dates. This check asks whether
+those dates agree with ground observations of the same event (NPN grass curing, for example)
+at the same place and year. Two details matter:
+
+- dates are compared on a circular year, so a satellite date of −20 (December 12 of the year
+  before) and a ground date of day 350 are 5 days apart, not 370;
+- a difference of more than 90 days is counted as a *season mismatch*: the satellite and the
+  ground picked different seasons (spring against monsoon, for example).
+
+**Input.** Two sites, four years each. Site B cures around the turn of the year, so some of
+its dates are written as negative days (days before January 1).
+
+```{r we-12a}
+#| echo: true
+cdiff <- function(a, b) { d <- (a - b) %% 365.25; ifelse(d > 182.625, d - 365.25, d) }   # as in script 36
+tc <- data.frame(site = rep(c("A", "B"), each = 4), year = rep(2011:2014, 2),
+                 ground    = c(150, 172, 141, 160, 350, 10, 340, 355),
+                 satellite = c(158, 176, 152, 262, -20, 20, -30, -5))
+tc$diff <- cdiff(tc$satellite, tc$ground)
+tc
+c(mean_abs_diff = mean(abs(tc$diff)), within_30 = mean(abs(tc$diff) <= 30), season_mismatch = mean(abs(tc$diff) > 90))
+```
+
+```{r we-12-text}
+#| include: false
+d12 <- tc$diff
+```
+
+Site B's winter dates line up once the year wraps: differences of `r paste(sprintf("%g", d12[5:8]), collapse = ", ")`
+days instead of several hundred. Site A's 2014 satellite date is `r round(d12[4])` days late: a
+season mismatch. Mean absolute difference, share within 30 days and share of mismatches are the
+three columns of the target-check tables.
+
+**Year-to-year agreement.** Each site's dates become departures from that site's own mean, and
+the departures are correlated. This asks whether the satellite sees the same early and late
+years as the ground, whatever its average offset. Two details: the ground dates are first
+unwrapped around the site's median (so site B's January 10 counts as day 375, next to its late
+December dates), and the satellite date is placed on the same scale by adding the difference.
+
+```{r we-12b}
+#| echo: true
+ok  <- abs(tc$diff) <= 90                                    # leave out the season mismatch
+med <- ave(tc$ground, tc$site, FUN = median)
+g_un <- med + cdiff(tc$ground, med)                          # ground, unwrapped around the site median
+s_un <- g_un + tc$diff                                       # satellite on the same scale
+g_dep <- g_un[ok] - ave(g_un[ok], tc$site[ok])
+s_dep <- s_un[ok] - ave(s_un[ok], tc$site[ok])
+data.frame(site = tc$site[ok], ground_dep = round(g_dep, 1), satellite_dep = round(s_dep, 1))
+r12 <- cor(g_dep, s_dep); round(r12, 2)
+```
+
+The departures mostly have the same signs and similar sizes, so the correlation is
+`r sprintf("%.2f", r12)`: the satellite sees the same early and late years even where its dates
+are a week or so off. In the report the correlation is computed over all site-years with at
+least three years at the site; the table gives it with the season mismatches included, and the
+text quotes it without them.
+
+### 13. Soil-water bucket
+
+**What it is for.** An alternative to the GSI for regions where its form does not fit. A
+daily bucket fills with rain and drains by evapotranspiration in proportion to how full it
+is; the index is a ramp on how full the bucket is (times a minimum-temperature ramp for cold
+places). There is no VPD or daylength term, so cool-season growth is not held back.
+
+**Input.** Two toy California-like years: a 15 mm storm every 6 days from November through
+March, potential evapotranspiration (PET) of 1 mm a day in January and 8 in July, and mild
+minimum temperatures. The bucket holds 150 mm. The second year is read, as the model reads
+year Y with the months before it in view; days before January 1 are negative.
+
+```{r we-13a}
+#| echo: true
+dd  <- -364:365                                  # day relative to Jan 1 of the year read
+doy <- ((dd - 1) %% 365) + 1
+P   <- matrix(ifelse((doy <= 90 | doy >= 305) & doy %% 6 == 0, 15, 0), 1)
+PET <- matrix(pmax(4.5 - 3.5 * cos(2 * pi * (doy - 15) / 365), 0.5), 1)
+fill <- m_bucket(P, PET, wmax = 150)                                        # relative fill, 0-1
+idx  <- m_ramp(fill, 0.15, 0.5) * m_ramp(matrix(8, 1, length(dd)), -2, 5)  # fill ramp x Tmin ramp (mild)
+G    <- matrix(m_roll_mean(idx, 28), 1)
+first_of <- c(Jan = 1, Feb = 32, Mar = 60, Apr = 91, May = 121, Jun = 152, Jul = 182, Nov = 305, Dec = 335)
+round(fill[1, match(first_of, dd)], 2)
+sd13 <- gm_season_dates(G, dd, which(dd >= 1), list(season_halfwidth_days = 183, min_amp = 0.05),
+                        "rel_split", c(up = 0.2, down = 0.5))
+sd13
+```
+
+```{r we-13-text}
+#| include: false
+f13 <- setNames(fill[1, match(first_of, dd)], names(first_of))
+```
+
+The bucket is `r round(f13[["Apr"]], 2)` full at the end of the rains (April 1), has drained to
+`r round(f13[["Jun"]], 2)` by June 1 and is empty by July; the November storms refill it. Read
+with green-up at 20 % and curing at half of the decline, the season starts on day
+`r sd13[1, "sos"]` (that is, `r -sd13[1, "sos"]` days before January 1: late November) and cures
+on day `r sd13[1, "eos"]` (mid-May), about where a California annual grassland's season falls.
+In the test the bucket size, the fill ramp and the temperature ramp are fitted per region,
+just like the GSI's thresholds; the fitted bucket sizes were mostly 180–205 mm.
+
+### 14. Season-aware reading
+
+**What it is for.** In the monsoon Southwest a year can have a spring and a summer season. Read
+as "the year's highest point", the dates jump between the two. The season-aware reading looks
+for the peak within 75 days of the cell's usual mid-season instead: halfway between its typical
+green-up and curing dates in the fitting years (never the scored years).
+
+```{r we-14a}
+#| echo: true
+d <- 1:365
+two <- 0.8 * exp(-((d - 100) / 25)^2) + 0.6 * exp(-((d - 220) / 30)^2)   # spring peak higher than summer
+G2 <- matrix(two, 1)
+g2 <- list(season_halfwidth_days = 183, min_amp = 0.05, anchor_halfwidth_days = 75)
+usual_mid <- gm_anchor(matrix(c(195, 200, 190), 1), matrix(c(250, 245, 255), 1))   # typical green-up / curing
+c(usual_mid_season = usual_mid)
+rbind(highest_point = gm_season_dates(G2, d, d, g2, "rel_split", c(up = 0.2, down = 0.5))[1, ],
+      season_aware  = gm_season_dates(G2, d, d, g2, "rel_anchor", c(up = 0.2, down = 0.5), anchor = usual_mid)[1, ])
+```
+
+```{r we-14-text}
+#| include: false
+h14 <- gm_season_dates(G2, d, d, g2, "rel_split", c(up = 0.2, down = 0.5))[1, ]
+a14 <- gm_season_dates(G2, d, d, g2, "rel_anchor", c(up = 0.2, down = 0.5), anchor = usual_mid)[1, ]
+```
+
+Read by the highest point, this year's season is the spring one (green-up on day
+`r h14[["sos"]]`, curing on day `r h14[["eos"]]`). Read near the usual mid-season (day
+`r round(usual_mid)`), it is the summer one (`r a14[["sos"]]` to `r a14[["eos"]]`), which is what this
+cell normally does. In the test, the season-aware reading did not beat the
+typical date in the monsoon Southwest either.
+
+### 15. Cue screening
+
+**What it is for.** Before building a region-specific curing rule, check whether any weather
+cue explains early and late curing years at all. Each cell's yearly curing date and each cue
+become departures from the cell's own mean. The screening reports:
+
+- the correlation of curing departures with each cue's departures;
+- the share of curing departures that a small linear model of up to three cues predicts in
+  held-out years. Cues are picked on the odd years and scored on the even years, then the
+  reverse. A share near zero means no cue in the list helps.
+
+**Input.** Toy data, 8 cells × 12 years: curing comes later after a wet fall, plus noise; spring
+heat is unrelated.
+
+```{r we-15a}
+#| echo: true
+set.seed(15)
+fall_rain   <- matrix(rnorm(96, 0, 40), 8)            # mm departures, cells x years
+spring_heat <- matrix(rnorm(96, 0, 1.5), 8)           # C departures
+curing      <- 0.25 * fall_rain + matrix(rnorm(96, 0, 8), 8)   # days: +10 d per +40 mm, plus noise
+cues <- list(fall_rain = cue_anom(fall_rain), spring_heat = cue_anom(spring_heat))
+yrs <- 2002:2013; folds <- list(odd = which(yrs %% 2 == 1), even = which(yrs %% 2 == 0))
+sc15 <- cue_screen(cue_anom(curing), cues, folds)
+round(sc15$r, 2); round(sc15$cv_r2, 2); sc15$cues
+```
+
+Fall rain correlates with curing (`r sprintf("%.2f", sc15$r[["fall_rain"]])`) and is picked in
+both folds; spring heat is not. The model predicts
+`r sprintf("%.0f %%", 100 * sc15$cv_r2)` of the curing departures in years it did not see. On
+real data, a region where no cue reaches a useful share is one where a rule built on these
+cues is unlikely to beat the typical date.
 
 :::

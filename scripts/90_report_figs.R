@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -682,6 +682,55 @@ if (do(gcv) && have(gc_file)) {
     utils::write.csv(w, file.path(fig_dir, sprintf("%s_best_%s.csv", gcv, profile)), row.names = FALSE)
   }
 }
+}
+
+# curing_cues: which weather cues go with early and late curing years, per working region
+# (37_curing_cues.R): correlation of curing departures with each cue's departures, and the share
+# of curing departures a small cue model predicts in held-out years
+cq_dir <- file.path(eval_dir, "curing_cues")
+if (do("curing_cues") && have(file.path(cq_dir, "cue_r.csv"))) {
+  cr <- utils::read.csv(file.path(cq_dir, "cue_r.csv"), stringsAsFactors = FALSE)
+  cm <- utils::read.csv(file.path(cq_dir, "cue_models.csv"), stringsAsFactors = FALSE)
+  cue_lab <- c(greenup = "Green-up date", onset = "Summer rain onset", rain_end = "End of summer rains",
+               spring_rain = "Last spring rain", fall_frz0 = "First fall frost (0 C)", fall_frz2 = "First hard freeze (-2.2 C)",
+               tmax_spring = "Spring heat (Mar-May)", tmax_summer = "Summer heat (Jun-Aug)", p_cool = "Cool-season rain (Oct-Mar)",
+               p_spring = "Spring rain (Apr-Jun)", p_summer = "Summer rain (Jul-Sep)", p_fall = "Fall rain (Sep-Nov)",
+               dry_spell = "Longest summer dry spell")
+  for (tg in intersect(c("eos50", "cure50"), unique(cr$target))) {
+    d <- cr[cr$target == tg, ]; m <- cm[cm$target == tg, ]
+    regs <- c("CONUS", setdiff(unique(d$region), "CONUS")); regs <- regs[order(regs != "CONUS", suppressWarnings(as.integer(regs)))]
+    cues <- intersect(names(cue_lab), unique(d$cue))
+    Rm <- matrix(NA, length(cues), length(regs), dimnames = list(cues, regs))
+    for (i in seq_len(nrow(d))) Rm[d$cue[i], d$region[i]] <- d$r[i]
+    pal <- grDevices::colorRampPalette(c("#2166ac", "#f7f7f7", "#b2182b"))(41)
+    plot_png(paste0("curing_cues", if (tg == "cure50") "_ndii" else ""), all_years, 2400, 1500, function() {
+      par(mar = c(5, 13, 5.5, 1))
+      nc <- length(cues)
+      image(seq_along(regs), seq_along(cues), t(Rm), col = pal, zlim = c(-1, 1), axes = FALSE, xlab = "", ylab = "",
+            ylim = c(0.5, nc + 1.7))
+      axis(1, seq_along(regs), ifelse(regs == "CONUS", "CONUS", paste("Region", regs)), las = 2, cex.axis = 0.8, tick = FALSE)
+      axis(2, c(seq_along(cues), nc + 1.2), c(cue_lab[cues], "Share predicted,\nheld-out years"), las = 1, cex.axis = 0.8, tick = FALSE)
+      for (i in seq_along(regs)) for (j in seq_along(cues)) if (is.finite(Rm[j, i]))
+        text(i, j, sprintf("%.2f", Rm[j, i]), cex = 0.62, col = if (abs(Rm[j, i]) > 0.5) "white" else ink)
+      cv <- m$cv_r2[match(regs, m$region)]
+      for (i in seq_along(regs)) {
+        v <- cv[i]; g <- if (is.finite(v)) grDevices::gray(1 - 0.7 * max(0, min(1, v))) else "#ffffff"
+        rect(i - 0.5, nc + 0.75, i + 0.5, nc + 1.65, col = g, border = "white")
+        text(i, nc + 1.2, if (is.finite(v)) sprintf("%.2f", max(v, 0)) else "", cex = 0.7, font = 2,
+             col = if (is.finite(v) && v > 0.5) "white" else ink)
+      }
+      mtext(sprintf("Correlation of curing departures (%s) with cue departures", if (tg == "eos50") "NDVI end of season" else "NDII7 curing"),
+            side = 3, line = 2.4, adj = 0, font = 2, cex = 0.95, col = ink)
+      mtext("Each cell's yearly departure from its own mean, pooled over the region; red = later curing when the cue is later or larger. Top row: share of curing departures a cue model predicts in held-out years",
+            side = 3, line = 1.0, adj = 0, cex = 0.68, col = ink2)
+    })
+    tb <- data.frame(Region = ifelse(regs == "CONUS", "CONUS", regs),
+                     `Curing departures (SD, days)` = sprintf("%.0f", m$anom_sd[match(regs, m$region)]),
+                     `Share predicted in held-out years` = sprintf("%.2f", m$cv_r2[match(regs, m$region)]),
+                     `Cues picked (odd / even fitting years)` = paste(m$cues_odd[match(regs, m$region)], "/", m$cues_even[match(regs, m$region)]),
+                     check.names = FALSE)
+    utils::write.csv(tb, file.path(fig_dir, sprintf("curing_cues%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile)), row.names = FALSE)
+  }
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------

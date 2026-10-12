@@ -258,6 +258,17 @@ default:
       - {set: grass_cured, metric: eos20, label: "NPN grass cured vs NDVI end (eos20)"}
       - {set: lfmc_herb_decline, metric: cure50, label: "Herb LFMC 50 % decline vs NDII7 curing"}
 
+  # Curing cue screening (37_curing_cues.R, P720; Oct 11 2026): per working region, which yearly
+  # weather cues (R/cues.R) go with early and late satellite curing years, and how much of the
+  # year-to-year curing variation a small cue model predicts in held-out years.
+  curing_cues:
+    partition: A2_groups
+    k: 13
+    min_cells: 25               # sampled cells a region needs
+    max_cues: 3                 # cues per model (forward selection on the fitting years)
+    min_gain: 0.01              # each added cue must raise the fitting-year R^2 by this much
+    max_abs_anomaly: 90         # days; larger departures are season jumps, dropped (as in 33)
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
