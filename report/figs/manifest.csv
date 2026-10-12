@@ -3,6 +3,8 @@
 "block1_iqr","full","CONUS","2002-2025","2026-10-07"
 "block1_medians","dev","Arizona test area (dev)","2024-2025","2026-10-06"
 "block1_medians","full","CONUS","2002-2025","2026-10-07"
+"curing_cues","full","CONUS","2001-2025","2026-10-12"
+"curing_cues_ndii","full","CONUS","2001-2025","2026-10-12"
 "cutb_curves","dev","Arizona test area (dev)","2023-2025","2026-10-06"
 "cutb_curves","full","CONUS","2021-2023","2026-10-07"
 "cutb_peak","dev","Arizona test area (dev)","2025","2026-10-06"

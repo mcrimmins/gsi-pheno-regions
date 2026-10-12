@@ -11,7 +11,8 @@
 #     rank correlation across sites (does the satellite put late sites late?).
 #   Level 2, year by year (if per-year satellite metrics are present, cutb/metrics/
 #     metrics_<Y>.tif): each site-year vs the cell's satellite date that year. Same scores,
-#     plus the anomaly correlation (site-years minus the site's own mean): does the satellite
+#     plus the anomaly correlation (site-years minus the site's own mean, season mismatches
+#     left out, ground dates unwrapped around the site median): does the satellite
 #     follow early and late years on the ground? Also the ground's own year-to-year spread.
 # Dates are compared on a circular year (a satellite date of -20 = Dec 12 of the year before),
 # so a difference is at most half a year; |difference| > 90 days is counted as a season
@@ -124,8 +125,10 @@ if (!length(have)) {
     p <- pairs[i, ]; y <- Y[Y$set == p$set, ]
     y$sat <- SY[[p$metric]][match(y$key, paste(SY$row, SY$year))]
     y$diff <- cdiff(y$sat, y$doy)
-    # anomalies: sites with >= min_years years of both
-    ok <- !is.na(y$diff)
+    # anomalies: site-years where both see the same season (|diff| <= 90; a mismatch puts the
+    # satellite on the far side of the circle and makes a large, spurious shared departure),
+    # sites with >= min_years such years
+    ok <- !is.na(y$diff) & abs(y$diff) <= (tc$mismatch_days %||% 90)
     cnt <- stats::ave(as.numeric(ok), y$site, FUN = sum)
     a <- ok & cnt >= (tc$min_years %||% 3)
     y$g_anom <- NA_real_; y$s_anom <- NA_real_

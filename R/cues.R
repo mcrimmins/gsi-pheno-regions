@@ -93,3 +93,65 @@ cue_screen <- function(y, C, folds, max_cues = 3, min_gain = 0.01) {
   list(r = r, n = n, cv_r2 = if (sst > 0) 1 - sse / sst else NA,
        cues = vapply(picked, function(s) paste(s, collapse = "+"), ""))
 }
+
+# ---- Typical date plus a weather adjustment (38_curing_adjust.R) ------------------------------
+# Lead-time cues: each cell's cues use only weather up to a cutoff day `cut` (day relative to
+# Jan 1 of Y; the cell's typical curing date minus the lead time), so the adjustment could be
+# made before the date is needed. All windows end at the cutoff:
+#   p30, p90, p180   precipitation in the 30, 90, 180 days before (mm)
+#   tx30, tx60       mean daily maximum temperature in the 30, 60 days before (C)
+#   dry60            days under 1 mm in the 60 days before
+#   since_rain       days since the last day with >= 10 mm (at most 180)
+#   greenup          this year's satellite green-up date if it is before the cutoff, else NA
+adj_cue_names <- c("p30", "p90", "p180", "tx30", "tx60", "dry60", "since_rain", "greenup")
+
+adj_cues <- function(P, TX, dates, Y, cut, sos_y = NULL) {
+  m <- nrow(P); out <- matrix(NA_real_, m, length(adj_cue_names), dimnames = list(NULL, adj_cue_names))
+  ti <- match(as.Date(sprintf("%d-01-01", Y)) + round(cut) - 1, dates)
+  ok <- which(!is.na(ti) & ti > 180)
+  if (!length(ok)) return(out)
+  lo <- min(ti[ok]) - 180; hi <- max(ti[ok]); cols <- lo:hi; tt <- ti[ok] - lo + 1   # position in block
+  rr <- seq_along(tt)
+  blk <- function(X) X[ok, cols, drop = FALSE]
+  cs <- function(X) { X[is.na(X)] <- 0; if (length(cols) == 1) cbind(0, X) else cbind(0, t(apply(X, 1, cumsum))) }  # col j + 1 = sum 1..j
+  wsum <- function(C, w) C[cbind(rr, tt + 1)] - C[cbind(rr, tt + 1 - w)]
+  Pb <- blk(P); CP <- cs(Pb); CT <- cs(blk(TX)); CD <- cs((Pb < 1) * 1)
+  out[ok, "p30"] <- wsum(CP, 30); out[ok, "p90"] <- wsum(CP, 90); out[ok, "p180"] <- wsum(CP, 180)
+  out[ok, "tx30"] <- wsum(CT, 30) / 30; out[ok, "tx60"] <- wsum(CT, 60) / 60
+  out[ok, "dry60"] <- wsum(CD, 60)
+  since <- rep(180, length(tt)); found <- rep(FALSE, length(tt))
+  for (k in 0:179) {
+    h <- !found & Pb[cbind(rr, tt - k)] >= 10
+    h[is.na(h)] <- FALSE; since[h] <- k; found <- found | h
+  }
+  out[ok, "since_rain"] <- since
+  if (!is.null(sos_y)) out[ok, "greenup"] <- ifelse(!is.na(sos_y[ok]) & sos_y[ok] <= cut[ok], sos_y[ok], NA)
+  out
+}
+
+# Fit and score "typical date + adjustment" for one region and one fold. y_tr / y_te: departures
+# from the typical date (cells x years, NA where unknown; season jumps already NA in y_tr).
+# X_tr / X_te: lists of cue anomaly matrices (same shapes; NA cue -> 0, i.e. "typical").
+# Forward selection on the fitting years (no intercept, so no cue = the typical date), up to
+# max_cues, each raising the fitting R^2 by min_gain. Returns the cues, coefficients and the
+# predicted adjustment for the test years, clamped to +/- max_adj days.
+adj_fit <- function(y_tr, X_tr, X_te, max_cues = 3, min_gain = 0.01, max_adj = 60) {
+  yv <- as.vector(y_tr); u <- !is.na(yv)
+  Xv <- vapply(X_tr, function(x) { v <- as.vector(x); v[is.na(v)] <- 0; v }, numeric(length(yv)))[u, , drop = FALSE]
+  yv <- yv[u]; sel <- character(); best <- 0; sst <- sum(yv^2)
+  if (length(yv) >= 30 && sst > 0) for (step in seq_len(max_cues)) {
+    gain <- c()
+    for (cn in setdiff(colnames(Xv), sel)) {
+      v <- c(sel, cn); if (all(Xv[, cn] == 0)) next
+      gain[cn] <- 1 - sum(stats::lm.fit(Xv[, v, drop = FALSE], yv)$residuals^2) / sst
+    }
+    gain <- gain[is.finite(gain)]
+    if (!length(gain) || max(gain) - best < min_gain) break
+    sel <- c(sel, names(which.max(gain))); best <- max(gain)
+  }
+  te_dim <- dim(X_te[[1]])
+  if (!length(sel)) return(list(cues = character(), b = numeric(), r2_fit = 0, adj = matrix(0, te_dim[1], te_dim[2])))
+  b <- stats::lm.fit(Xv[, sel, drop = FALSE], yv)$coefficients; b[is.na(b)] <- 0
+  adj <- Reduce(`+`, lapply(sel, function(cn) { x <- X_te[[cn]]; x[is.na(x)] <- 0; b[[cn]] * x }))
+  list(cues = sel, b = b, r2_fit = best, adj = pmax(pmin(adj, max_adj), -max_adj))
+}

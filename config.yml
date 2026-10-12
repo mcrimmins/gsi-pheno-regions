@@ -269,6 +269,20 @@ default:
     min_gain: 0.01              # each added cue must raise the fitting-year R^2 by this much
     max_abs_anomaly: 90         # days; larger departures are season jumps, dropped (as in 33)
 
+  # Typical curing date plus a weather adjustment (38_curing_adjust.R, P720): cues end at the
+  # cell's typical date minus the lead time, so the adjustment is known in advance.
+  curing_adjust:
+    partition: A2_groups
+    k: 13
+    min_cells: 25
+    targets: [eos50, cure50]
+    lead_days: [0, 14, 30]      # cutoff = typical date minus this; 14 is the operational case
+    max_cues: 3
+    min_gain: 0.01
+    max_adj_days: 60            # adjustment clamped to +/- this
+    cap_days: 90                # error cap, as in 35
+    max_abs_anomaly: 90         # season jumps left out of fitting (still scored)
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a

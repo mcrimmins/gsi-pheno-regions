@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -730,6 +730,31 @@ if (do("curing_cues") && have(file.path(cq_dir, "cue_r.csv"))) {
                      `Cues picked (odd / even fitting years)` = paste(m$cues_odd[match(regs, m$region)], "/", m$cues_even[match(regs, m$region)]),
                      check.names = FALSE)
     utils::write.csv(tb, file.path(fig_dir, sprintf("curing_cues%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile)), row.names = FALSE)
+  }
+}
+
+# curing_adjust: typical curing date plus a weather adjustment known in advance (38): table per
+# region with the typical-date and adjusted errors at a 14-day lead, the gain at 0 / 14 / 30
+# days lead, and the cues picked (curing_adjust[_ndii]_<profile>.csv; no figure)
+ad_dir <- file.path(eval_dir, "curing_adjust")
+if (do("curing_adjust") && have(file.path(ad_dir, "scores.csv"))) {
+  sc <- utils::read.csv(file.path(ad_dir, "scores.csv"), stringsAsFactors = FALSE)
+  cue_lab2 <- c(p30 = "rain 30 d", p90 = "rain 90 d", p180 = "rain 180 d", tx30 = "Tmax 30 d", tx60 = "Tmax 60 d",
+                dry60 = "dry days 60 d", since_rain = "days since 10 mm", greenup = "green-up")
+  lab_cues <- function(x) vapply(strsplit(ifelse(is.na(x), "", as.character(x)), "+", fixed = TRUE), function(v) if (!length(v)) "none" else paste(cue_lab2[v], collapse = ", "), "")
+  for (tg in intersect(c("eos50", "cure50"), unique(sc$target))) {
+    d <- sc[sc$target == tg, ]
+    regs <- unique(d$region); regs <- regs[order(regs != "CONUS", suppressWarnings(as.integer(regs)))]
+    g <- function(r, l, v) { x <- d[d$region == r & d$lead == l, v]; if (length(x)) x[1] else NA }
+    tb <- data.frame(Region = regs,
+                     `Typical date (MAE, days)` = sprintf("%.1f", vapply(regs, g, 0, l = 14, v = "mae_typical")),
+                     `Adjusted, 14-day lead (MAE, days)` = sprintf("%.1f", vapply(regs, g, 0, l = 14, v = "mae_adjusted")),
+                     `Gain at 0 / 14 / 30 days lead` = vapply(regs, function(r) paste(sprintf("%+.1f", c(g(r, 0, "gain"), g(r, 14, "gain"), g(r, 30, "gain"))), collapse = " / "), ""),
+                     `Cues (14-day lead; odd / even fitting years)` = vapply(regs, function(r) paste(lab_cues(g(r, 14, "cues_odd")), "/", lab_cues(g(r, 14, "cues_even"))), ""),
+                     check.names = FALSE)
+    tb[["Gain at 0 / 14 / 30 days lead"]] <- gsub("NA", "-", tb[["Gain at 0 / 14 / 30 days lead"]])
+    utils::write.csv(tb, file.path(fig_dir, sprintf("curing_adjust%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile)), row.names = FALSE)
+    log_msg("wrote ", sprintf("curing_adjust%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile))
   }
 }
 

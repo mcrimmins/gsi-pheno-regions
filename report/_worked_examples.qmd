@@ -498,9 +498,10 @@ r12 <- cor(g_dep, s_dep); round(r12, 2)
 
 The departures mostly have the same signs and similar sizes, so the correlation is
 `r sprintf("%.2f", r12)`: the satellite sees the same early and late years even where its dates
-are a week or so off. In the report the correlation is computed over all site-years with at
-least three years at the site; the table gives it with the season mismatches included, and the
-text quotes it without them.
+are a week or so off. In the report the correlation is computed the same way over all
+site-years, at sites with at least three years without a mismatch. Leaving a mismatch in would
+be a mistake: its satellite date lands on the far side of the year, which makes one large
+departure that can drive the correlation on its own.
 
 ### 13. Soil-water bucket
 
@@ -605,5 +606,58 @@ both folds; spring heat is not. The model predicts
 `r sprintf("%.0f %%", 100 * sc15$cv_r2)` of the curing departures in years it did not see. On
 real data, a region where no cue reaches a useful share is one where a rule built on these
 cues is unlikely to beat the typical date.
+
+### 16. Typical date plus adjustment
+
+**What it is for.** The test of the one curing rule that could replace the typical date in the
+hard regions: shift each cell's typical curing date by a small weather adjustment that uses
+only weather known some days before the date (the lead time). It is scored exactly like the
+GSI: fitted on odd years, scored on even years, and the reverse.
+
+**Input.** Toy data, 40 cells × 12 years of daily weather. Curing comes 5 days earlier for each
+degree of warm spring (a property of the year) and later after a wet winter, plus noise. The
+cutoff is the typical date minus 14 days, so the last two weeks of weather are not used.
+
+```{r we-16a}
+#| echo: true
+set.seed(16); n <- 40; years <- 2011:2022
+dates <- seq(as.Date("2010-01-01"), as.Date("2022-12-31"), by = "day")
+doy <- as.integer(format(dates, "%j")); yi <- as.integer(format(dates, "%Y")) - 2009
+heat <- matrix(rnorm(n * 13, 0, 1.5), n)                       # spring heat anomaly per cell-year (C)
+wet  <- matrix(rlnorm(n * 13, 0, 0.5), n)                      # winter storm-size multiplier
+TX <- matrix(20 + 10 * sin(2 * pi * (doy - 100) / 365), n, length(dates), byrow = TRUE) + heat[, yi] +
+      matrix(rnorm(n * length(dates), 0, 3), n)
+P  <- matrix(0, n, length(dates)); w <- doy <= 90 | doy >= 300
+P[, w] <- (matrix(runif(n * sum(w)) < 0.12, n) * 12) * wet[, yi[w]]
+cure <- 135 - 5 * heat[, -1] + 8 * (wet[, -1] - 1) + matrix(rnorm(n * 12, 0, 6), n)   # days, cells x years
+
+folds <- list(odd = which(years %% 2 == 1), even = which(years %% 2 == 0))
+err <- list(); picked <- list()
+for (f in names(folds)) {
+  tr <- folds[[f]]; te <- setdiff(seq_along(years), tr)
+  typical <- apply(cure[, tr], 1, median)                                    # fitting years only
+  cues <- lapply(seq_along(years), function(j) adj_cues(P, TX, dates, years[j], typical - 14))
+  X <- lapply(setNames(adj_cue_names, adj_cue_names), function(cn) {
+    x <- sapply(cues, function(v) v[, cn]); x - rowMeans(x[, tr], na.rm = TRUE) })   # departures
+  fit <- adj_fit((cure - typical)[, tr], lapply(X, function(x) x[, tr]), lapply(X, function(x) x[, te]))
+  picked[[f]] <- round(fit$b, 2)
+  err[[f]] <- cbind(typical = as.vector(abs(typical - cure[, te])), adjusted = as.vector(abs(typical + fit$adj - cure[, te])))
+}
+picked                                     # cues and days per unit (tx60: per C; p90: per mm)
+e16 <- do.call(rbind, err)
+round(colMeans(e16), 1)                    # mean absolute error, held-out years
+```
+
+```{r we-16-text}
+#| include: false
+m16 <- colMeans(e16); b16 <- picked$odd
+```
+
+The model finds the spring heat (`r names(b16)[1]`, `r sprintf("%.1f", b16[[1]])` days per
+degree, close to the 5 built into the toy data) and a rain cue, from weather that ends two
+weeks before the typical date. On the years it did not see, the error falls from
+`r sprintf("%.1f", m16[["typical"]])` days (typical date) to `r sprintf("%.1f", m16[["adjusted"]])`
+days. On the real data, a region keeps the adjustment only if it lowers the error like this;
+otherwise the typical date stays.
 
 :::

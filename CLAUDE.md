@@ -349,8 +349,11 @@ Deferred: fire data, gridMET, ERA5-Land.
      Target good in CA annual (86 % within 30 d) and mid-South (72 %); monsoon SW 34 % mismatch
      (eos50 18 %); Snake River (6 sites) satellite ~4 months later than ground. NDVI end of
      season is at least as good a curing target as NDII7, with fewer season mismatches.
-     Oct 11 fix: anomalies unwrap ground dates around the site median (cdiff) so dates either
-     side of Jan 1 don't make huge departures; rerun to refresh anom r.
+     Oct 11-12 fix: anomalies unwrap ground dates around the site median (cdiff) and leave out
+     season mismatches (|d| > 90 put the satellite on the far side of the circle and made large
+     shared departures). Revised anom r: curing vs cure50 0.77, vs eos50 0.70; cured 0.67 /
+     0.66; green-up 0.49; mid-South (5) ~0.1 (ground varies little); Snake River 0.94-0.98;
+     herb-mask cells 0.53-0.55 for curing. The Oct 10 anom r numbers above are superseded.
    - **Curing baseline decision (Oct 11):** the typical (median) curing date is the curing
      baseline in regions 3 (monsoon SW), 5 (mid-South), 2 (S Plains), 11 (CA annual), where no
      model beat it; GSI / bucket where they beat it (10, 6); bucket for green-up.
@@ -364,6 +367,22 @@ Deferred: fire data, gridMET, ERA5-Land.
      region: pooled r per cue and cv_r2 of a forward-selected <= 3-cue linear model (odd / even
      years) -> cue_r.csv, cue_models.csv. Page figure `curing_cues` (heatmap of r, top row
      cv_r2; CSV table).
+     Oct 12 results (eos50 target): cv_r2 CONUS 0.10, regions 0.08-0.33; CA annual (11) 0.33
+     (tmax_spring r -0.53, p_cool 0.37, spring_rain 0.35); low deserts (4) 0.29; mid-South (5)
+     0.25 (63 cells; target r ~0.1 there); Great Plains (10) 0.25 (GSI r 0.72 is better); S
+     Plains (2) 0.20, mostly greenup; monsoon SW (3) 0.13. cure50 lower (CONUS 0.06). sos20
+     CONUS 0.05. Regions 1, 8, 9 too few cells. Reading: a rule is worth trying only in CA
+     annual grasslands (open; Mike to decide).
+   - `scripts/38_curing_adjust.R` (P720, minutes; config `curing_adjust:`; R/cues.R adj_cues /
+     adj_fit). Decision Oct 12: one general rule, typical date (cell median over fitting years)
+     + linear adjustment of <= 3 lead-time cue departures (no intercept, clamp +/- 60 d), fitted
+     per A2 k13 region on odd / even years, scored on the others by capped MAE as in 35; kept
+     only where it beats the typical date. Cues end at typical date - lead (0 / 14 / 30 d; 14 =
+     operational): p30 / p90 / p180, tx30 / tx60, dry60, since_rain, greenup (if before the
+     cutoff, else typical). Outputs eval/curing_adjust/scores.csv, coefs.csv, cue caches. Page
+     table `curing_adjust` (90 writes curing_adjust[_ndii]_<profile>.csv). Synthetic check:
+     recovers a planted -5 d/C heat effect (-4.6 to -4.9). Last curing experiment before the
+     write-up. Worked-examples tab 16.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
