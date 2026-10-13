@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -755,6 +755,22 @@ if (do("curing_adjust") && have(file.path(ad_dir, "scores.csv"))) {
     tb[["Gain at 0 / 14 / 30 days lead"]] <- gsub("NA", "-", tb[["Gain at 0 / 14 / 30 days lead"]])
     utils::write.csv(tb, file.path(fig_dir, sprintf("curing_adjust%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile)), row.names = FALSE)
     log_msg("wrote ", sprintf("curing_adjust%s_%s.csv", if (tg == "cure50") "_ndii" else "", profile))
+  }
+}
+
+# curing_adjust_ground: the rule against NPN grass curing at the ground sites (39)
+if (do("curing_adjust_ground") && have(file.path(ad_dir, "ground_scores.csv"))) {
+  gs <- utils::read.csv(file.path(ad_dir, "ground_scores.csv"), stringsAsFactors = FALSE)
+  for (st in intersect(c("grass_curing", "grass_cured"), unique(gs$set))) {
+    d <- gs[gs$set == st, ]; d <- d[order(d$region != "CONUS", suppressWarnings(as.integer(d$region))), ]
+    tb <- data.frame(Region = d$region, `Sites / site-years` = sprintf("%d / %d", d$sites, d$site_years),
+                     `Season mismatch` = sprintf("%.0f %%", 100 * d$mismatch),
+                     `Difference from ground: typical / adjusted (days)` = sprintf("%.0f / %.0f", d$mae_typical, d$mae_adjusted),
+                     `Site offset removed: typical / adjusted (days)` = ifelse(is.na(d$dev_typical), "-", sprintf("%.1f / %.1f", d$dev_typical, d$dev_adjusted)),
+                     `Adjustment vs ground departure (r)` = ifelse(is.na(d$r_adj), "-", sprintf("%.2f", d$r_adj)),
+                     check.names = FALSE)
+    utils::write.csv(tb, file.path(fig_dir, sprintf("curing_adjust_ground%s_%s.csv", if (st == "grass_cured") "_cured" else "", profile)), row.names = FALSE)
+    log_msg("wrote ", sprintf("curing_adjust_ground%s_%s.csv", if (st == "grass_cured") "_cured" else "", profile))
   }
 }
 

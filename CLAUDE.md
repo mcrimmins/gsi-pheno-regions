@@ -400,7 +400,15 @@ Deferred: fire data, gridMET, ERA5-Land.
      d/C Great Plains, -2 to -3 CA), rain 30-90 d (+0.1-0.3 d/mm), dry days / days since rain
      (earlier), green-up (later). Proposed decision (pending Mike): typical + adjustment
      everywhere except bucket in 2 and 5; green-up bucket in 11, 3, 4, 2, typical elsewhere;
-     stop curing model work and write up.
+     stop curing model work and write up. DECIDED by Mike Oct 12 (yes).
+   - `scripts/39_rule_ground_check.R` (P720; needs 38 coefs.csv, PRISM daily, cutb metrics, and
+     npn_curing_metrics.rds via GSI_OBS_DIR): applies the eos50 lead-14 rule at NPN grass site
+     cells (typical = cell median eos50 over fitting years; 38 region+fold coefs, CONUS where
+     none) and compares held-out site-years with ground curing (g50 down) and cured dates:
+     capped MAE without season mismatches, offset-removed error (site-demeaned ground vs
+     site-demeaned adjustment, sites with >= 3 non-mismatch years), r. Outputs
+     eval/curing_adjust/ground_site_years.csv, ground_scores.csv; page table
+     `curing_adjust_ground` (90). The bucket rule (regions 2, 5) is not ground-checked.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

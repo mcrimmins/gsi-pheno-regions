@@ -88,7 +88,7 @@ models. Where they disagree is where to look for what's missing.
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
 | Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket; the GSI or bucket beats the typical curing date only in the southern Plains and the mid-South (region labels corrected October 12) |
-| Curing rule | Cue screening done; typical date plus a weather adjustment (weather known 14 days ahead) beats the typical date in every region and is best in 8 of 10; revised decision proposed |
+| Curing rule | Decided October 12 (typical date plus weather adjustment; bucket in two regions); check against ground curing next, then the write-up |
 
 : Pipeline status {.striped}
 
@@ -869,13 +869,43 @@ if (file.exists(f)) {
 
 : Curing error on held-out years by approach and region (bold: best, where it beats the typical date). "off": the fits gave no dates. The rules in each column are fitted per region on the same years. {.striped}
 
-**Proposed decision (replacing October 11; for the team to confirm).** Operational curing
+**Decision (October 12, replacing October 11).** Operational curing
 uses **the typical date plus the weather adjustment** in every region except the southern
 Plains and the mid-South, where **the soil-water bucket** (or GSI) does better; in the
 monsoon Southwest the two tie. Green-up uses **the bucket** in the California annual
 grasslands, the monsoon Southwest, the low deserts and the southern Plains, and **the
-typical date** elsewhere. The model work on curing stops here; the next step is writing up
-this recommendation per region.
+typical date** elsewhere. The model work on curing stops here. Before the write-up, the rule
+is checked against the ground (below).
+
+### Does the rule move curing dates toward the ground?
+
+Everything above is scored against satellite dates. This check applies the rule at the NPN
+grass sites' own cells, exactly as above (typical date from the fitting years, weather up to
+14 days before, the coefficients fitted for the site's region and fold), and compares each
+held-out year with the ground curing date (graminoid green falling below 50 %). Two
+comparisons:
+
+- **Difference from the ground**, in site-years where the typical date and the ground see the
+  same season. This includes the satellite's average offset from the ground (about 20 days
+  later for end of season), which the adjustment cannot change.
+- **With each site's average offset removed**: does the adjustment move each year toward the
+  ground's early or late year? The correlation of the adjustment with the ground's departure
+  from its own average says the same thing directly.
+
+The bucket rule for the southern Plains and the mid-South is not checked here; the ground
+check of the satellite target found that in the mid-South the satellite does not follow the
+ground's early and late years anyway.
+
+```{r tab-curing-ground}
+#| results: asis
+f <- "figs/curing_adjust_ground_full.csv"
+if (file.exists(f)) {
+  tb <- utils::read.csv(f, check.names = FALSE, stringsAsFactors = FALSE)
+  cat(knitr::kable(tb, align = c("l", "r", "r", "r", "r", "r"),
+                   caption = "Typical date and typical date plus adjustment against NPN grass curing (below 50 % green), held-out years, by region (regions with at least 3 sites)."), sep = "\n")
+  cat("\n\n")
+} else cat("*Results to come.*\n\n")
+```
 
 ### Is the satellite curing date the right target?
 
@@ -1212,17 +1242,17 @@ models, not by clustering scores alone.
 | Oct 9 2026 | A3 = A2 + GSI features (FEMS operational settings with the 28-day precipitation ramp; without VPD and with KBDI as sensitivity runs) | Tests whether the GSI as run today adds to, or steers, the regions |
 | Oct 10 2026 | A2 stays the working set after A3: the GSI features add little to the regions and make them less stable | A3 vs A2 within noise on satellite timing, ground observations and synchrony; stability 0.74 against 0.83 at 7 regions |
 | Oct 11 2026 | Curing baseline (under revision October 12: the region names came from mislabeled tables): each place's typical curing date in the monsoon Southwest, mid-South, southern Plains and California annual grasslands; GSI or soil-water bucket where they beat it (Great Plains, Snake River Plain); bucket for green-up | No model tried beats the typical curing date in those four regions, with either satellite target; region-specific rules are screened next |
-| Oct 12 2026 | Curing rule test: one general rule (typical date plus a weather adjustment from weather known 14 days ahead), tested in every region and kept only where it beats the typical date | The cue screening found a usable cue only in the California annual grasslands and could see weather after curing; one rule for all regions avoids picking the winner in advance. This is the last curing experiment before the write-up |
+| Oct 12 2026 | **Curing and green-up rules** (replacing October 11): curing = typical date plus a weather adjustment from weather known 14 days ahead, except the soil-water bucket in the southern Plains and the mid-South; green-up = bucket in the California grasslands, monsoon Southwest, low deserts and southern Plains, typical date elsewhere | The adjustment beats the typical date in every region and is best in 8 of 10; the bucket is better in the two regions where it beats both. Curing model work stops; the rule is checked against the ground before the write-up |
 
 : Analysis decisions {.striped}
 
 ## Open questions for the team
 
 - **Study period:** use all of 2001–2025, or a fixed recent window?
-- **Curing rule by region:** the proposed decision is the typical date plus a weather
-  adjustment in most regions, and the soil-water bucket in the southern Plains and the
-  mid-South. The gains are a few days. Is that worth the added complexity for managers, and
-  is a 14-day lead the right operational case?
+- **Curing rule by region:** the typical date plus a weather adjustment in most regions,
+  and the soil-water bucket in the southern Plains and the mid-South. The gains are a few
+  days. Is that worth the added complexity for managers, and is a 14-day lead the right
+  operational case?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -1235,6 +1265,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-12 | Curing and green-up rules decided per region; ground check of the curing rule set up |
 | 2026-10-12 | Curing rule test: typical date plus a weather adjustment beats the typical date in every region (29.3 to 27.2 days nationally) and is best in 8 of 10; revised curing decision proposed |
 | 2026-10-12 | Correction: the GSI and bucket region tables showed the clustering's internal region numbers under the map's names; tables, text and the October 11 decision corrected |
 | 2026-10-12 | Typical curing date plus a weather adjustment (weather known 14 days ahead) set up as the last curing test |
