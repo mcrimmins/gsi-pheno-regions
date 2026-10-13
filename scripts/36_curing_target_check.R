@@ -138,7 +138,11 @@ if (!length(have)) {
       # not 350), then the satellite aligned to the ground's year
       gm <- stats::ave(y$doy, y$site, FUN = function(v) stats::median(v, na.rm = TRUE))
       gu <- gm + cdiff(y$doy, gm)
-      sa <- gu + y$diff
+      # satellite dates unwrapped around the satellite's own site median (Oct 13: building them
+      # as ground + difference copied every ground outlier, e.g. a February "curing" at a fall-
+      # curing site, into the satellite departure and inflated the correlation)
+      sm <- stats::ave(y$sat, y$site, FUN = function(v) stats::median(v, na.rm = TRUE))
+      sa <- sm + cdiff(y$sat, sm)
       y$g_anom[a] <- gu[a] - stats::ave(gu[a], y$site[a])
       y$s_anom[a] <- sa[a] - stats::ave(sa[a], y$site[a])
     }

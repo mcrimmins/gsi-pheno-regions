@@ -455,7 +455,8 @@ at the same place and year. Two details matter:
   ground picked different seasons (spring against monsoon, for example).
 
 **Input.** Two sites, four years each. Site B cures around the turn of the year, so some of
-its dates are written as negative days (days before January 1).
+its dates are written as negative days (days before January 1). Each row is one site and year; where
+several plants are observed at a site, the row holds their median date.
 
 ```{r we-12a}
 #| echo: true
@@ -480,16 +481,19 @@ three columns of the target-check tables.
 
 **Year-to-year agreement.** Each site's dates become departures from that site's own mean, and
 the departures are correlated. This asks whether the satellite sees the same early and late
-years as the ground, whatever its average offset. Two details: the ground dates are first
-unwrapped around the site's median (so site B's January 10 counts as day 375, next to its late
-December dates), and the satellite date is placed on the same scale by adding the difference.
+years as the ground, whatever its average offset. Each series is unwrapped around its own site
+median (so site B's January 10 counts as day 375, next to its late December dates). The
+satellite departure is computed from the satellite dates alone: building it as the ground date
+plus the difference would copy every ground outlier into the satellite series and inflate the
+correlation (the October 13 correction).
 
 ```{r we-12b}
 #| echo: true
 ok  <- abs(tc$diff) <= 90                                    # leave out the season mismatch
 med <- ave(tc$ground, tc$site, FUN = median)
 g_un <- med + cdiff(tc$ground, med)                          # ground, unwrapped around the site median
-s_un <- g_un + tc$diff                                       # satellite on the same scale
+smed <- ave(tc$satellite, tc$site, FUN = median)
+s_un <- smed + cdiff(tc$satellite, smed)                     # satellite, unwrapped around its own median
 g_dep <- g_un[ok] - ave(g_un[ok], tc$site[ok])
 s_dep <- s_un[ok] - ave(s_un[ok], tc$site[ok])
 data.frame(site = tc$site[ok], ground_dep = round(g_dep, 1), satellite_dep = round(s_dep, 1))

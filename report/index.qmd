@@ -88,7 +88,7 @@ models. Where they disagree is where to look for what's missing.
 | Cut B clustering of satellite curves | First runs done |
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
 | Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket; the GSI or bucket beats the typical curing date only in the southern Plains and the mid-South (region labels corrected October 12) |
-| Curing rule | Decided October 12 (typical date plus weather adjustment; bucket in two regions); check against ground curing next, then the write-up |
+| Curing rule | Decided October 12; ground check (October 13) supports the adjustment only in the monsoon Southwest and California; amendment proposed |
 
 : Pipeline status {.striped}
 
@@ -598,7 +598,7 @@ precipitation). The two runs agree on where the GSI works.
     temperature and daylength ramps hold back;
   - in the interior West (Snake River Plain, southern Great Basin and Colorado Plateau) and
     the Rockies the season is short, and the target check below found that the NDII7 curing
-    date there often picks a different season from the ground (44–84 % of site-years at the
+    date there often picks a different season from the ground (61–96 % of site-years at the
     few grass sites).
 
   For green-up the GSI helps most in the low deserts, the California grasslands and the
@@ -774,7 +774,7 @@ their typical size falls by about a fifth (the square root of 0.67 is 0.82).
 - **The mid-South (5) and the southern Plains (2) are marginal.** In the mid-South a hot
   summer brings curing earlier and summer rain delays it (25 % predicted), but only 63 sample
   cells are in the region, and the target check found that the satellite does not follow the
-  ground's early and late years there. In the southern Plains most of what is predicted (20 %)
+  ground's early and late years well there. In the southern Plains most of what is predicted (20 %)
   comes from the green-up date: a late spring means a late end of season. A rule there would
   add little beyond following green-up.
 - **The monsoon Southwest (3) has no usable cue** (13 %; fall rain and the end of the summer
@@ -907,6 +907,37 @@ if (file.exists(f)) {
 } else cat("*Results to come.*\n\n")
 ```
 
+**Reading the ground check (October 13).**
+
+- **Across CONUS the adjustment does not move curing dates toward the ground.** With each
+  site's average offset removed, the typical date misses the ground's year-to-year swings by
+  19.5 days and the adjusted date by 21.9; the adjustment correlates 0.08 with the ground's
+  departures (674 site-years at 187 sites). The cured date gives the same answer.
+- **Two regions are exceptions.** In the monsoon Southwest the adjustment follows the ground
+  (correlation 0.43 for curing, 0.47 for the cured date) and cuts the error from 21.5 to 17.8
+  days (cured: 17.1 to 15.3). In the California annual grasslands it follows the ground
+  closely (0.66 and 0.83) and cuts the error from 5.3 to 4.2 days (cured: 6.0 to 3.2), but
+  from only 10 site-years at 7 sites.
+- **Where it gained most against the satellite it adds noise at the ground**: the Great
+  Plains (19.4 to 25.4 days), the southern Plains (23.1 to 25.9), the upper Midwest (21.4
+  to 25.8) and the mid-South (8.6 to 10.9).
+- **Why.** At the same site-years the adjustment follows the satellite's departures
+  (correlation 0.35), and the satellite follows the ground's only moderately (0.35 over all
+  sites, about 0.55 in herbaceous cells; see the target check below). The part of the
+  satellite signal the weather predicts is mostly not the part the grass sites share: in a
+  4 km cell, end of season reflects the greenness of everything in it.
+- **What that means.** A rule tuned to the satellite date should not be trusted for grass
+  curing without a ground check. The ground supports the weather adjustment in the monsoon
+  Southwest and, on few sites, the California annual grasslands. Elsewhere the typical date
+  is the safer baseline. The bucket rule for the southern Plains and the mid-South has not
+  been checked against the ground.
+
+**Proposed amendment to the October 12 decision (for the team to confirm).** Curing uses
+**the typical date** as the baseline everywhere, with **the weather adjustment** in the
+monsoon Southwest and the California annual grasslands, where the ground supports it. The
+bucket for curing in the southern Plains and the mid-South waits on a ground check.
+Green-up is unchanged.
+
 ### Is the satellite curing date the right target?
 
 The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.
@@ -917,62 +948,63 @@ and herbaceous live fuel moisture decline dates. Dates are compared on a circula
 difference of more than 90 days is counted as a *season mismatch* (for example, the satellite
 picking the spring season and the ground the monsoon season).
 
-| Ground event vs satellite date (all site-years) | Site-years | Median difference (satellite − ground) | Mean absolute difference | Within 30 days | Season mismatch | Year-to-year correlation |
+| Ground event vs satellite date | Site-years | Median difference (satellite − ground) | Mean absolute difference | Within 30 days | Season mismatch | Year-to-year correlation (all cells / herbaceous cells) |
 |---|---|---|---|---|---|---|
-| Grass green-up vs NDVI green-up | 2,335 | −1 d | 36 d | 55 % | 7 % | 0.49 |
-| Grass curing vs NDII7 curing | 4,883 | +16 d | 58 d | 45 % | 26 % | 0.77 |
-| Grass curing vs NDVI end of season (50 %) | 4,928 | +20 d | 50 d | 48 % | 21 % | 0.70 |
-| Grass cured vs NDII7 curing | 3,471 | −13 d | 52 d | 47 % | 23 % | 0.67 |
-| Grass cured vs NDVI end of season (20 %) | 3,064 | +22 d | 43 d | 51 % | 14 % | 0.66 |
-| Herbaceous fuel moisture decline vs NDII7 curing | 385 | −101 d | 109 d | 6 % | 71 % | (0.78, 65 site-years) |
+| Grass green-up vs NDVI green-up | 348 | −15 d | 42 d | 44 % | 9 % | 0.48 / 0.57 |
+| Grass curing vs NDII7 curing | 632 | +14 d | 55 d | 48 % | 25 % | 0.27 / 0.55 |
+| Grass curing vs NDVI end of season (50 %) | 645 | +17 d | 47 d | 51 % | 17 % | 0.35 / 0.56 |
+| Grass cured vs NDII7 curing | 567 | −10 d | 51 d | 45 % | 20 % | 0.34 / 0.43 |
+| Grass cured vs NDVI end of season (20 %) | 471 | +28 d | 49 d | 42 % | 16 % | 0.31 / 0.41 |
+| Herbaceous fuel moisture decline vs NDII7 curing | 385 | −101 d | 109 d | 6 % | 71 % | 0.10 / 0.26 |
 
-: Satellite season dates against ground observations, year by year (NPN grasses; Globe-LFMC herbaceous series). The year-to-year correlation compares each site's departures from its own average date, in the site-years where satellite and ground see the same season (difference of 90 days or less). {.striped}
+: Satellite season dates against ground observations, year by year (NPN grasses, one row per site and year, the median over a site's plants; Globe-LFMC herbaceous series). The year-to-year correlation compares each site's departures from its own average date, ground and satellite each measured from their own site median, in the site-years where satellite and ground see the same season (difference of 90 days or less), at sites with at least three such years. Herbaceous cells: sites in the strict herbaceous mask. Revised October 13, see below. {.striped}
 
 | Region (13 regions) | Grass sites | NDII7 curing: within 30 days / season mismatch / correlation | NDVI end of season: within 30 days / season mismatch / correlation |
 |---|---|---|---|
-| 5, mid-South (with the tallgrass prairie) | 25 | 72 % / 9 % / 0.13 | 75 % / 8 % / 0.09 |
-| 11, California annual grasslands | 7 | 86 % / 2 % / 0.53 | 89 % / 0 % / 0.32 |
-| 2, southern Plains | 17 | 43 % / 21 % / 0.61 | 50 % / 25 % / 0.63 |
-| 10, northern and central Great Plains | 23 | 47 % / 30 % / 0.42 | 46 % / 14 % / 0.42 |
-| 3, monsoon Southwest | 30 | 30 % / 34 % / 0.74 | 45 % / 18 % / 0.69 |
-| 12, southern Great Basin and Colorado Plateau | 4 | 13 % / 44 % / 0.72 | 42 % / 7 % / 0.59 |
-| 6, Snake River Plain and northern Great Basin | 6 | 1 % / 84 % / 0.94 | 1 % / 80 % / 0.98 |
+| 1, Gulf and south Atlantic coastal plain | 26 | 44 % / 21 % / −0.21 | 44 % / 20 % / −0.14 |
+| 2, southern Plains | 17 | 54 % / 11 % / 0.65 | 53 % / 15 % / 0.62 |
+| 3, monsoon Southwest | 30 | 30 % / 49 % / 0.55 | 42 % / 26 % / 0.65 |
+| 5, mid-South (with the tallgrass prairie) | 25 | 70 % / 11 % / 0.27 | 72 % / 10 % / 0.21 |
+| 6, Snake River Plain and northern Great Basin | 6 | 0 % / 96 % / – | 0 % / 78 % / – |
+| 10, northern and central Great Plains | 23 | 48 % / 36 % / 0.49 | 52 % / 16 % / 0.55 |
+| 11, California annual grasslands | 7 | 64 % / 7 % / 0.77 | 77 % / 0 % / 0.48 |
+| 12, southern Great Basin and Colorado Plateau | 4 | 6 % / 61 % / – | 39 % / 11 % / 0.71 |
+| 13, upper Midwest | 27 | 53 % / 10 % / 0.61 | 44 % / 12 % / 0.31 |
 
-: Grass curing (below 50 % green) against the satellite curing and end-of-season dates by region, year by year. The low deserts have two grass sites and are left out. {.striped}
+: Grass curing (below 50 % green) against the satellite curing and end-of-season dates by region, year by year. "–": too few site-years without a season mismatch. The low deserts have two grass sites and are left out. {.striped}
 
 **Reading the target check.**
 
-- **The satellite curing date follows the ground from year to year.** Where both see the
-  same season, a site's early and late curing years on the ground are early and late in the
-  satellite record too (correlation 0.77 for NDII7 curing, 0.70 for NDVI end of season). The
-  GSI follows the satellite curing date much more weakly (correlations of 0.1–0.4), so
-  across CONUS the weak link is the GSI, not the target. (These correlations were revised on
-  October 12: dates either side of January 1 and season mismatches had inflated some of the
-  first numbers.)
+- **The satellite curing date follows the ground's early and late years moderately, and
+  only in grassland cells.** Where both see the same season, the correlation is about 0.55
+  at sites in herbaceous cells, but 0.27–0.35 over all sites, because sites in mixed cells
+  (the Gulf coastal plain most of all) do not follow at all. By region it is 0.5–0.65 in the
+  southern Plains, the monsoon Southwest and the Great Plains, and about 0.2 in the mid-South.
+- **Corrections (October 12–13).** The first version of this table counted each NPN plant as
+  a site-year (several plants of a species are often observed at one site), and built the
+  satellite's departure from the ground date plus the difference, which copied ground
+  outliers (for example a February "curing" at a site that cures in the fall) into the
+  satellite. Both inflated the year-to-year correlation (first reported as 0.70–0.77).
+  Dates on either side of January 1 are also handled on a circular year now.
 - **Average timing and season matching are the weak points of the target.** The satellite
-  date is often a month or more from the ground date, and about a quarter of site-years pick
-  a different season. NDVI end of season matches the ground's timing at least as well as NDII7
-  curing (it follows early and late years a little less closely), with fewer season mismatches: notably in the monsoon Southwest (18 against 34 %), the
-  northern Plains (14 against 30 %) and the southern Great Basin (7 against 44 %, with only
-  four sites).
-- **In the California grasslands and the mid-South the target's timing is good**: 72–86 % of
-  site-years within 30 days and few mismatches. There the GSI's failure is real. In the
-  mid-South, though, the satellite does not follow the ground's early and late years
-  (correlation near 0.1): ground curing there varies little from year to year, and what
-  varies is not what the satellite sees. A typical-date baseline loses little there.
-- **In the monsoon Southwest the target is part of the problem.** A third of site-years
-  pick a different season from the ground, so some of the GSI's error there comes from
-  scoring it against the wrong season.
-- **At the six Snake River Plain sites the satellite curing date is about four months later
-  than the ground** (84 % mismatches), although both move together from year to year. The
-  GSI's apparent skill there is against a satellite date that does not match these grass
-  sites; with six sites, possibly in towns or irrigated land, this needs a closer look.
+  date is often a month or more from the ground date, and a sixth to a quarter of site-years
+  pick a different season. NDVI end of season matches the ground's timing better than NDII7
+  curing, with fewer season mismatches, most of all in the monsoon Southwest (26 against
+  49 %) and the Great Plains (16 against 36 %).
+- **In the California grasslands and the mid-South the target's timing is good**: 64–77 % of
+  site-years within 30 days and few mismatches. In the mid-South, though, the satellite
+  follows the ground's early and late years only weakly: ground curing there varies little
+  from year to year, and what varies is not what the satellite sees.
+- **In the monsoon Southwest the target is part of the problem.** A quarter to half of
+  site-years pick a different season from the ground.
+- **At the six Snake River Plain sites the satellite date is about four months later than
+  the ground** (78–96 % mismatches): it does not describe these grass sites, which may be in
+  towns or irrigated land.
 - **Live fuel moisture decline dates are a different event.** They come 3–4 months before the
   satellite curing date (71 % mismatches), so they cannot check it.
 - **Caveats.** Ground sites are points; the satellite date describes a 4 km cell that often
-  mixes grass with other cover. Using only cells in the strict herbaceous mask gives similar
-  results for timing; the year-to-year curing correlation is lower (0.53–0.55). Several regions have few sites, and the low deserts
-  have almost none.
+  mixes grass with other cover. Several regions have few sites, and the low deserts have
+  almost none.
 
 ```{r fig-obs-sites}
 #| results: asis
@@ -1265,6 +1297,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-13 | Ground check of the curing rule: the adjustment follows ground curing only in the monsoon Southwest and California; target check corrected (one row per site-year; satellite departures from the satellite's own dates): year-to-year correlation 0.35, about 0.55 in herbaceous cells; amendment to the curing decision proposed |
 | 2026-10-12 | Curing and green-up rules decided per region; ground check of the curing rule set up |
 | 2026-10-12 | Curing rule test: typical date plus a weather adjustment beats the typical date in every region (29.3 to 27.2 days nationally) and is best in 8 of 10; revised curing decision proposed |
 | 2026-10-12 | Correction: the GSI and bucket region tables showed the clustering's internal region numbers under the map's names; tables, text and the October 11 decision corrected |
