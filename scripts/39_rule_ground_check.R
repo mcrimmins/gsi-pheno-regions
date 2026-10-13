@@ -63,6 +63,7 @@ grid <- terra::rast(file.path(static_dir(cfg), "grid_mask.tif"))
 land <- which(!is.na(terra::values(grid, mat = FALSE)))
 E$cell <- terra::cellFromXY(grid, as.matrix(E[, c("lon", "lat")]))
 E$row <- match(E$cell, land); E <- E[!is.na(E$row), ]
+E <- obs_site_years(E)                     # one row per site-year (median over plants)
 D <- region_display(cfg, grid, list(list(partition = ca$partition %||% "A2_groups", k = ca$k %||% 13)))[[1]]
 E$region <- D$num[E$row]
 

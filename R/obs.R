@@ -59,3 +59,18 @@ obs_events <- function(ddir, sets = NULL) {
                                   year = integer(), doy = numeric())
   E
 }
+
+# One row per set x site x year: NPN curing metrics hold one row per plant, so a site (place x
+# species) with several plants has several rows per year, which would weight those site-years
+# several times and treat plant-to-plant scatter as year-to-year variation. The date is the
+# median over plants, taken on a circular year around the first plant's date (Oct 13 2026).
+obs_site_years <- function(E) {
+  if (!nrow(E)) return(E)
+  cd <- function(a, b) { d <- (a - b) %% 365.25; ifelse(d > 182.625, d - 365.25, d) }
+  key <- paste(E$set, E$site, E$year, sep = "\r")
+  first <- !duplicated(key)
+  ref <- E$doy[first][match(key, key[first])]
+  E$doy <- stats::ave(ref + cd(E$doy, ref), key, FUN = stats::median)
+  E$n_obs <- as.integer(stats::ave(E$doy, key, FUN = length))
+  E[first, , drop = FALSE]
+}

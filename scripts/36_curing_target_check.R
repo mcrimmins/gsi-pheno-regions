@@ -57,6 +57,7 @@ land <- which(!is.na(terra::values(grid, mat = FALSE)))
 E$cell <- terra::cellFromXY(grid, as.matrix(E[, c("lon", "lat")]))
 E$row <- match(E$cell, land)
 E <- E[!is.na(E$row), ]
+E <- obs_site_years(E)                     # one row per site-year (median over plants)
 rs <- list(partition = tc$partition, k = tc$k)
 D <- region_display(cfg, grid, list(rs))[[1]]
 if (is.null(D)) stop("region set ", tc$partition, " k", tc$k, " not found under clusters/")

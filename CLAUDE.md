@@ -409,6 +409,16 @@ Deferred: fire data, gridMET, ERA5-Land.
      site-demeaned adjustment, sites with >= 3 non-mismatch years), r. Outputs
      eval/curing_adjust/ground_site_years.csv, ground_scores.csv; page table
      `curing_adjust_ground` (90). The bucket rule (regions 2, 5) is not ground-checked.
+     Oct 12 first run (plant rows): adjustment does not track ground curing (offset-removed
+     error 25.5 -> 27.6 d, r 0.03) except CA (11: r 0.59, 5.8 -> 4.4) and monsoon SW (3:
+     r 0.37). Check: adjustment vs satellite departures at the same site-years r 0.35 (code
+     OK), but satellite vs ground at the site-year level only ~0.2-0.46 (0.70 on the page was
+     plant rows, several plants per site-year, and conditioned on |sat - ground| <= 90).
+   - **Plant rows fix (Oct 12 evening):** npn_curing_metrics has one row per PLANT; 36 and 39
+     counted plant-years as site-years (4,928 rows = 645 site-years for curing vs eos50). R/obs.R
+     obs_site_years() collapses to one row per set x site x year (circular median over
+     plants); 36 and 39 call it after obs_events. Rerun both; target-check tables on the page
+     must be refreshed from the rerun.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
