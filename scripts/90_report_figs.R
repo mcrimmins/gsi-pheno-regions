@@ -758,19 +758,26 @@ if (do("curing_adjust") && have(file.path(ad_dir, "scores.csv"))) {
   }
 }
 
-# curing_adjust_ground: the rule against NPN grass curing at the ground sites (39)
+# curing_adjust_ground: the rules against NPN grass dates at the ground sites (39). Tables:
+# curing_adjust_ground[_cured] (weather adjustment, curing), curing_bucket_ground (bucket, curing),
+# greenup_bucket_ground (bucket, green-up)
 if (do("curing_adjust_ground") && have(file.path(ad_dir, "ground_scores.csv"))) {
   gs <- utils::read.csv(file.path(ad_dir, "ground_scores.csv"), stringsAsFactors = FALSE)
-  for (st in intersect(c("grass_curing", "grass_cured"), unique(gs$set))) {
-    d <- gs[gs$set == st, ]; d <- d[order(d$region != "CONUS", suppressWarnings(as.integer(d$region))), ]
+  if (is.null(gs$rule)) { gs$rule <- "adjustment"; names(gs) <- sub("_adjusted$|_adj$", "_rule", names(gs)) }
+  outs <- list(c("adjustment", "grass_curing", "curing_adjust_ground"), c("adjustment", "grass_cured", "curing_adjust_ground_cured"),
+               c("bucket", "grass_curing", "curing_bucket_ground"), c("bucket", "grass_greenup", "greenup_bucket_ground"))
+  for (o in outs) {
+    d <- gs[gs$rule == o[1] & gs$set == o[2], ]
+    if (!nrow(d)) next
+    d <- d[order(d$region != "CONUS", suppressWarnings(as.integer(d$region))), ]
+    lab <- if (o[1] == "bucket") "bucket" else "adjusted"
     tb <- data.frame(Region = d$region, `Sites / site-years` = sprintf("%d / %d", d$sites, d$site_years),
-                     `Season mismatch` = sprintf("%.0f %%", 100 * d$mismatch),
-                     `Difference from ground: typical / adjusted (days)` = sprintf("%.0f / %.0f", d$mae_typical, d$mae_adjusted),
-                     `Site offset removed: typical / adjusted (days)` = ifelse(is.na(d$dev_typical), "-", sprintf("%.1f / %.1f", d$dev_typical, d$dev_adjusted)),
-                     `Adjustment vs ground departure (r)` = ifelse(is.na(d$r_adj), "-", sprintf("%.2f", d$r_adj)),
-                     check.names = FALSE)
-    utils::write.csv(tb, file.path(fig_dir, sprintf("curing_adjust_ground%s_%s.csv", if (st == "grass_cured") "_cured" else "", profile)), row.names = FALSE)
-    log_msg("wrote ", sprintf("curing_adjust_ground%s_%s.csv", if (st == "grass_cured") "_cured" else "", profile))
+                     `Season mismatch` = sprintf("%.0f %%", 100 * d$mismatch), check.names = FALSE)
+    tb[[sprintf("Difference from ground: typical / %s (days)", lab)]] <- sprintf("%.0f / %.0f", d$mae_typical, d$mae_rule)
+    tb[[sprintf("Site offset removed: typical / %s (days)", lab)]] <- ifelse(is.na(d$dev_typical), "-", sprintf("%.1f / %.1f", d$dev_typical, d$dev_rule))
+    tb[[sprintf("%s vs ground departure (r)", if (o[1] == "bucket") "Bucket shift" else "Adjustment")]] <- ifelse(is.na(d$r_rule), "-", sprintf("%.2f", d$r_rule))
+    utils::write.csv(tb, file.path(fig_dir, sprintf("%s_%s.csv", o[3], profile)), row.names = FALSE)
+    log_msg("wrote ", sprintf("%s_%s.csv", o[3], profile))
   }
 }
 

@@ -427,7 +427,16 @@ Deferred: fire data, gridMET, ERA5-Land.
      39 rerun (site-years): adjustment vs ground, offset removed, CONUS 19.5 -> 21.9 d, r 0.08;
      monsoon SW 21.5 -> 17.8 (r 0.43), CA 5.3 -> 4.2 (r 0.66, 10 site-years); worse in 10, 2,
      13, 5. Proposed amendment (pending Mike): typical date everywhere, adjustment only in
-     monsoon SW and CA; bucket for 2 / 5 waits on a ground check.
+     monsoon SW and CA; bucket for 2 / 5 waits on a ground check. DECIDED by Mike Oct 13 (yes): typical date
+     everywhere, adjustment in monsoon SW and (provisionally) CA; bucket rules kept only if the
+     ground check supports them; then the write-up. Further curing rules should be fitted to
+     ground data (the NPN curing study), not the satellite.
+     39 extended (Oct 13): also the bucket rule (best swb form per internal region and fold from
+     gsi_curing_eos50_newforms/params.csv, rebuilt with gm_predict at the site cells; PET via
+     hargreaves; typical date where it gives none) for curing and green-up (grass_greenup);
+     ground_scores.csv now has `rule` (adjustment / bucket) and mae_rule / dev_rule / r_rule.
+     90 `curing_adjust_ground` writes curing_adjust_ground[_cured], curing_bucket_ground,
+     greenup_bucket_ground CSVs.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

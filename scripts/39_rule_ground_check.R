@@ -18,7 +18,11 @@
 #   mismatch                     share of site-years whose typical date is > 90 days from the ground
 # Runs on the P720 (PRISM daily + cutb metrics there; ground table npn_curing_metrics.rds from the
 # GSI study, folder given by GSI_OBS_DIR or config evaluation: study_dir). Needs 38's coefs.csv.
-# Outputs <run_dir>/eval/curing_adjust/ground_site_years.csv, ground_scores.csv.
+# Also (Oct 13) the soil-water bucket rule from 35 (eos50 target, new forms; per region and fold
+# the bucket form with the lowest fitting loss, rebuilt from params.csv) for curing and for
+# green-up (NPN graminoid green rising through 50 %), scored the same way (rule = "bucket").
+# Outputs <run_dir>/eval/curing_adjust/ground_site_years.csv (one row per site-year and rule),
+# ground_scores.csv (rule, set, region).
 #
 # Usage: GSI_OBS_DIR=<folder with npn_curing_metrics.rds> Rscript scripts/39_rule_ground_check.R [profile]
 
@@ -36,6 +40,8 @@ source(here::here("R", "evaluate.R"))
 source(here::here("R", "block2.R"))
 source(here::here("R", "cues.R"))
 source(here::here("R", "obs.R"))
+source(here::here("R", "gsi.R"))
+source(here::here("R", "gsi_model.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
 cfg <- load_cfg(profile)
@@ -56,7 +62,7 @@ if (!nrow(CF)) stop("coefs.csv has no rows for ", target, " at lead ", lead)
 
 # ---- ground site-years, cells, regions -------------------------------------------------------
 ddir <- Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg))
-sets <- c("grass_curing", "grass_cured")
+sets <- c("grass_curing", "grass_cured", "grass_greenup")
 E <- obs_events(ddir, sets)
 if (!nrow(E)) stop("no NPN grass curing observations in ", ddir, " (set GSI_OBS_DIR to the folder with npn_curing_metrics.rds)")
 grid <- terra::rast(file.path(static_dir(cfg), "grid_mask.tif"))
@@ -80,13 +86,15 @@ EOS <- sat(target); SOS <- sat("sos20")
 py <- seq(min(years) - 1, max(years))
 read_series <- function(v) do.call(cbind, lapply(py, function(y) {
   r <- terra::rast(pfile(v, y)); x <- as.matrix(terra::extract(r, land[U])); colnames(x) <- names(r); x }))
-P <- read_series("ppt"); TX <- read_series("tmax"); dates <- as.Date(colnames(P))
+P <- read_series("ppt"); TX <- read_series("tmax"); TN <- read_series("tmin"); dates <- as.Date(colnames(P))
+lat_u <- terra::yFromCell(grid, land[U])
+PET <- hargreaves(TN, TX, ra_matrix(lat_u, as.integer(format(dates, "%j"))))
 log_msg(sprintf("drivers: %d cells x %d days (%.1f min)", nU, length(dates), as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 
 # ---- the rule at the site cells, per fold ------------------------------------------------------
 folds <- list(odd = which(years %% 2 == 1), even = which(years %% 2 == 0))
 reg_u <- D$num[U]
-TYP <- ADJ <- matrix(NA_real_, nU, nY)
+TYP <- ADJ <- TYPG <- matrix(NA_real_, nU, nY)
 for (f in names(folds)) {
   tr <- folds[[f]]; te <- setdiff(seq_len(nY), tr)
   typ <- apply(EOS[, tr, drop = FALSE], 1, stats::median, na.rm = TRUE)
@@ -103,48 +111,89 @@ for (f in names(folds)) {
     for (k in seq_len(nrow(cf))) a <- a + cf$b[k] * X[[cf$cue[k]]][i, te]
     ADJ[i, te] <- pmax(pmin(a, max_adj), -max_adj); TYP[i, te] <- typ[i]
   }
+  TYPG[, te] <- apply(SOS[, tr, drop = FALSE], 1, stats::median, na.rm = TRUE)
 }
 
+invisible(gm_bucket_init())
+# ---- the soil-water bucket rule at the site cells (35, eos50 target, new forms) -----------------
+# Per region (35's internal labels) and fold, the bucket form with the lowest fitting loss; its
+# green-up and curing dates for the held-out years, the typical date where it gives none (as 35).
+gmc <- utils::modifyList(cfg$gsi_model, cfg$gsi_curing %||% list())
+g <- cfg$features$gsi; g$anchor_halfwidth_days <- gmc$anchor_days %||% 75
+pp_file <- file.path(cfg$run_dir, "eval", ca$bucket_run %||% "gsi_curing_eos50_newforms", "params.csv")
+BKS <- BKE <- matrix(NA_real_, nU, nY)
+if (file.exists(pp_file)) {
+  PP <- utils::read.csv(pp_file, stringsAsFactors = FALSE)
+  PP <- PP[PP$moisture == "swb" & PP$partition == (ca$partition %||% "A2_groups") & PP$k == (ca$k %||% 13), ]
+  Pint <- eval_partitions(cfg, grid, ca$k %||% 13)[[ca$partition %||% "A2_groups"]]
+  ireg <- Pint[U, sprintf("k%02d", as.integer(ca$k %||% 13))]
+  drv <- list(tmin = TN, ppt = P, pet = PET)
+  for (f in names(folds)) {
+    tr <- folds[[f]]; te <- setdiff(seq_len(nY), tr)
+    anc <- gm_anchor(SOS[, tr, drop = FALSE], EOS[, tr, drop = FALSE])
+    for (r in sort(unique(ireg[!is.na(ireg)]))) {
+      b <- PP[PP$fold == f & PP$region == r, ]
+      if (!nrow(b)) next
+      b <- b[which.min(b$loss), ]
+      par <- list(moisture = "swb", cross = b$cross, tmin = c(b$tmin_lo, b$tmin_hi), wmax = b$wmax,
+                  moist = c(b$moist_lo, b$moist_hi), x = c(up = b$x_up, down = b$x_down))
+      i <- which(ireg == r)
+      pr <- gm_predict(lapply(drv, function(m) m[i, , drop = FALSE]), par, gmc$smooth, dates, years, g,
+                       if (b$cross == "rel_anchor") anc[i] else NULL)
+      BKS[i, te] <- pr$sos[, te]; BKE[i, te] <- pr$eos[, te]
+    }
+  }
+  BKS[is.na(BKS)] <- TYPG[is.na(BKS)]; BKE[is.na(BKE)] <- TYP[is.na(BKE)]       # fallback: typical date
+  log_msg("bucket rule: ", sum(!is.na(ireg)), " site cells, fits from ", pp_file)
+} else log_warn("no ", pp_file, ": bucket rule skipped")
+
 # ---- compare with the ground -----------------------------------------------------------------
+# Long table: one row per site-year and rule. Curing sets: rules "adjustment" (typical + weather
+# adjustment) and "bucket"; green-up: "bucket". The typical date is the cell's satellite median
+# (end of season or green-up) over the fitting years.
 cdiff <- function(a, b) { d <- (a - b) %% 365.25; ifelse(d > 182.625, d - 365.25, d) }
-iu <- match(E$row, U); jy <- match(E$year, years)
-E$typical <- TYP[cbind(iu, jy)]; E$adjust <- ADJ[cbind(iu, jy)]
-E <- E[!is.na(E$typical), ]
-E$d_typ <- cdiff(E$typical, E$doy); E$d_adj <- cdiff(E$typical + E$adjust, E$doy)
-E$mismatch <- abs(E$d_typ) > 90
-# departures from each site's own mean (season mismatches left out): ground unwrapped around the
-# site median; the rule's typical date is the same every test year of a fold, so its departure
-# is the adjustment minus the site's mean adjustment
-k <- !E$mismatch
-key <- paste(E$set, E$site)
-gm <- stats::ave(E$doy, key, FUN = function(v) stats::median(v, na.rm = TRUE)); gu <- gm + cdiff(E$doy, gm)
-E$g_dev <- E$a_dev <- NA_real_
-nk <- stats::ave(as.numeric(k), key, FUN = sum)
-w <- k & nk >= 3
-E$g_dev[w] <- gu[w] - stats::ave(gu[w], key[w]); E$a_dev[w] <- E$adjust[w] - stats::ave(E$adjust[w], key[w])
-utils::write.csv(E, file.path(out_dir, "ground_site_years.csv"), row.names = FALSE)
+iu <- match(E$row, U); jy <- match(E$year, years); ix <- cbind(iu, jy)
+cur <- E$set != "grass_greenup"
+L <- rbind(
+  data.frame(E[cur, ], rule = "adjustment", typical = TYP[ix[cur, , drop = FALSE]], pred = (TYP + ADJ)[ix[cur, , drop = FALSE]]),
+  data.frame(E[cur, ], rule = "bucket", typical = TYP[ix[cur, , drop = FALSE]], pred = BKE[ix[cur, , drop = FALSE]]),
+  data.frame(E[!cur, ], rule = "bucket", typical = TYPG[ix[!cur, , drop = FALSE]], pred = BKS[ix[!cur, , drop = FALSE]]))
+L <- L[!is.na(L$typical) & !is.na(L$pred), ]
+L$d_typ <- cdiff(L$typical, L$doy); L$d_rule <- cdiff(L$pred, L$doy)
+L$mismatch <- abs(L$d_typ) > 90
+# departures from each site's own mean (season mismatches left out, sites with >= 3 such years):
+# ground unwrapped around the site median; the rule's departure is its shift from the typical
+# date minus the site's mean shift
+key <- paste(L$rule, L$set, L$site); k <- !L$mismatch
+gm <- stats::ave(L$doy, key, FUN = function(v) stats::median(v, na.rm = TRUE)); gu <- gm + cdiff(L$doy, gm)
+sh <- cdiff(L$pred, L$typical)
+L$g_dev <- L$r_dev <- NA_real_
+w <- k & stats::ave(as.numeric(k), key, FUN = sum) >= 3
+L$g_dev[w] <- gu[w] - stats::ave(gu[w], key[w]); L$r_dev[w] <- sh[w] - stats::ave(sh[w], key[w])
+utils::write.csv(L, file.path(out_dir, "ground_site_years.csv"), row.names = FALSE)
 
 score <- function(x) {
   u <- !x$mismatch; v <- !is.na(x$g_dev)
   data.frame(site_years = nrow(x), sites = length(unique(x$site)), mismatch = mean(x$mismatch),
-             mae_typical = mean(pmin(abs(x$d_typ[u]), cap)), mae_adjusted = mean(pmin(abs(x$d_adj[u]), cap)),
+             mae_typical = mean(pmin(abs(x$d_typ[u]), cap)), mae_rule = mean(pmin(abs(x$d_rule[u]), cap)),
              dev_typical = if (sum(v)) mean(abs(x$g_dev[v])) else NA,
-             dev_adjusted = if (sum(v)) mean(abs(x$g_dev[v] - x$a_dev[v])) else NA,
-             r_adj = if (sum(v) >= 10 && stats::sd(x$a_dev[v]) > 0) stats::cor(x$g_dev[v], x$a_dev[v]) else NA,
+             dev_rule = if (sum(v)) mean(abs(x$g_dev[v] - x$r_dev[v])) else NA,
+             r_rule = if (sum(v) >= 10 && stats::sd(x$r_dev[v]) > 0) stats::cor(x$g_dev[v], x$r_dev[v]) else NA,
              n_dev = sum(v))
 }
 rows <- list()
-for (s in sets) {
-  x <- E[E$set == s, ]
+for (ru in unique(L$rule)) for (s in sets) {
+  x <- L[L$rule == ru & L$set == s, ]
+  if (!nrow(x)) next
   for (rn in c("CONUS", sort(unique(x$region[!is.na(x$region)])))) {
     xr <- if (rn == "CONUS") x else x[x$region %in% as.integer(rn), ]
     if (length(unique(xr$site)) < 3) next
-    rows[[length(rows) + 1]] <- data.frame(set = s, region = rn, score(xr))
+    rows[[length(rows) + 1]] <- data.frame(rule = ru, set = s, region = rn, score(xr))
   }
 }
 Sc <- do.call(rbind, rows)
 utils::write.csv(Sc, file.path(out_dir, "ground_scores.csv"), row.names = FALSE)
 for (i in seq_len(nrow(Sc))) with(Sc[i, ], log_msg(sprintf(
-  "%-13s region %-5s %4d site-years %3d sites | mismatch %3.0f %% | vs ground: typical %5.1f adjusted %5.1f d | offset removed: %5.1f -> %5.1f d (n %d) | r %5.2f",
-  set, region, site_years, sites, 100 * mismatch, mae_typical, mae_adjusted, dev_typical, dev_adjusted, n_dev, r_adj)))
+  "%-10s %-13s region %-5s %4d site-years %3d sites | mismatch %3.0f %% | vs ground: typical %5.1f rule %5.1f d | offset removed: %5.1f -> %5.1f d (n %d) | r %5.2f",
+  rule, set, region, site_years, sites, 100 * mismatch, mae_typical, mae_rule, dev_typical, dev_rule, n_dev, r_rule)))
 log_msg(sprintf("=== done | %.1f min | outputs: %s | log: %s", as.numeric(difftime(Sys.time(), t0, units = "mins")), out_dir, log_file))
