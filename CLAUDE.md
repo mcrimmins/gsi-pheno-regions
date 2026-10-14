@@ -437,6 +437,15 @@ Deferred: fire data, gridMET, ERA5-Land.
      ground_scores.csv now has `rule` (adjustment / bucket) and mae_rule / dev_rule / r_rule.
      90 `curing_adjust_ground` writes curing_adjust_ground[_cured], curing_bucket_ground,
      greenup_bucket_ground CSVs.
+     Oct 13 bucket ground results: worse than typical everywhere it matters (curing S Plains
+     23 -> 43 d offset-removed, mid-South 8.6 -> 11.9, CONUS 19.5 -> 28.3; green-up S Plains
+     21 -> 30, monsoon SW 23 -> 43; no CA green-up sites; Great Plains green-up r 0.42 but ~no
+     gain). FINAL RULES (per the Oct 13 decision): typical date everywhere; curing adjustment
+     (lead 14) in monsoon SW (3) and provisionally CA (11). Next: the write-up.
+     Write-up drafted Oct 13 as a Docs artifact ("Herbaceous green-up and curing rules by
+     region: findings and recommendations"; with a satellite-vs-ground gain chart). Page:
+     "At a glance" has a findings summary; "How the analysis is built" has the four-step
+     rule-testing method; worked-examples tab 17 = ground check of a rule (offset removed).
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

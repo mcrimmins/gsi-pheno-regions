@@ -664,4 +664,47 @@ weeks before the typical date. On the years it did not see, the error falls from
 days. On the real data, a region keeps the adjustment only if it lowers the error like this;
 otherwise the typical date stays.
 
+### 17. Ground check of a rule
+
+**What it is for.** A rule can beat the typical date against the satellite and still miss the
+ground. This check applies the rule at a ground site's cell and asks whether it moves each
+year toward the ground's early or late year. The satellite's typical date sits on average
+some weeks from the ground's (end of season runs about 20 days after ground curing), and no
+rule can change that, so each site's average offset is removed first.
+
+**Input.** Three sites, six held-out years each. The ground's curing dates, and the shift
+each of two rules makes from the typical date: rule A follows the ground's early and late
+years, rule B follows something else (say, the greenness of the whole cell).
+
+```{r we-17a}
+#| echo: true
+set.seed(17)
+gc <- data.frame(site = rep(c("A", "B", "C"), each = 6), year = rep(2015:2020, 3))
+g_true  <- rnorm(18, 0, 12)                                   # the ground's real year-to-year swings
+gc$ground <- rep(c(150, 175, 200), each = 6) + g_true         # ground curing date
+gc$shift_A <- 0.7 * g_true + rnorm(18, 0, 5)                  # rule A: tracks the ground
+gc$shift_B <- rnorm(18, 0, 10)                                # rule B: tracks something else
+dev <- function(v, site) v - ave(v, site)                     # departure from the site's own mean
+g_dev <- dev(gc$ground, gc$site)
+score <- function(shift) {
+  r_dev <- dev(shift, gc$site)
+  c(typical = mean(abs(g_dev)), rule = mean(abs(g_dev - r_dev)), r = cor(g_dev, r_dev))
+}
+round(rbind(rule_A = score(gc$shift_A), rule_B = score(gc$shift_B)), 2)
+```
+
+```{r we-17-text}
+#| include: false
+s17 <- rbind(A = score(gc$shift_A), B = score(gc$shift_B))
+```
+
+With the offsets removed the typical date misses the ground's swings by
+`r sprintf("%.1f", s17["A", "typical"])` days on average (the same for both rules). Rule A
+brings that to `r sprintf("%.1f", s17["A", "rule"])` days and correlates
+`r sprintf("%.2f", s17["A", "r"])` with the ground. Rule B, which moves the dates by about as
+much but in years unrelated to the ground's, makes it worse
+(`r sprintf("%.1f", s17["B", "rule"])` days, correlation `r sprintf("%.2f", s17["B", "r"])`).
+On the real data, the weather adjustment behaved like rule A in the monsoon Southwest and
+the California grasslands, and like rule B almost everywhere else.
+
 :::
