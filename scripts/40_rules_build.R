@@ -88,9 +88,16 @@ if (!length(CO)) stop("no adjustment fitted in any region")
 CO <- do.call(rbind, CO)
 utils::write.csv(CO, file.path(out_dir, "adjust_coefs.csv"), row.names = FALSE)
 adjust <- as.integer(adjust == 1 & region %in% CO$region)        # only regions with a fitted adjustment
+# confidence: 1 = herbaceous cell in a region whose rule was checked against NPN grass sites,
+# 2 = herbaceous cell in a region with few or no ground sites, 3 = mixed cover (outside the
+# strict herbaceous mask: the satellite date describes forest, crops and grass together)
+tested <- as.integer(unlist(rc$tested_regions %||% list(2, 3, 5, 10, 11, 13)))
+confidence <- ifelse(is.na(med[, "eos50"]) & is.na(med[, "sos20"]), NA, ifelse(herb == 1, ifelse(region %in% tested, 1, 2), 3))
+log_msg(sprintf("confidence: %d ground-checked herbaceous, %d other herbaceous, %d mixed-cover cells",
+                sum(confidence == 1, na.rm = TRUE), sum(confidence == 2, na.rm = TRUE), sum(confidence == 3, na.rm = TRUE)))
 TD <- c(to_rast(med[, "sos20"], "greenup_doy"), to_rast(med[, "eos50"], "curing_doy"),
         to_rast(iqr[, "sos20"], "greenup_spread"), to_rast(iqr[, "eos50"], "curing_spread"),
-        to_rast(herb, "herb"), to_rast(region, "region"), to_rast(adjust, "adjust"))
+        to_rast(herb, "herb"), to_rast(region, "region"), to_rast(adjust, "adjust"), to_rast(confidence, "confidence"))
 terra::writeRaster(TD, file.path(out_dir, "typical_dates.tif"), overwrite = TRUE, gdal = c("COMPRESS=DEFLATE"))
 log_msg(sprintf("typical dates: %d land cells, %d herbaceous, %d with the curing adjustment", length(land), sum(herb), sum(adjust)))
 rm(S); invisible(gc())
@@ -144,12 +151,15 @@ writeLines(c(
   sprintf("  curing, adjust cells (regions %s): curing_doy + adjustment, from weather up to %d days before curing_doy", paste(unique(CO$region), collapse = ", "), lead),
   "",
   "typical_dates.tif layers:",
-  "  greenup_doy, curing_doy  median satellite date over the record, day of year relative to Jan 1",
+  "  greenup_doy, curing_doy  median satellite date over the record, day of year relative to Jan 1 (every land cell)",
   "                           (values below 1 fall in the previous year, above 365 in the next)",
   "  greenup_spread, curing_spread  interquartile range across years (days)",
   "  herb      1 = strict herbaceous mask (the rules were tested on grass- and shrub-dominated cells)",
   "  region    A2 climate region, 13 regions, project-page numbering",
   "  adjust    1 = curing adjustment applies",
+  "  confidence  1 = herbaceous cell in a region whose rule was checked against NPN grass sites;",
+  "              2 = herbaceous cell, few or no ground sites in its region;",
+  "              3 = mixed cover: the date describes forest, crops and grass together, not grass fuels",
   "",
   "adjust_coefs.csv: per region, the cues and days of curing shift per unit of cue departure (b).",
   "adjust_cue_means.tif: each cue's mean over the record at each adjusted cell's own cutoff.",

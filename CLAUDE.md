@@ -456,6 +456,11 @@ Deferred: fire data, gridMET, ERA5-Land.
      and, for past years, predict_<Y>_check.csv (in-sample vs satellite eos50). R/cues.R
      adj_apply(). 90 figures rules_typical (2x2 maps) and rules_adjust (example_years, west
      crop; needs predict files). Dev checked with regions 4/9 (dev regions 3/11 too small).
+     Oct 15 full run: region 3 cues p30 (+0.26 d/mm), greenup (+0.16), p180 (-0.05), R2 0.11;
+     region 11 p90 (+0.05), since_rain (-0.13), tx60 (-2.6 d/C), R2 0.33; 34,041 adjusted
+     cells; 2021/2023 in-sample checks CA 23.1->19.7, 14.4->9.6. Wall to wall (Oct 15):
+     typical_dates.tif gains `confidence` (1 herb in tested_regions [2,3,5,10,11,13], 2 other
+     herb, 3 mixed cover); maps show every land cell; 90 figure rules_confidence.
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

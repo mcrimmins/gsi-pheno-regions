@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust", "rules_confidence")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -785,6 +785,8 @@ if (do("curing_adjust_ground") && have(file.path(ad_dir, "ground_scores.csv"))) 
 # rules_typical  typical green-up and curing dates (median satellite date) and their year-to-year
 #                spread (IQR), strict herbaceous cells; outlines of the cells with the curing
 #                adjustment
+# rules_confidence  confidence class per cell (ground-checked herbaceous, other herbaceous,
+#                mixed cover)
 # rules_adjust   the curing adjustment in example years (config rules: example_years; needs
 #                rules/predict_<Y>.tif from 41), western U.S.
 rules_dir <- file.path(cfg$run_dir, "rules")
@@ -797,15 +799,14 @@ doy_breaks <- function(lo, hi) {                     # month starts (day of year
 }
 if (do("rules_typical") && have(file.path(rules_dir, "typical_dates.tif"))) {
   TD <- terra::rast(file.path(rules_dir, "typical_dates.tif"))
-  hmask <- TD[["herb"]] == 1
-  td <- function(nm) terra::mask(TD[[nm]], hmask, maskvalues = c(0, NA))
+  td <- function(nm) TD[[nm]]                              # every land cell (Oct 15: wall to wall)
   q <- function(r) unlist(terra::global(r, function(v) stats::quantile(v, c(0.02, 0.98), na.rm = TRUE)))
   fig("rules_typical", "satellite record", 2, 2, function() {
     for (nm in c("greenup_doy", "curing_doy")) {
       r <- td(nm); b <- doy_breaks(q(r)[1], q(r)[2])
       map_panel(r, if (nm == "greenup_doy") "Typical green-up date" else "Typical curing date",
-                if (nm == "greenup_doy") "Median NDVI green-up (20 % of the seasonal range), herbaceous cells" else
-                  "Median NDVI end of season (50 %), herbaceous cells; outlined: curing adjustment applies",
+                if (nm == "greenup_doy") "Median NDVI green-up (20 % of the seasonal range), every land cell" else
+                  "Median NDVI end of season (50 %), every land cell; outlined: curing adjustment applies",
                 b$breaks, seq_pal(if (nm == "greenup_doy") "YlGnBu" else "YlOrBr", length(b$breaks) - 1), b$labels)
       if (nm == "curing_doy") {
         adj <- terra::classify(TD[["adjust"]], cbind(0, NA))
@@ -817,6 +818,19 @@ if (do("rules_typical") && have(file.path(rules_dir, "typical_dates.tif"))) {
       map_panel(td(nm), if (nm == "greenup_spread") "Year-to-year spread of green-up" else "Year-to-year spread of curing",
                 "Interquartile range across years (days)", b$breaks, seq_pal("Purples", length(b$breaks) - 1), b$labels, "days")
     }
+  })
+}
+if (do("rules_confidence") && have(file.path(rules_dir, "typical_dates.tif"))) {
+  TD <- terra::rast(file.path(rules_dir, "typical_dates.tif"))
+  if (!"confidence" %in% names(TD)) log_msg("skip: typical_dates.tif has no confidence layer (rerun 40)") else
+  fig("rules_confidence", "satellite record", 1, 1, function() {
+    pc <- c("#1c5cab", "#8fbcef", "#c8b28a")
+    map_panel(TD[["confidence"]], "How much to trust the typical date",
+              "Herbaceous cells by ground support; mixed cover = forest and crops with grass",
+              c(0.5, 1.5, 2.5, 3.5), pc, NULL)
+    p <- under_map()
+    legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.5, fill = pc, border = NA,
+           cex = 0.8, text.col = ink2, legend = c("Grass, ground-checked", "Grass, few sites", "Mixed cover"))
   })
 }
 if (do("rules_adjust")) {

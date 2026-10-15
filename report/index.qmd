@@ -1025,7 +1025,13 @@ and 41):
   (NDVI end of season) over the record, their year-to-year spread (interquartile range), the
   strict herbaceous mask, the working region, and a flag for the cells where the curing
   adjustment applies (herbaceous cells in the monsoon Southwest and the California annual
-  grasslands).
+  grasslands). Every land cell gets a date, so the product covers all of CONUS.
+- **A confidence class per cell.** (1) Herbaceous cells in regions whose rule was checked
+  against NPN grass sites (the southern Plains, the monsoon Southwest, the mid-South, the Great
+  Plains, the California grasslands, the upper Midwest); (2) herbaceous cells in regions with
+  few or no ground sites (the interior West, the low deserts, the Rockies); (3) mixed cover,
+  outside the herbaceous mask, where the satellite date describes forest, crops and grass
+  together rather than grass fuels.
 - **The adjustment.** Its coefficients refitted on all years of the 4,000-cell sample, and
   each adjusted cell's own average of the cues it uses (so a year's cues become departures
   from that cell's normal).
@@ -1038,12 +1044,21 @@ and 41):
 ```{r fig-rules-typical}
 #| results: asis
 show_fig("rules_typical",
-  "Typical green-up and curing dates (median satellite dates) and their year-to-year spread, strict herbaceous cells. Outlined on the curing map: the cells where the weather adjustment applies.",
-  "Four maps of CONUS herbaceous cells: typical green-up month, typical curing month, and the interquartile range of each across years.")
+  "Typical green-up and curing dates (median satellite dates) and their year-to-year spread, every land cell. Outlined on the curing map: the cells where the weather adjustment applies.",
+  "Four maps of CONUS: typical green-up month, typical curing month, and the interquartile range of each across years.")
 ```
 
-**Reading the typical-date maps.** The herbaceous cells are almost all in the West and the
-Plains. Green-up comes in December–February in the California grasslands and the low deserts,
+```{r fig-rules-confidence}
+#| results: asis
+show_fig("rules_confidence",
+  "Confidence class of each cell's typical date: herbaceous cells in regions checked against NPN grass sites, herbaceous cells with few or no ground sites, and mixed cover, where the date describes forest and crops as well as grass.",
+  "Map of CONUS in three classes of confidence in the typical date.")
+```
+
+**Reading the typical-date maps.** Every land cell has a date, but only the West and the
+Plains are mostly herbaceous; east of the Plains the dates describe the greening and browning
+of forest and cropland and are marked as mixed cover, so read them as a landscape calendar,
+not a grass-curing date. In the herbaceous West and Plains, green-up comes in December–February in the California grasslands and the low deserts,
 in April–May across the Plains and the interior West, and with the summer rains (July–August)
 in the monsoon Southwest and south Texas. Curing comes in May in California and the deserts,
 June–July in the interior West, August–September on the northern Plains, and October–December
@@ -1433,6 +1448,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-15 | Typical-date product made wall to wall (every land cell) with a confidence class per cell |
 | 2026-10-15 | Rules packaged: typical green-up and curing date maps for every cell, and the curing adjustment model for the monsoon Southwest and California |
 | 2026-10-13 | Bucket rules checked at the ground: worse than the typical date for curing and green-up, so they drop out; final per-region rules tabled |
 | 2026-10-13 | Curing decision amended (typical date, adjustment in two regions); bucket rules added to the ground check |

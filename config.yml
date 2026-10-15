@@ -290,6 +290,7 @@ default:
     partition: A2_groups
     k: 13
     adjust_regions: [3, 11]     # monsoon Southwest; California annual grasslands (provisional)
+    tested_regions: [2, 3, 5, 10, 11, 13]   # NPN grass sites enough for a ground check (39); confidence class 1
     lead_days: 14
     max_cues: 3
     min_gain: 0.01
