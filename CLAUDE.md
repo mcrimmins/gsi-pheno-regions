@@ -446,6 +446,16 @@ Deferred: fire data, gridMET, ERA5-Land.
      region: findings and recommendations"; with a satellite-vs-ground gain chart). Page:
      "At a glance" has a findings summary; "How the analysis is built" has the four-step
      rule-testing method; worked-examples tab 17 = ground check of a rule (offset removed).
+   - **Rules package (Oct 15):** `scripts/40_rules_build.R` (P720; config `rules:`) writes
+     <run_dir>/rules/: typical_dates.tif (greenup_doy, curing_doy = cutb_metrics median sos20 /
+     eos50; *_spread = IQR; herb; region = A2 k13 map number; adjust = herb cells in fitted
+     adjust_regions [3, 11]), adjust_coefs.csv (refit on ALL sample years, adj_fit), 
+     adjust_cue_means.tif (per-cell cue climatology at the cell's own cutoff; chunked, forked),
+     README.txt. `scripts/41_rules_predict.R <year> [as-of] [profile]` writes predict_<Y>.tif
+     (greenup_typical, curing_typical, curing_adjustment, curing_expected, adjusted, region)
+     and, for past years, predict_<Y>_check.csv (in-sample vs satellite eos50). R/cues.R
+     adj_apply(). 90 figures rules_typical (2x2 maps) and rules_adjust (example_years, west
+     crop; needs predict files). Dev checked with regions 4/9 (dev regions 3/11 too small).
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr

@@ -283,6 +283,22 @@ default:
     cap_days: 90                # error cap, as in 35
     max_abs_anomaly: 90         # season jumps left out of fitting (still scored)
 
+  # Packaged rules (40_rules_build.R, 41_rules_predict.R; P720), decided Oct 13 2026 after the
+  # ground checks: each cell's typical green-up and curing date everywhere; curing shifted by a
+  # weather adjustment (cues to 14 days before the typical date) in adjust_regions (map numbers).
+  rules:
+    partition: A2_groups
+    k: 13
+    adjust_regions: [3, 11]     # monsoon Southwest; California annual grasslands (provisional)
+    lead_days: 14
+    max_cues: 3
+    min_gain: 0.01
+    max_adj_days: 60
+    max_abs_anomaly: 90
+    chunk_cells: 2500           # cells per chunk for the per-cell cue climatology
+    workers: 8
+    example_years: [2021, 2023] # hindcast years drawn on the page
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a

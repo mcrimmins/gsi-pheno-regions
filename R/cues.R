@@ -155,3 +155,17 @@ adj_fit <- function(y_tr, X_tr, X_te, max_cues = 3, min_gain = 0.01, max_adj = 6
   adj <- Reduce(`+`, lapply(sel, function(cn) { x <- X_te[[cn]]; x[is.na(x)] <- 0; b[[cn]] * x }))
   list(cues = sel, b = b, r2_fit = best, adj = pmax(pmin(adj, max_adj), -max_adj))
 }
+
+# Adjustment for one year from fitted coefficients (41_rules_predict.R): cues at the cutoff
+# (typical date minus lead) minus each cell's own cue climatology, times the region's
+# coefficients; a missing cue counts as typical (0); clamped to +/- max_adj days.
+# coefs: data.frame(cue, b) for one region; means: list cue -> per-cell climatology.
+adj_apply <- function(cues, coefs, means, max_adj = 60) {
+  a <- rep(0, nrow(cues))
+  for (k in seq_len(nrow(coefs))) {
+    d <- cues[, coefs$cue[k]] - means[[coefs$cue[k]]]
+    d[is.na(d)] <- 0
+    a <- a + coefs$b[k] * d
+  }
+  pmax(pmin(a, max_adj), -max_adj)
+}

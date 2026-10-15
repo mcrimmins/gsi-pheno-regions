@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -778,6 +778,71 @@ if (do("curing_adjust_ground") && have(file.path(ad_dir, "ground_scores.csv"))) 
     tb[[sprintf("%s vs ground departure (r)", if (o[1] == "bucket") "Bucket shift" else "Adjustment")]] <- ifelse(is.na(d$r_rule), "-", sprintf("%.2f", d$r_rule))
     utils::write.csv(tb, file.path(fig_dir, sprintf("%s_%s.csv", o[3], profile)), row.names = FALSE)
     log_msg("wrote ", sprintf("%s_%s.csv", o[3], profile))
+  }
+}
+
+# ---- Packaged rules (40, 41) ---------------------------------------------------------------
+# rules_typical  typical green-up and curing dates (median satellite date) and their year-to-year
+#                spread (IQR), strict herbaceous cells; outlines of the cells with the curing
+#                adjustment
+# rules_adjust   the curing adjustment in example years (config rules: example_years; needs
+#                rules/predict_<Y>.tif from 41), western U.S.
+rules_dir <- file.path(cfg$run_dir, "rules")
+doy_breaks <- function(lo, hi) {                     # month starts (day of year, may run past 365 or below 1)
+  st <- as.integer(format(seq(as.Date("2000-07-01"), as.Date("2003-06-01"), by = "month"), "%j")) +
+    365 * (as.integer(format(seq(as.Date("2000-07-01"), as.Date("2003-06-01"), by = "month"), "%Y")) - 2001)
+  st <- st[st > lo & st < hi]
+  lab <- month.abb[as.integer(format(as.Date("2001-01-01") + st - 1, "%m"))]
+  list(breaks = c(-Inf, st, Inf), labels = c("", lab, ""))
+}
+if (do("rules_typical") && have(file.path(rules_dir, "typical_dates.tif"))) {
+  TD <- terra::rast(file.path(rules_dir, "typical_dates.tif"))
+  hmask <- TD[["herb"]] == 1
+  td <- function(nm) terra::mask(TD[[nm]], hmask, maskvalues = c(0, NA))
+  q <- function(r) unlist(terra::global(r, function(v) stats::quantile(v, c(0.02, 0.98), na.rm = TRUE)))
+  fig("rules_typical", "satellite record", 2, 2, function() {
+    for (nm in c("greenup_doy", "curing_doy")) {
+      r <- td(nm); b <- doy_breaks(q(r)[1], q(r)[2])
+      map_panel(r, if (nm == "greenup_doy") "Typical green-up date" else "Typical curing date",
+                if (nm == "greenup_doy") "Median NDVI green-up (20 % of the seasonal range), herbaceous cells" else
+                  "Median NDVI end of season (50 %), herbaceous cells; outlined: curing adjustment applies",
+                b$breaks, seq_pal(if (nm == "greenup_doy") "YlGnBu" else "YlOrBr", length(b$breaks) - 1), b$labels)
+      if (nm == "curing_doy") {
+        adj <- terra::classify(TD[["adjust"]], cbind(0, NA))
+        if (!all(is.na(terra::values(adj)))) terra::plot(terra::as.polygons(adj), add = TRUE, border = ink, lwd = 0.8, col = NA)
+      }
+    }
+    for (nm in c("greenup_spread", "curing_spread")) {
+      b <- fix_breaks(c(7, 14, 21, 30, 45, 60, 90))
+      map_panel(td(nm), if (nm == "greenup_spread") "Year-to-year spread of green-up" else "Year-to-year spread of curing",
+                "Interquartile range across years (days)", b$breaks, seq_pal("Purples", length(b$breaks) - 1), b$labels, "days")
+    }
+  })
+}
+if (do("rules_adjust")) {
+  ys <- unlist(cfg$rules$example_years %||% list())
+  pf <- file.path(rules_dir, sprintf("predict_%d.tif", ys))
+  ys <- ys[file.exists(pf)]; pf <- pf[file.exists(pf)]
+  if (!length(ys)) log_msg("skip: no rules/predict_<year>.tif for example years (run 41)") else {
+    west <- terra::ext(-125, -102, 30.5, 42.5)
+    fig("rules_adjust", yrs_label(ys), length(ys), 1, function() {
+      br <- c(-Inf, -30, -20, -10, -3, 3, 10, 20, 30, Inf)
+      cols <- rev(grDevices::hcl.colors(length(br) - 1, "Blue-Red 3")); cols[5] <- "#d9d8d4"
+      for (k in seq_along(ys)) {
+        P <- terra::crop(terra::rast(pf[k]), west); a <- terra::mask(P[["curing_adjustment"]], P[["adjusted"]], maskvalues = c(0, NA))
+        lw <- terra::crop(land, west)
+        terra::plot(west, type = "n", axes = FALSE, xlab = "", ylab = "", asp = asp, main = "", mar = NA)
+        terra::plot(lw, col = landgray, legend = FALSE, add = TRUE, axes = FALSE)
+        terra::plot(a, col = cols, breaks = br, legend = FALSE, add = TRUE, axes = FALSE)
+        if (!is.null(states)) lines(states$x, states$y, col = "#ffffff", lwd = 0.7)
+        e <- unname(as.vector(west)); lh <- line_h()
+        text(e[1], e[4] + 1.75 * lh, sprintf("Curing adjustment, %d", ys[k]), adj = c(0, 0), cex = 1.15, font = 2, col = ink, xpd = NA)
+        text(e[1], e[4] + 0.45 * lh, "Days from the typical curing date; red = earlier, blue = later", adj = c(0, 0), cex = 0.85, col = ink2, xpd = NA)
+        p <- c(x = e[1] + 0.01 * (e[2] - e[1]), y = e[3] - 0.3 * lh)
+        legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.4, fill = cols, border = NA, cex = 0.7,
+               text.col = ink2, legend = c("< -30", "-30", "-20", "-10", "0", "+10", "+20", "+30", "> +30"))
+      }
+    })
   }
 }
 
