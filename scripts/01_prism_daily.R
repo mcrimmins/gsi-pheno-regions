@@ -3,7 +3,11 @@
 # variable-year, cropped to the configured bbox. Raw daily files are dropped afterwards.
 #
 # Usage (from the project root):
-#   Rscript scripts/01_prism_daily.R [profile]     # profile: test | dev | full
+#   Rscript scripts/01_prism_daily.R [profile] [years] [vars]   # profile: test | dev | full
+#   years (optional): one year or a range, e.g. 2026 or 2024-2026 (default: config years)
+#   vars (optional): comma-separated, e.g. ppt,tmax (default: config prism vars)
+# The current year is fetched up to yesterday. Its file is rebuilt when newer days exist, and
+# its daily raw files are kept so the next update only downloads the new days.
 # From an RStudio console (project open), as a background job so the console stays free:
 #   gsi_profile <- "test"
 #   rstudioapi::jobRunScript("scripts/01_prism_daily.R", workingDir = getwd(), importEnv = TRUE)
@@ -38,6 +42,11 @@ source(here::here("R", "prism.R"))
 source(here::here("R", "notify.R"))
 
 cfg <- load_cfg(profile)
+if (length(args) >= 2 && nzchar(args[2])) {               # years override (Oct 15 2026)
+  yy <- as.integer(strsplit(args[2], "-", fixed = TRUE)[[1]])
+  cfg$years <- if (length(yy) == 2) seq(yy[1], yy[2]) else yy
+}
+if (length(args) >= 3 && nzchar(args[3])) cfg$prism$vars <- strsplit(args[3], ",", fixed = TRUE)[[1]]
 log_file <- log_init("01_prism_daily", profile)
 paths <- prism_paths(cfg)
 dir.create(paths$out_root, showWarnings = FALSE, recursive = TRUE)
@@ -87,9 +96,17 @@ for (yr in cfg$years) {
     log_warn(yr, ": includes days < 6 months old (may be provisional and change later)")
   }
 
+  partial <- max(dates) < as.Date(sprintf("%d-12-31", yr))
   todo <- character()
   for (v in cfg$prism$vars) {
-    if (file.exists(prism_out_file(cfg, v, yr))) {
+    of <- prism_out_file(cfg, v, yr)
+    stale <- FALSE
+    if (file.exists(of) && partial) {                        # current year: rebuild when newer days exist
+      last <- tryCatch(max(as.Date(names(terra::rast(of)))), error = function(e) as.Date(NA))
+      stale <- is.na(last) || last < max(dates)
+      if (stale) log_msg(v, " ", yr, ": output ends ", last, ", ", max(dates), " available: updating")
+    }
+    if (file.exists(of) && !stale) {
       log_msg(v, " ", yr, ": output exists, skip"); n_skip <- n_skip + 1L
     } else todo <- c(todo, v)
   }
@@ -128,7 +145,7 @@ for (yr in cfg$years) {
       log_msg(sprintf("%s %d: wrote %s | %d bands | %d x %d | res %.5f | %s | %.1f MB | crs %s | QA max err %.6f | day1 range %.2f..%.2f",
                       v, yr, basename(r$out_file), r$nlyr, r$nrow, r$ncol, r$res[1],
                       r$datatype, r$mb, r$crs, r$max_err, r$range[1], r$range[2]))
-      if (isTRUE(cfg$prism$drop_raw)) {
+      if (isTRUE(cfg$prism$drop_raw) && !partial) {          # keep a partial year's raw days for updates
         unlink(prism_raw_dir(cfg, v, yr), recursive = TRUE)
       }
     } else {

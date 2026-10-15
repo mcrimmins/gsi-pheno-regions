@@ -80,6 +80,9 @@ OUT <- c(to_rast(v[, "greenup_doy"], "greenup_typical"), to_rast(v[, "curing_doy
          to_rast(flag, "adjusted"), to_rast(v[, "region"], "region"))
 of <- file.path(rdir, sprintf("predict_%d.tif", Y))
 terra::writeRaster(OUT, of, overwrite = TRUE, gdal = c("COMPRESS=DEFLATE"))
+utils::write.csv(data.frame(year = Y, as_of = format(if (is.null(asof)) last_day else min(asof, last_day)),
+                           weather_to = format(last_day), cells_adjusted = sum(ready), cells_pending = sum(!ready)),
+                file.path(rdir, sprintf("predict_%d_info.csv", Y)), row.names = FALSE)
 log_msg(sprintf("adjustment applied in %d of %d cells; median %+.1f d, 10-90 %%: %+.1f to %+.1f d", sum(ready), length(rows),
                 stats::median(adj[ready]), stats::quantile(adj[ready], 0.1), stats::quantile(adj[ready], 0.9)))
 

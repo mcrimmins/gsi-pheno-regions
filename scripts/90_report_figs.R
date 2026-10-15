@@ -51,7 +51,7 @@ source(here::here("R", "evaluate.R"))
 
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
-              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust", "rules_confidence")
+              "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust", "rules_confidence", "rules_current")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -833,31 +833,43 @@ if (do("rules_confidence") && have(file.path(rules_dir, "typical_dates.tif"))) {
            cex = 0.8, text.col = ink2, legend = c("Grass, ground-checked", "Grass, few sites", "Mixed cover"))
   })
 }
-if (do("rules_adjust")) {
-  ys <- unlist(cfg$rules$example_years %||% list())
+# rules_current  the curing adjustment for one year so far (env GSI_RULES_YEAR, default the
+#                current year; needs rules/predict_<Y>.tif from 41 with an as-of date)
+draw_adjust <- function(name, ys, sub_fn) {
   pf <- file.path(rules_dir, sprintf("predict_%d.tif", ys))
   ys <- ys[file.exists(pf)]; pf <- pf[file.exists(pf)]
-  if (!length(ys)) log_msg("skip: no rules/predict_<year>.tif for example years (run 41)") else {
-    west <- terra::ext(-125, -102, 30.5, 42.5)
-    fig("rules_adjust", yrs_label(ys), length(ys), 1, function() {
-      br <- c(-Inf, -30, -20, -10, -3, 3, 10, 20, 30, Inf)
-      cols <- rev(grDevices::hcl.colors(length(br) - 1, "Blue-Red 3")); cols[5] <- "#d9d8d4"
-      for (k in seq_along(ys)) {
-        P <- terra::crop(terra::rast(pf[k]), west); a <- terra::mask(P[["curing_adjustment"]], P[["adjusted"]], maskvalues = c(0, NA))
-        lw <- terra::crop(land, west)
-        terra::plot(west, type = "n", axes = FALSE, xlab = "", ylab = "", asp = asp, main = "", mar = NA)
-        terra::plot(lw, col = landgray, legend = FALSE, add = TRUE, axes = FALSE)
-        terra::plot(a, col = cols, breaks = br, legend = FALSE, add = TRUE, axes = FALSE)
-        if (!is.null(states)) lines(states$x, states$y, col = "#ffffff", lwd = 0.7)
-        e <- unname(as.vector(west)); lh <- line_h()
-        text(e[1], e[4] + 1.75 * lh, sprintf("Curing adjustment, %d", ys[k]), adj = c(0, 0), cex = 1.15, font = 2, col = ink, xpd = NA)
-        text(e[1], e[4] + 0.45 * lh, "Days from the typical curing date; red = earlier, blue = later", adj = c(0, 0), cex = 0.85, col = ink2, xpd = NA)
-        p <- c(x = e[1] + 0.01 * (e[2] - e[1]), y = e[3] - 0.3 * lh)
-        legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.4, fill = cols, border = NA, cex = 0.7,
-               text.col = ink2, legend = c("< -30", "-30", "-20", "-10", "0", "+10", "+20", "+30", "> +30"))
-      }
-    })
-  }
+  if (!length(ys)) { log_msg("skip ", name, ": no rules/predict_<year>.tif (run 41)"); return(invisible()) }
+  west <- terra::ext(-125, -102, 30.5, 42.5)
+  fig(name, yrs_label(ys), length(ys), 1, function() {
+    br <- c(-Inf, -30, -20, -10, -3, 3, 10, 20, 30, Inf)
+    cols <- rev(grDevices::hcl.colors(length(br) - 1, "Blue-Red 3")); cols[5] <- "#d9d8d4"
+    for (k in seq_along(ys)) {
+      P <- terra::crop(terra::rast(pf[k]), west); a <- terra::mask(P[["curing_adjustment"]], P[["adjusted"]], maskvalues = c(0, NA))
+      pend <- terra::mask(terra::crop(terra::rast(file.path(rules_dir, "typical_dates.tif"))[["adjust"]], west), P[["adjusted"]], maskvalues = 1, inverse = FALSE)
+      lw <- terra::crop(land, west)
+      terra::plot(west, type = "n", axes = FALSE, xlab = "", ylab = "", asp = asp, main = "", mar = NA)
+      terra::plot(lw, col = landgray, legend = FALSE, add = TRUE, axes = FALSE)
+      terra::plot(terra::classify(pend, cbind(0, NA)), col = "#a9a8a3", legend = FALSE, add = TRUE, axes = FALSE)
+      terra::plot(a, col = cols, breaks = br, legend = FALSE, add = TRUE, axes = FALSE)
+      if (!is.null(states)) lines(states$x, states$y, col = "#ffffff", lwd = 0.7)
+      e <- unname(as.vector(west)); lh <- line_h()
+      text(e[1], e[4] + 1.75 * lh, sprintf("Curing adjustment, %d", ys[k]), adj = c(0, 0), cex = 1.15, font = 2, col = ink, xpd = NA)
+      text(e[1], e[4] + 0.45 * lh, sub_fn(ys[k], pf[k]), adj = c(0, 0), cex = 0.85, col = ink2, xpd = NA)
+      p <- c(x = e[1] + 0.01 * (e[2] - e[1]), y = e[3] - 0.3 * lh)
+      legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.4, fill = c(cols, "#a9a8a3"), border = NA, cex = 0.7,
+             text.col = ink2, legend = c("< -30", "-30", "-20", "-10", "0", "+10", "+20", "+30", "> +30", "not yet"))
+    }
+  })
+}
+if (do("rules_adjust")) draw_adjust("rules_adjust", unlist(cfg$rules$example_years %||% list()),
+                                    function(y, f) "Days from the typical curing date; red = earlier, blue = later")
+if (do("rules_current")) {
+  yc <- as.integer(Sys.getenv("GSI_RULES_YEAR", format(Sys.Date(), "%Y")))
+  draw_adjust("rules_current", yc, function(y, f) {
+    inf <- sub("\\.tif$", "_info.csv", f)
+    d <- if (file.exists(inf)) as.Date(utils::read.csv(inf)$as_of[1]) else as.Date(file.info(f)$mtime)
+    sprintf("Days from the typical curing date, as of %s; dark grey: cutoff still ahead", format(d, "%b %d, %Y"))
+  })
 }
 
 # ---- Region profiles (32_region_profiles.R) ------------------------------------------------

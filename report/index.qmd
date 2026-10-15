@@ -1088,6 +1088,18 @@ show_fig("rules_adjust",
   "Two maps of the western U.S. showing the curing adjustment in the monsoon Southwest and California for two years.")
 ```
 
+**This year so far.** The yearly run is re-run as the season goes on, with daily PRISM up to
+yesterday. Cells whose cutoff (14 days before the typical curing date) has passed show their
+adjustment; the rest keep the typical date until their cutoff arrives. This year the
+satellite green-up is not yet available, so the green-up cue counts as typical.
+
+```{r fig-rules-current}
+#| results: asis
+show_fig("rules_current",
+  "The curing adjustment for the current year, as of the date in the subtitle: cells whose cutoff has passed, in days from the typical curing date; dark grey, cells whose cutoff is still ahead.",
+  "Map of the western U.S. showing this year's curing adjustment where its cutoff has passed.")
+```
+
 ### Is the satellite curing date the right target?
 
 The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.

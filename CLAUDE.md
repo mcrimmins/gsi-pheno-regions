@@ -461,6 +461,12 @@ Deferred: fire data, gridMET, ERA5-Land.
      cells; 2021/2023 in-sample checks CA 23.1->19.7, 14.4->9.6. Wall to wall (Oct 15):
      typical_dates.tif gains `confidence` (1 herb in tested_regions [2,3,5,10,11,13], 2 other
      herb, 3 mixed cover); maps show every land cell; 90 figure rules_confidence.
+   - **Current-year run (Oct 15):** `scripts/01_prism_daily.R [profile] [years] [vars]` (e.g.
+     `full 2026 ppt,tmax`); a partial current year is fetched to yesterday, rebuilt when newer
+     days exist, and keeps its raw days (drop_raw skipped) so updates download only new days.
+     41 writes predict_<Y>_info.csv (as_of, weather_to, cells adjusted / pending). 90 figure
+     rules_current (env GSI_RULES_YEAR, default this year; pending cells dark grey);
+     rules_adjust / rules_current share draw_adjust().
 9. A3 (Block 3, GSI features; built Oct 9): `20_cluster_a1.R` variants `a3_groups` (A2 groups +
    Block 3 from GSI variant fems_precip, equal weight), `a3_groups_novpd` (fems_precip_novpd)
    and `a3_groups_kbdi` (fems_kbdi); config `block3: gsi_variant`, sources g3med / g3iqr
