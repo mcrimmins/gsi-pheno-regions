@@ -511,3 +511,21 @@ If a metric's definition changes in `R/` or a script, check the matching tab.
 summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`. It also renders the page
 (`render`) and uploads `index.html` to S3 with the AWS CLI (`publish`, only when asked;
 `GSI_S3_DEST`, optional `GSI_AWS_PROFILE`, `GSI_CF_DIST`). Never handle AWS credentials.
+
+## NPN grass curing study (started Oct 15 2026)
+Scope: project doc claude/gsi-npn-curing-study-scope.md (Q1-Q6, model ladder L0-L4). Decided
+Oct 15 (Mike): code lives here (scripts 50+); likely managed sites flagged and reported both
+ways (needs site names, not in the derived tables yet); C3/C4 drafted in
+`data/npn_species_pathway.csv` (pathway, life cycle, origin, crop) for Mike / Theresa to review;
+config `npn_study:` defaults (min 12 readings, P-PET memory 15/30/60 d, day-length gates 12/11 h).
+Record (Oct 15): 6,420 usable plant-years 2014-2024, 1,706 plants, 132 sites, 72 species (C4
+4,265 plant-years, C3 2,155); g50 down 5,165, cured 3,607, g50 up 2,761; median 34 readings;
+119 site x species with curing in >= 3 years. Strong in the West and Plains (FL, ND, KS, CO, UT,
+OK, TX, NM, CA, AZ), not mostly East as the scope assumed.
+Lessons carried from the rules work: NPN rows are plants (aggregate or model plants within
+site-years explicitly); score year-to-year skill on departures from each site's own mean;
+satellite dates are not a target here.
+- `scripts/50_npn_prism.R` (P720): daily PRISM (ppt, tmin, tmax, vpdmax; 1990 to the last
+  year) at every NPN grass site cell -> <run_dir>/npn_study/npn_site_daily.rds (sites x days),
+  so metrics and the ladder (51+) run anywhere.
+

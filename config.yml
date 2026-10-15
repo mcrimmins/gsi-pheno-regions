@@ -300,6 +300,17 @@ default:
     workers: 8
     example_years: [2021, 2023] # hindcast years drawn on the page
 
+  # NPN grass curing study (50+; scope: project doc gsi-npn-curing-study-scope.md). Decided
+  # Oct 15 2026: code here; managed sites flagged and reported both ways; C3/C4 drafted from
+  # the literature for review; defaults below as starting values, each a sensitivity.
+  npn_study:
+    years: {start: 1990, end: 2025}   # 1991-2020 normals + observation years and the year before
+    vars: [ppt, tmin, tmax, vpdmax]
+    min_readings: 12                  # per plant-year
+    memory_days: [15, 30, 60]         # time constants of the antecedent P - PET index
+    daylength_gates_h: [12, 11]       # fall gates for northern C3 curing
+    normals: {start: 1991, end: 2020}
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
