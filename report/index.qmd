@@ -1057,8 +1057,11 @@ show_fig("rules_confidence",
 
 **Reading the typical-date maps.** Every land cell has a date, but only the West and the
 Plains are mostly herbaceous; east of the Plains the dates describe the greening and browning
-of forest and cropland and are marked as mixed cover, so read them as a landscape calendar,
-not a grass-curing date. In the herbaceous West and Plains, green-up comes in December–February in the California grasslands and the low deserts,
+of forest and cropland (green-up in April–May, end of season in October–November, into
+December in the Southeast) and are marked as mixed cover, so read them as a landscape
+calendar, not a grass-curing date. About a third of CONUS land cells are herbaceous; the
+ground-checked class covers the Great Plains, the southern Plains, the monsoon Southwest and
+the California grasslands, the few-sites class mostly the Great Basin and the low deserts. In the herbaceous West and Plains, green-up comes in December–February in the California grasslands and the low deserts,
 in April–May across the Plains and the interior West, and with the summer rains (July–August)
 in the monsoon Southwest and south Texas. Curing comes in May in California and the deserts,
 June–July in the interior West, August–September on the northern Plains, and October–December
