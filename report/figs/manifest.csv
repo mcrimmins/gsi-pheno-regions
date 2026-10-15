@@ -37,3 +37,5 @@
 "prof_obs_A2_groups_k13","full","CONUS","site medians across years","2026-10-08"
 "prof_obs_A2_herbw_k13","full","CONUS","site medians across years","2026-10-08"
 "regions","full","CONUS","2001-2025","2026-10-08"
+"rules_adjust","full","CONUS","2021-2023","2026-10-15"
+"rules_typical","full","CONUS","satellite record","2026-10-15"

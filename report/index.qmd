@@ -1042,12 +1042,26 @@ show_fig("rules_typical",
   "Four maps of CONUS herbaceous cells: typical green-up month, typical curing month, and the interquartile range of each across years.")
 ```
 
-**Reading the typical-date maps.** Green-up comes first in the California grasslands (late fall
-and winter, shown as the months before January) and the low deserts, in spring across the
-Plains and the interior West, and with the summer rains in the monsoon Southwest. Curing runs
-from late spring in California and the deserts to fall in the Plains. Where the spread is
-large (a month or more), a single typical date is a weak guide: those are the two-season and
-patchy-rain areas, where the satellite season itself jumps between years.
+**Reading the typical-date maps.** The herbaceous cells are almost all in the West and the
+Plains. Green-up comes in December–February in the California grasslands and the low deserts,
+in April–May across the Plains and the interior West, and with the summer rains (July–August)
+in the monsoon Southwest and south Texas. Curing comes in May in California and the deserts,
+June–July in the interior West, August–September on the northern Plains, and October–December
+in the monsoon Southwest and Texas. The year-to-year spread is small (two to three weeks) for
+green-up on the northern Plains and in the interior West, and largest (two to three months)
+for both dates in the Southwest and south Texas, where the satellite season itself jumps
+between years: there a single typical date is a weak guide.
+
+**The adjustment as fitted on all years.** In the monsoon Southwest, more rain in the last 30
+days delays curing (0.26 days per mm) and a later green-up delays it (0.16 days per day); the
+cues explain 11 % of the year-to-year departures. In the California grasslands, a warmer last
+two months brings curing earlier (2.6 days per degree), as does a long time since the last
+soaking rain (0.13 days per day), and recent rain delays it (0.05 days per mm); 33 % explained.
+In the example years the adjustment moves California's curing about two weeks earlier in dry
+2021 and three or more weeks later after the wet winter of 2023. Against those years' satellite
+dates it lowers California's error from 23.1 to 19.7 days (2021) and 14.4 to 9.6 days (2023),
+and the monsoon Southwest's from 20.9 to 18.7 and 24.2 to 23.7 (consistency checks: the
+coefficients were fitted on these years too).
 
 ```{r fig-rules-adjust}
 #| results: asis
