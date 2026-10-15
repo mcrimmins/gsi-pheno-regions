@@ -39,4 +39,5 @@
 "regions","full","CONUS","2001-2025","2026-10-08"
 "rules_adjust","full","CONUS","2021-2023","2026-10-15"
 "rules_confidence","full","CONUS","satellite record","2026-10-15"
+"rules_current","full","CONUS","2026","2026-10-15"
 "rules_typical","full","CONUS","satellite record","2026-10-15"

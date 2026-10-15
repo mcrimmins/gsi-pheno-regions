@@ -1100,6 +1100,12 @@ show_fig("rules_current",
   "Map of the western U.S. showing this year's curing adjustment where its cutoff has passed.")
 ```
 
+As of October 14, 2026, the adjustment puts California's curing (already past, in spring) 5 to
+20 days earlier than typical, and the monsoon Southwest's 10 to 20 days later in Arizona and up
+to a month later in northern New Mexico, after late-season rain. In southern New Mexico and
+west Texas the cutoff is still ahead. These are the rule's estimates; they can be checked once
+the 2026 satellite season is processed.
+
 ### Is the satellite curing date the right target?
 
 The GSI tests above score the GSI against satellite dates: NDVI green-up and NDII7 curing.
@@ -1463,6 +1469,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-15 | First current-year run (2026, as of October 14) of the curing adjustment |
 | 2026-10-15 | Typical-date product made wall to wall (every land cell) with a confidence class per cell |
 | 2026-10-15 | Rules packaged: typical green-up and curing date maps for every cell, and the curing adjustment model for the monsoon Southwest and California |
 | 2026-10-13 | Bucket rules checked at the ground: worse than the typical date for curing and green-up, so they drop out; final per-region rules tabled |

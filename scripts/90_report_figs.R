@@ -856,8 +856,8 @@ draw_adjust <- function(name, ys, sub_fn) {
       text(e[1], e[4] + 1.75 * lh, sprintf("Curing adjustment, %d", ys[k]), adj = c(0, 0), cex = 1.15, font = 2, col = ink, xpd = NA)
       text(e[1], e[4] + 0.45 * lh, sub_fn(ys[k], pf[k]), adj = c(0, 0), cex = 0.85, col = ink2, xpd = NA)
       p <- c(x = e[1] + 0.01 * (e[2] - e[1]), y = e[3] - 0.3 * lh)
-      legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.4, fill = c(cols, "#a9a8a3"), border = NA, cex = 0.7,
-             text.col = ink2, legend = c("< -30", "-30", "-20", "-10", "0", "+10", "+20", "+30", "> +30", "not yet"))
+      legend(p[["x"]], p[["y"]], xpd = NA, horiz = TRUE, bty = "n", x.intersp = 0.3, text.width = NA, fill = c(cols, "#a9a8a3"), border = NA, cex = 0.62,
+             text.col = ink2, legend = c("< -30", "-30", "-20", "-10", "0", "+10", "+20", "+30", "> +30", "ahead"))
     }
   })
 }
