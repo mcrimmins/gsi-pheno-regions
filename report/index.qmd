@@ -89,6 +89,7 @@ models. Where they disagree is where to look for what's missing.
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
 | Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket, a weather adjustment of the typical date; each scored against satellite dates and then checked against NPN grass sites |
 | Curing and green-up rules | Final after the ground checks (October 13); packaged as typical-date maps and a yearly adjustment run (October 15) |
+| NPN curing study (models fitted to ground dates) | Started October 15; first model comparison October 16 |
 
 : Pipeline status {.striped}
 
@@ -108,6 +109,12 @@ models. Where they disagree is where to look for what's missing.
   it is used, and the next round of curing rules should be fitted to ground observations
   directly. [Typical date plus a weather adjustment](#typical-date-plus-a-weather-adjustment)
   and the two sections after it have the details.
+- **Fitted to the ground (first result, October 16):** models fitted to NPN grass dates
+  directly, from one weather driver up to a random forest, also do no better than each
+  grass's typical date. Much of the year-to-year scatter in single-plant dates is not
+  shared between species at a site, which caps what any weather model can explain.
+  [Fitting to the ground](#fitting-to-the-ground-the-npn-curing-study-first-result) has
+  the details.
 
 ## Why regions?
 
@@ -1181,6 +1188,74 @@ show_fig("obs_sites",
   "Map of CONUS with points for iNaturalist, NPN, live fuel moisture and NPN grass observation sites.")
 ```
 
+### Fitting to the ground: the NPN curing study (first result)
+
+The ground checks above showed that rules tuned to satellite dates rarely carry over to NPN
+grass sites. The NPN curing study asks the question directly on the ground observations:
+can weather explain a grass's early and late years at its own site?
+
+**Methods.**
+
+- **Unit.** One series-year per site, species and year, the median over that site-year's
+  observed plants, from plants with at least 12 readings. Green-up and curing are the dates
+  the plant passes 50 % green going up and coming down; the cured date is when it is fully
+  cured. Crops (wheat, corn) are left out, and species are labeled C3 (cool-season) or C4
+  (warm-season) from the literature.
+- **Record.** 707 series-years in 181 series (86 sites, 67 species), 2014–2024. A series
+  needs at least 3 years with the date to be scored: 289 green-up, 529 curing and 461 cured
+  series-years. Dates more than 90 days from the series' usual date (2–4 %) count as a
+  season mismatch and are not scored.
+- **Weather.** Daily PRISM at each site, 2001–2025: growing degree-days, seasonal
+  temperature, freeze dates, chilling, seasonal rain, vapour pressure deficit, rain events
+  and dry spells, monsoon onset, and a moisture memory (a running average of daily
+  precipitation minus potential evapotranspiration, over 15, 30 and 60 days). Each is used
+  as a departure from the site's own average, so place is removed from both sides.
+- **Two sets of curing drivers.** *Lead*: only weather known by the series' typical date
+  minus 14 days (spring conditions, rain after the typical green-up, moisture memory and
+  heat at that cutoff), the operational case. *Hindcast*: adds the summer and fall windows,
+  which can run past the date.
+- **The ladder**, the same data, folds and scores at each step:
+  - **L0, typical date:** the series' average over the training years. This is the bar.
+  - **L1, one driver:** March–April temperature for green-up; moisture memory at the cutoff
+    (lead) or June–August rain (hindcast) for curing.
+  - **L2, process rule:** green-up when growing degree-days reach the series' usual amount;
+    curing when the 30-day moisture memory falls below the series' usual level and stays
+    there (within 60 days of the typical date), or at the first hard fall freeze if earlier.
+  - **L3, regression:** up to four drivers chosen by forward selection, per C3/C4.
+  - **L4, random forest:** all drivers plus site climate, pathway and life cycle.
+- **Scoring.** Leave one year out (every series loses the same year at once). Mean absolute
+  error in days; skill = 1 − error / error of the typical date; and the correlation of each
+  model's predicted departure with the observed one.
+
+**Results.**
+
+| Date | Series-years | Typical-date error | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|---|---|
+| Green-up | 289 | 24.8 days | 0.00 | −0.04 | −0.02 | −0.02 |
+| 50 % curing | 529 | 27.6 days | 0.00 | −0.33 | −0.04 | −0.02 |
+| Cured | 461 | 23.7 days | +0.01 | −0.17 | −0.05 | −0.03 |
+
+: Skill against the typical date (0 = no better, negative = worse), lead driver set {.striped}
+
+- **No step beats the typical date.** The best is one driver for the cured date (+0.01,
+  correlation 0.15). The process rules, the regression and the random forest all add
+  error. The same holds for C3 and C4 separately, in each region with enough data, when
+  species are averaged within a site-year, and with the hindcast drivers that can see
+  past the date.
+- **The regression does not settle on drivers.** Its choices change from one left-out
+  year to the next.
+- **The ceiling is low.** Species observed at the same site in the same year share only
+  part of their early or late year: 22 % of the year-to-year variance for green-up, 24 %
+  for curing and 40 % for the cured date. The rest is specific to the plant or the
+  observer, which no weather record can explain.
+
+**What it means.** On the ground, as with the satellite rules checked above, the typical
+date is the baseline to beat, and so far nothing beats it. The study's main results are
+likely to be the record itself, the dates by region and grass type, and how much of the
+year-to-year variation is shared. The next step is to measure that shared part directly
+(a variance partition with site, species, year and plant effects) and to focus on the cured
+date, which carries the most shared signal.
+
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
 - **Climate regions capture seasonal timing better than location alone.** On the
@@ -1455,8 +1530,9 @@ models, not by clustering scores alone.
 - **Study period:** use all of 2001–2025, or a fixed recent window?
 - **Curing rules:** the typical date everywhere, with a weather adjustment in the monsoon
   Southwest and California. Is a few days' gain there worth a second method for managers,
-  and is a 14-day lead the right operational case? Should the next round of rules be fitted
-  to ground observations directly (the NPN curing study) rather than the satellite?
+  and is a 14-day lead the right operational case? Models fitted to the NPN ground dates
+  directly (October 16) did not beat the typical date either; is the typical date, with a
+  clear statement of its spread, the right product for now?
 - **Ground observations:** which NPN and iNaturalist taxa and phenophases best
   represent herbaceous fuel green-up and curing?
 - **Operational use:** how contiguous do regions need to be to be useful to managers?
@@ -1469,6 +1545,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-16 | NPN curing study: first comparison of weather models against the typical date on ground dates (methods and results) |
 | 2026-10-15 | First current-year run (2026, as of October 14) of the curing adjustment |
 | 2026-10-15 | Typical-date product made wall to wall (every land cell) with a confidence class per cell |
 | 2026-10-15 | Rules packaged: typical green-up and curing date maps for every cell, and the curing adjustment model for the monsoon Southwest and California |
