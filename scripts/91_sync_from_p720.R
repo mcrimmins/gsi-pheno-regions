@@ -6,8 +6,9 @@
 #   summaries  full-run across-year summaries and static layers, into the local data
 #              root (<data_root>/full/summaries, <data_root>/full/static) for plotting
 #   logs       the P720 logs/ folder, into logs/p720/
-#   render     quarto render report/index.qmd -> report/index.html
-#   publish    upload report/index.html to S3 with the AWS CLI (optional CloudFront
+#   render     quarto render every page: report/index.qmd and report/npn_study.qmd (the NPN
+#              curing study companion page) -> report/<page>.html
+#   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
 #              invalidation). Never runs unless asked for ("publish" or "all").
 #   all        figs + render + publish
 #   Default: figs + render.
@@ -118,6 +119,8 @@ if ("logs" %in% what) {
 }
 
 # ---- render -------------------------------------------------------------------------------
+pages <- c("index", "npn_study")                     # report/<page>.qmd -> <page>.html
+pages <- pages[file.exists(here::here("report", paste0(pages, ".qmd")))]
 html <- here::here("report", "index.html")
 find_quarto <- function() {
   q1 <- Sys.getenv("QUARTO_PATH", ""); if (nzchar(q1) && file.exists(q1)) return(q1)
@@ -135,40 +138,49 @@ if ("render" %in% what) {
   # so hand it this session's library paths.
   old <- Sys.getenv("R_LIBS", unset = NA)
   Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
-  r <- run(qbin, c("render", q(here::here("report", "index.qmd"))))
-  if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old)
-  if (!r$ok || !file.exists(html)) {
-    log_err("render failed:\n", paste(utils::tail(r$out, 15), collapse = "\n"))
-    stop("quarto render failed (see log)")
+  for (pg in pages) {
+    out <- here::here("report", paste0(pg, ".html"))
+    r <- run(qbin, c("render", q(here::here("report", paste0(pg, ".qmd")))))
+    if (!r$ok || !file.exists(out)) {
+      if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old)
+      log_err("render failed (", pg, "):\n", paste(utils::tail(r$out, 15), collapse = "\n"))
+      stop("quarto render failed for ", pg, ".qmd (see log)")
+    }
+    log_msg("rendered report/", pg, ".html (", round(file.size(out) / 1e6, 1), " MB)")
   }
-  log_msg("rendered report/index.html (", round(file.size(html) / 1e6, 1), " MB)")
+  if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old)
 }
 
 # ---- publish (S3) ---------------------------------------------------------------------------
 if ("publish" %in% what) {
   dest <- Sys.getenv("GSI_S3_DEST", "")
   if (!grepl("^s3://", dest)) stop("Set GSI_S3_DEST=s3://bucket/path/ in ~/.Renviron")
-  if (endsWith(dest, "/")) dest <- paste0(dest, "index.html")
-  if (!file.exists(html)) stop("report/index.html missing: run the render step first")
-  newest_input <- max(file.mtime(c(here::here("report", "index.qmd"),
-                                   list.files(here::here("report", "figs"), full.names = TRUE))))
-  if (file.mtime(html) < newest_input)
-    log_warn("index.html is older than index.qmd or a figure; publishing it anyway")
+  folder <- if (endsWith(dest, "/")) dest else paste0(dirname(dest), "/")   # all pages go in one folder
   aws <- Sys.which("aws")
   if (!nzchar(aws)) stop("AWS CLI not found (install it and run aws configure / aws sso login)")
   prof <- Sys.getenv("GSI_AWS_PROFILE", "")
   pa <- if (nzchar(prof)) c("--profile", prof) else character()
-  r <- run(aws, c("s3", "cp", q(html), q(dest), "--content-type", q("text/html; charset=utf-8"),
-                  "--cache-control", q("max-age=300"), "--only-show-errors", pa))
-  if (!r$ok) {
-    log_err("S3 upload failed: ", paste(r$out, collapse = " "))
-    stop("aws s3 cp failed (see log). Logged in? Try: aws sts get-caller-identity", if (nzchar(prof)) paste(" --profile", prof))
+  paths <- character()
+  for (pg in pages) {
+    h <- here::here("report", paste0(pg, ".html"))
+    if (!file.exists(h)) stop("report/", pg, ".html missing: run the render step first")
+    newest_input <- max(file.mtime(c(here::here("report", paste0(pg, ".qmd")),
+                                     list.files(here::here("report", "figs"), full.names = TRUE))))
+    if (file.mtime(h) < newest_input)
+      log_warn(pg, ".html is older than its .qmd or a figure; publishing it anyway")
+    d <- if (pg == "index" && !endsWith(dest, "/")) dest else paste0(folder, pg, ".html")   # a full key names the main page
+    r <- run(aws, c("s3", "cp", q(h), q(d), "--content-type", q("text/html; charset=utf-8"),
+                    "--cache-control", q("max-age=300"), "--only-show-errors", pa))
+    if (!r$ok) {
+      log_err("S3 upload failed: ", paste(r$out, collapse = " "))
+      stop("aws s3 cp failed (see log). Logged in? Try: aws sts get-caller-identity", if (nzchar(prof)) paste(" --profile", prof))
+    }
+    log_msg("published -> ", d)
+    paths <- c(paths, sub("^s3://[^/]+", "", d))
   }
-  log_msg("published -> ", dest)
   cf <- Sys.getenv("GSI_CF_DIST", "")
   if (nzchar(cf)) {
-    path <- sub("^s3://[^/]+", "", dest)                     # /path/index.html
-    paths <- unique(c(path, sub("index\\.html$", "", path)))  # file and its folder URL
+    paths <- unique(c(paths, sub("index\\.html$", "", paths[grepl("index\\.html$", paths)])))  # files and the folder URL
     r <- run(aws, c("cloudfront", "create-invalidation", "--distribution-id", cf,
                     "--paths", vapply(paths, q, ""), pa))
     if (r$ok) log_msg("CloudFront invalidation: ", paste(paths, collapse = " "))

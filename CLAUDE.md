@@ -509,10 +509,18 @@ anomaly r); 13 soil-water bucket; 14 season-aware reading (rel_anchor); 15 cue s
 If a metric's definition changes in `R/` or a script, check the matching tab.
 `scripts/91_sync_from_p720.R` (laptop) pulls `*_full.png` + merged manifest (and optionally
 summaries/static rasters, logs) by scp; host from `GSI_P720_HOST`, remote paths in config `sync:`. It also renders the page
-(`render`) and uploads `index.html` to S3 with the AWS CLI (`publish`, only when asked;
+(`render`, both pages: index.qmd and npn_study.qmd) and uploads both HTML files to one S3 folder with the AWS CLI (`publish`, only when asked;
 `GSI_S3_DEST`, optional `GSI_AWS_PROFILE`, `GSI_CF_DIST`). Never handle AWS credentials.
 
-## NPN grass curing study (started Oct 15 2026)
+## NPN grass curing study (started Oct 15 2026) — separate companion study
+**Boundary (Oct 16, Mike):** a separate, complementary study to the regions work, with its own
+chat thread, page and paper. Code stays in this repo (scripts 50-59, R/npn.R) because it reuses
+the PRISM, cue and region code and the map region numbers. Its page is report/npn_study.qmd
+(-> npn_study.html, rendered and published next to index.html by 91); index.qmd keeps only a
+short summary under "Ground dates: the NPN curing study" with a link. Put NPN methods, figures
+and results on npn_study.qmd, not index.qmd. Handoff: project doc claude/gsi-npn-study-handoff.md.
+Region-work changes that affect NPN (region numbers, typical-date product) should be noted on
+both pages.
 Scope: project doc claude/gsi-npn-curing-study-scope.md (Q1-Q6, model ladder L0-L4). Decided
 Oct 15 (Mike): code lives here (scripts 50+); likely managed sites flagged and reported both
 ways (needs site names, not in the derived tables yet); C3/C4 drafted in
@@ -564,7 +572,7 @@ satellite dates are not a target here.
   (managed, neon; side needs >= 8 sites and 100 plant-years). Plant share is NEON technician
   plots, not volunteer noise. Next: PhenoCam at the NEON sites as an observer-free check
   of the site-year signal.
-- Page figures (90_report_figs.R, run on the laptop after 51-54): npn_sites (NEON filled; reads
+- Page figures (on npn_study.qmd; 90_report_figs.R, run on the laptop after 51-54): npn_sites (NEON filled; reads
   data/npn_site_names.csv only for the NEON flag, names never drawn), npn_dates, npn_ladder,
   npn_variance, npn_signal.
 

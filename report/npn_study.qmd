@@ -1,0 +1,315 @@
+---
+title: "Grass green-up and curing on the ground: the NPN curing study"
+subtitle: "A companion study to the fuel phenology regions: approach, decisions and preliminary results"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Figures come from scripts/90_report_figs.R (figs/<figure>_<profile>.png + manifest.csv).
+# The CONUS ("full") version of a figure is shown when it exists, otherwise the dev one.
+figs <- if (file.exists("figs/manifest.csv")) {
+  utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
+} else data.frame(figure = character(), profile = character())
+
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n',
+                caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s · %s · figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+```
+
+::: {.callout-important appearance="simple"}
+## Work in progress
+This page is updated as the analysis runs. Results are preliminary and will change.
+It is a companion to the [fuel phenology regions page](index.html).
+:::
+
+## At a glance
+
+**The question.** Curing is the fuel variable fire managers care about most for grasses, and
+the U.S. has almost no ground record of it. USA National Phenology Network (NPN) observers
+record, for tagged grass plants, what share of the plant is still green, several times a
+month. This study asks what that record shows: when grasses green up and cure, where and
+for which grass types, how much those dates change from year to year, and whether weather
+explains the early and late years.
+
+**How it fits the regions work.** The [regions page](index.html) builds typical green-up
+and curing dates for every 4 km cell and tested weather rules against satellite dates; most
+of those rules lost their skill when checked at NPN grass sites. This study works the other
+way round: it starts from the ground dates and asks what can be predicted from weather at
+all. It is the validation dataset for the typical-date product and for any future
+ground-fitted rules.
+
+**Questions.**
+
+1. **The record:** how many sites, species, years and plants carry usable curves, and where?
+2. **Climatology:** typical green-up, curing and cured dates for cool-season (C3) and
+   warm-season (C4) grasses, by region.
+3. **Place versus year:** how much of each date is fixed by place, and how much varies from
+   year to year? Is the year-to-year part shared among plants and sites?
+4. **Climate across space:** do typical dates follow each site's climate?
+5. **Weather from year to year:** how far up a ladder of models, from one driver to a random
+   forest, does it take to explain a grass's early and late years?
+6. **Is simple enough?** Where do simple process rules sit on that ladder?
+
+**What we have found so far (October 2026).**
+
+- **The record is mostly NEON.** 96 % of the usable plant-years come from 36 National
+  Ecological Observatory Network field sites, where technicians follow five tagged plants
+  per species in natural plots.
+- **Place dominates.** Two-thirds to four-fifths of the variation in a grass's dates is
+  where it grows and which species it is.
+- **No weather model beats the typical date.** From one driver to a random forest, every
+  model does as well as or worse than each grass's typical date, for green-up, curing and
+  the cured date.
+- **There is a shared year signal, mostly missed.** A quarter to two-fifths of the
+  year-to-year variation is shared by the grasses at a site (about 18 days), regional for
+  green-up and local for curing. Moisture and summer vapour pressure deficit track it in the
+  expected direction, but too weakly to predict it.
+
+**Status (October 2026).**
+
+| Component | Status |
+|---|---|
+| Daily PRISM at every NPN grass site, 2001–2025 | Done |
+| Series-years, climate metrics and site normals | Done |
+| Model ladder (L0–L4), leave-one-year-out | Done |
+| Variance partition (place, shared year, species, plant) | Done |
+| Shared signal against local weather; managed and NEON sites | Done |
+| PhenoCam check of the shared signal | Next |
+| Record and climatology by region and grass type (Q1, Q2, Q4) | Started (figures below); write-up next |
+| Manuscript | Not started |
+
+: Study status {.striped}
+
+## Data and methods
+
+- **Unit.** One series-year per site, species and year, the median over that site-year's
+  observed plants, from plants with at least 12 readings. Green-up and curing are the dates
+  the plant passes 50 % green going up and coming down; the cured date is when it is fully
+  cured. Crops (wheat, corn) are left out, and species are labeled C3 (cool-season) or C4
+  (warm-season) from the literature.
+- **Record.** 707 series-years in 181 series (86 sites, 67 species), 2014–2024. A series
+  needs at least 3 years with the date to be scored: 289 green-up, 529 curing and 461 cured
+  series-years. Dates more than 90 days from the series' usual date (2–4 %) count as a
+  season mismatch and are not scored.
+- **Weather.** Daily PRISM at each site, 2001–2025: growing degree-days, seasonal
+  temperature, freeze dates, chilling, seasonal rain, vapour pressure deficit, rain events
+  and dry spells, monsoon onset, and a moisture memory (a running average of daily
+  precipitation minus potential evapotranspiration, over 15, 30 and 60 days). Each is used
+  as a departure from the site's own average, so place is removed from both sides.
+- **Two sets of curing drivers.** *Lead*: only weather known by the series' typical date
+  minus 14 days (spring conditions, rain after the typical green-up, moisture memory and
+  heat at that cutoff), the operational case. *Hindcast*: adds the summer and fall windows,
+  which can run past the date.
+- **The ladder**, the same data, folds and scores at each step:
+  - **L0, typical date:** the series' average over the training years. This is the bar.
+  - **L1, one driver:** March–April temperature for green-up; moisture memory at the cutoff
+    (lead) or June–August rain (hindcast) for curing.
+  - **L2, process rule:** green-up when growing degree-days reach the series' usual amount;
+    curing when the 30-day moisture memory falls below the series' usual level and stays
+    there (within 60 days of the typical date), or at the first hard fall freeze if earlier.
+  - **L3, regression:** up to four drivers chosen by forward selection, per C3/C4.
+  - **L4, random forest:** all drivers plus site climate, pathway and life cycle.
+- **Scoring.** Leave one year out (every series loses the same year at once). Mean absolute
+  error in days; skill = 1 − error / error of the typical date; and the correlation of each
+  model's predicted departure with the observed one.
+
+```{r fig-npn-sites}
+#| results: asis
+show_fig("npn_sites",
+  "Where the NPN grass curing study sites are. Filled points are NEON field sites, which hold 96 % of the usable record; open points are other NPN sites. Point size is the number of series-years (site, species and year) used.",
+  "Map of the contiguous U.S. with NPN grass study sites coloured by cool-season, warm-season or both grass types, sized by series-years, filled for NEON sites.")
+```
+
+```{r fig-npn-dates}
+#| results: asis
+show_fig("npn_dates",
+  "Typical green-up, 50 % curing and cured dates by region (map numbers as on the region maps) and grass type. Each point is one site and species, the median over its years; the bar is the region median where it has three or more.",
+  "Three panels of dot plots: green-up, curing and cured dates by region, cool-season grasses in blue and warm-season in orange.")
+```
+
+## Can weather beat the typical date?
+
+| Date | Series-years | Typical-date error | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|---|---|
+| Green-up | 289 | 24.8 days | 0.00 | −0.04 | −0.02 | −0.02 |
+| 50 % curing | 529 | 27.6 days | 0.00 | −0.33 | −0.04 | −0.02 |
+| Cured | 461 | 23.7 days | +0.01 | −0.17 | −0.05 | −0.03 |
+
+: Skill against the typical date (0 = no better, negative = worse), lead driver set {.striped}
+
+```{r fig-npn-ladder}
+#| results: asis
+show_fig("npn_ladder",
+  "Skill of each model against the typical date (0 = no better, negative = worse), lead driver set, leave-one-year-out. Black: all grasses; blue: cool-season; orange: warm-season.",
+  "Dot charts of skill for four model levels and three dates; all points sit at or below zero.")
+```
+
+- **No step beats the typical date.** The best is one driver for the cured date (+0.01,
+  correlation 0.15). The process rules, the regression and the random forest all add
+  error. The same holds for C3 and C4 separately, in each region with enough data, when
+  species are averaged within a site-year, and with the hindcast drivers that can see
+  past the date.
+- **The regression does not settle on drivers.** Its choices change from one left-out
+  year to the next.
+- **The ceiling is low.** Species observed at the same site in the same year share only
+  part of their early or late year: 22 % of the year-to-year variance for green-up, 24 %
+  for curing and 40 % for the cured date. The rest is specific to the plant or the
+  observer, which no weather record can explain.
+
+## How much of the year-to-year variation could weather explain?
+
+To measure the ceiling directly, each plant's date is split into parts with a mixed model
+on all plant-years (5,780 plant-years, 1,514 plants, 84 sites; plant dates more than 90 days
+from the series' usual date, 5–10 %, are left out): place (site, species, and
+the species at that site), a year signal shared by the grasses at a site (national,
+regional and site-wide), a year signal of one species at one site, and what is left for
+the single plant.
+
+| Date | Plant-years | Place, % of all variation | Year-to-year SD | Shared by the site's grasses | Region-wide part of that | One species only | Single plant |
+|---|---|---|---|---|---|---|---|
+| Green-up | 2,563 | 68 % | 30 days | 39 % | 28 % | 23 % | 39 % |
+| 50 % curing | 4,468 | 72 % | 35 days | 26 % | 10 % | 21 % | 53 % |
+| Cured | 3,225 | 80 % | 30 days | 38 % | 3 % | 22 % | 39 % |
+
+: Variance partition of NPN grass dates; the last four columns are shares of the year-to-year variation {.striped}
+
+```{r fig-npn-variance}
+#| results: asis
+show_fig("npn_variance",
+  "What the year-to-year variation in each date is made of: shared across the region, shared by the grasses at a site, specific to one species at a site, or specific to the single plant.",
+  "Stacked horizontal bars of the four shares for green-up, curing and cured, all grasses and by grass type.")
+```
+
+- **Place dominates.** Two-thirds to four-fifths of the variation in a plant's date is where
+  it grows and what species it is. That is what the typical-date maps carry.
+- **Of the year-to-year part, a quarter to two-fifths is shared** by the grasses at a site:
+  about 18 days (standard deviation) for each date. That shared part is the most any
+  weather record at the site could explain, and the ladder above explained almost none of
+  it. So the ceiling is real but not zero: the weather drivers tried so far miss a
+  shared signal that exists.
+- **Green-up moves together across a region** (28 % of its year-to-year variation);
+  curing and the cured date mostly do not (10 % and 3 %). Their shared signal is local to
+  the site. Local weather is one explanation; so are things that act on a whole site in a
+  year, such as mowing, grazing, irrigation or a change of observer, which the data cannot
+  separate.
+- **Half of the year-to-year variation in 50 % curing belongs to the single plant**,
+  more for warm-season (C4) grasses (62 %) than cool-season (C3, 36 %). The spacing of
+  readings accounts for only 1–3 % of it, so it is not a sampling artefact: plants of one
+  species at one site really differ (microsite, age, how each observer judges "percent
+  green").
+- **Averaging the plants helps but does not remove it.** In a site-species-year mean
+  (median 3–5 plants) the shared part is about half (45–55 %) of the year-to-year variation.
+
+## Does the shared signal follow local weather?
+
+The shared part was estimated for each
+site-year from the same model (203–290 site-years at 64–71 sites) and compared with that
+year's weather departures at the site.
+
+- **For curing and the cured date it does, weakly, and in the expected direction.** Within
+  a year, sites with a wetter spring, more summer rain events or lower summer vapour
+  pressure deficit cure later (correlations 0.2–0.27; strongest: June–August VPD, April–June
+  rain, April–September rain events, and VPD in the 30 days before the typical date).
+- **But not enough to predict it.** Fitted on the other years, the best single driver
+  explains 3–4 % of the shared signal in a left-out year, and a selected set of drivers
+  explains none. So most of the site-wide year signal is something the 4 km weather record
+  does not see: very local weather and soil, or what happens at the site (mowing, grazing,
+  irrigation, a new observer).
+```{r fig-npn-signal}
+#| results: asis
+show_fig("npn_signal",
+  "The shared site-year signal against June–August vapour pressure deficit, both as departures within each year: higher summer VPD goes with earlier curing, but the scatter is wide.",
+  "Two scatter plots with a downward-sloping fitted line, curing and cured.")
+```
+
+- **Managed sites are not the explanation.** Gardens, yards, campuses and parks are only
+  about 4 % of the usable plant-years, too few to fit on their own; the results without them
+  are unchanged.
+- **The record is mostly NEON.** 96 % of the usable plant-years come from the 36 National
+  Ecological Observatory Network field sites, where trained technicians follow five tagged
+  plants per species in natural plots. Results without NEON sites are too thin to compare
+  (124–154 plant-years). So the large plant share is not volunteer noise: it is real
+  plant-to-plant variation within a plot plus how each technician judges "percent green",
+  and the site-wide year signal may include crew changes and visit schedules as well as
+  weather.
+- **For green-up, the links are with summer temperature, after the event,** so they reflect
+  which years were warm overall rather than a cause, and they do not carry over to a
+  left-out year either.
+
+## What it means so far
+
+On the ground, as with the satellite rules on the [regions page](index.html), the typical
+date is the baseline to beat, and so far nothing beats it. There is a shared year signal of
+about 18 days, regional for green-up and local for curing, that the weather drivers tried
+here capture only weakly (moisture and VPD, in the expected direction). An independent,
+observer-free check is available at the same NEON sites: PhenoCam cameras photograph the
+plots daily. If the camera's grass greenness shows the same early and late years, the
+site-wide signal is real vegetation; if not, it is mostly how the plants were observed.
+That check, and the record and dates by region and grass type, are the next steps.
+
+## Decisions so far
+
+| Date | Decision | Why |
+|---|---|---|
+| Oct 11 2026 | Scope: NPN "percent green" records for grasses with daily PRISM; no GSI, no soil data | Curing measured directly; mapped soil is unlikely to describe the soil under a tagged plant |
+| Oct 11 2026 | Moisture as a running P − PET memory (15, 30, 60 days) instead of a soil bucket | Carries wet and dry spells without a soil parameter |
+| Oct 15 2026 | A companion study to the regions work, with its own page; code shared with the regions work | Reuses the PRISM, cue and region code; region numbers match the maps |
+| Oct 15 2026 | Cool- and warm-season (C3/C4) assigned by species from the literature, to be reviewed with USA-NPN | No national C3/C4 grass layer |
+| Oct 15 2026 | At least 12 readings per plant-year; series need 3 or more years; dates more than 90 days from a series' usual date counted as a season mismatch | Enough readings to place the crossings; mismatches would dominate the errors |
+| Oct 15 2026 | Likely managed sites flagged and reported both ways | Gardens and yards may not follow local weather |
+| Oct 16 2026 | Normals over 2002–2025 | Daily PRISM used here starts in 2001 |
+
+: Study decisions {.striped}
+
+## Changelog
+
+| Date | Change |
+|---|---|
+| 2026-10-16 | Study moved to its own page, with figures (sites, dates by region, model ladder, variance partition, shared signal against VPD) |
+| 2026-10-16 | Managed-site and NEON check (96 % of the record is NEON) |
+| 2026-10-16 | Shared site-year signal tested against local weather |
+| 2026-10-16 | Variance partition of plant dates (place, shared year signal, species, plant) |
+| 2026-10-16 | First comparison of weather models against the typical date on ground dates |
+| 2026-10-15 | Study started: daily PRISM at every NPN grass site; C3/C4 table drafted |
+
+## Data sources and references
+
+- USA National Phenology Network (2026). Plant and animal phenology data, status and
+  intensity observations, <https://www.usanpn.org>.
+- National Ecological Observatory Network (NEON). Plant phenology observations, contributed
+  to the USA-NPN database, <https://www.neonscience.org>.
+- PRISM Group, Oregon State University, <https://prism.oregonstate.edu>, daily 4 km data
+  accessed October 2026.
+- Bates, D., Mächler, M., Bolker, B. and Walker, S. (2015). Fitting linear mixed-effects
+  models using lme4. *Journal of Statistical Software* 67(1).
+- Wright, M. N. and Ziegler, A. (2017). ranger: a fast implementation of random forests for
+  high dimensional data in C++ and R. *Journal of Statistical Software* 77(1).
