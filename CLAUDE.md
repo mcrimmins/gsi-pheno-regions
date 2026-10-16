@@ -558,4 +558,10 @@ satellite dates are not a target here.
   follows moisture in the expected direction (within-year r 0.2-0.27: vpd_jja -, p_amj +,
   events_amjjas +, vpd30_lead -) but LOYO R2 <= 0.04 single driver, <= 0 selected. Green-up
   links are with summer temperature (after the event): year confounding.
+  Site names (Oct 16, 54a): 96 % of usable plant-years (5,547 of 5,780) are NEON sites (site
+  names "XXXX_NNN.phenology.phe", 36 sites; median 36 readings, 5 plants per species-year);
+  managed sites ~4 %, too few to fit; non-NEON side 124-154 plant-years. 54 refits by flag
+  (managed, neon; side needs >= 8 sites and 100 plant-years). Plant share is NEON technician
+  plots, not volunteer noise. Next: PhenoCam at the NEON sites as an observer-free check
+  of the site-year signal.
 

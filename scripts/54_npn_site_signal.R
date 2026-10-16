@@ -9,7 +9,8 @@
 #   2. leave-one-year-out forward selection (<= 3 drivers) on those departures: cross-validated
 #      R^2 of the shared signal
 #   3. if data/npn_site_names.csv exists (54a_npn_site_names.R, laptop with rnpn): likely managed
-#      sites (garden, campus, park, yard, ...) flagged; model refitted with and without them
+#      sites (garden, campus, park, yard, ...) and NEON plots flagged; model refitted for each side
+#      (a side needs >= 8 sites and 100 plant-years)
 # The estimates are shrunken (BLUPs), so correlations are conservative but not biased in sign.
 # Inputs: npn_curing_metrics.rds (GSI_OBS_DIR or study_dir), <run_dir>/npn_study/npn_metrics.rds
 # (51), npn_site_daily.rds (50), region from eval/target_check. Needs lme4.
@@ -63,6 +64,8 @@ if (file.exists(nf)) {
   sn <- utils::read.csv(nf, stringsAsFactors = FALSE)
   u$site_name <- sn$site_name[match(u$site_id, sn$site_id)]
   u$managed <- grepl(managed_re, tolower(u$site_name))
+  u$neon <- grepl("\\.phenology\\.phe", u$site_name)            # NEON plots (technician protocol)
+  log_msg(sprintf("NEON sites: %d plant-years of %d (%.0f %%), %d sites", sum(u$neon), nrow(u), 100 * mean(u$neon), length(unique(u$site_id[u$neon]))))
   log_msg(sprintf("site names for %d of %d sites; %d flagged as likely managed", sum(unique(u$site_id) %in% sn$site_id),
                   length(unique(u$site_id)), length(unique(u$site_id[u$managed %in% TRUE]))))
 } else log_msg("no data/npn_site_names.csv: managed-site check skipped (run 54a_npn_site_names.R on the laptop)")
@@ -145,14 +148,14 @@ for (tg in names(targets)) {
     log_msg(sprintf("  %s: cross-validated R2 of the shared signal %.2f (r %.2f) | most picked: %s", st, r2, stats::cor(pred, y), paste(top, collapse = ", ")))
   }
   # 3. managed sites
-  if (any(!is.na(x$managed))) for (mg in c(TRUE, FALSE)) {
-    g <- x[x$managed %in% mg, ]; if (length(unique(g$site)) < 8) next
+  if (any(!is.na(x$managed))) for (fl in c("managed", "neon")) for (mg in c(TRUE, FALSE)) {
+    g <- x[x[[fl]] %in% mg, ]; if (length(unique(g$site)) < 8 || nrow(g) < 100) next
     Fg <- fit_vc(droplevels(g))
-    man_rows[[length(man_rows) + 1]] <- data.frame(target = tg, managed = mg, sites = length(unique(g$site)), plant_years = nrow(g),
+    man_rows[[length(man_rows) + 1]] <- data.frame(target = tg, flag = fl, value = mg, sites = length(unique(g$site)), plant_years = nrow(g),
       sd_year_to_year = sqrt(Fg$within), shared_share = sum(Fg$v[shared]) / Fg$within, site_year_share = Fg$v[["site:year"]] / Fg$within,
       plant_share = Fg$v[["plant"]] / Fg$within)
-    with(man_rows[[length(man_rows)]], log_msg(sprintf("  managed=%s: %d sites | year-to-year SD %.0f d | shared %.0f %% (site-wide %.0f %%), plant %.0f %%",
-                                                       managed, sites, sd_year_to_year, 100 * shared_share, 100 * site_year_share, 100 * plant_share)))
+    with(man_rows[[length(man_rows)]], log_msg(sprintf("  %s=%s: %d sites, %d plant-years | year-to-year SD %.0f d | shared %.0f %% (site-wide %.0f %%), plant %.0f %%",
+                                                       flag, value, sites, plant_years, sd_year_to_year, 100 * shared_share, 100 * site_year_share, 100 * plant_share)))
   }
 }
 keep <- unique(unlist(lapply(sig_rows, names)))

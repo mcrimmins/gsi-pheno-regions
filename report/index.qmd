@@ -1299,6 +1299,16 @@ year's weather departures at the site.
   explains none. So most of the site-wide year signal is something the 4 km weather record
   does not see: very local weather and soil, or what happens at the site (mowing, grazing,
   irrigation, a new observer).
+- **Managed sites are not the explanation.** Gardens, yards, campuses and parks are only
+  about 4 % of the usable plant-years, too few to fit on their own; the results without them
+  are unchanged.
+- **The record is mostly NEON.** 96 % of the usable plant-years come from the 36 National
+  Ecological Observatory Network field sites, where trained technicians follow five tagged
+  plants per species in natural plots. Results without NEON sites are too thin to compare
+  (124–154 plant-years). So the large plant share is not volunteer noise: it is real
+  plant-to-plant variation within a plot plus how each technician judges "percent green",
+  and the site-wide year signal may include crew changes and visit schedules as well as
+  weather.
 - **For green-up, the links are with summer temperature, after the event,** so they reflect
   which years were warm overall rather than a cause, and they do not carry over to a
   left-out year either.
@@ -1306,10 +1316,11 @@ year's weather departures at the site.
 **What it means.** On the ground, as with the satellite rules checked above, the typical
 date is the baseline to beat, and so far nothing beats it. There is a shared year signal of
 about 18 days, regional for green-up and local for curing, that the weather drivers tried
-here capture only weakly (moisture and VPD, in the expected direction). The next steps are
-to check whether that signal is stronger at gardens, campuses and other managed sites, and
-to describe the record and the dates by region and grass type, which are the study's
-firmest results.
+here capture only weakly (moisture and VPD, in the expected direction). An independent,
+observer-free check is available at the same NEON sites: PhenoCam cameras photograph the
+plots daily. If the camera's grass greenness shows the same early and late years, the
+site-wide signal is real vegetation; if not, it is mostly how the plants were observed.
+That check, and the record and dates by region and grass type, are the next steps.
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
@@ -1600,6 +1611,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-16 | NPN curing study: managed-site and NEON check (96 % of the record is NEON) |
 | 2026-10-16 | NPN curing study: shared site-year signal tested against local weather |
 | 2026-10-16 | NPN curing study: variance partition of plant dates (place, shared year signal, species, plant) |
 | 2026-10-16 | NPN curing study: first comparison of weather models against the typical date on ground dates (methods and results) |
