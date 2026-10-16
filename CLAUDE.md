@@ -564,4 +564,7 @@ satellite dates are not a target here.
   (managed, neon; side needs >= 8 sites and 100 plant-years). Plant share is NEON technician
   plots, not volunteer noise. Next: PhenoCam at the NEON sites as an observer-free check
   of the site-year signal.
+- Page figures (90_report_figs.R, run on the laptop after 51-54): npn_sites (NEON filled; reads
+  data/npn_site_names.csv only for the NEON flag, names never drawn), npn_dates, npn_ladder,
+  npn_variance, npn_signal.
 
