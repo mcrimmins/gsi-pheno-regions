@@ -527,5 +527,28 @@ site-years explicitly); score year-to-year skill on departures from each site's 
 satellite dates are not a target here.
 - `scripts/50_npn_prism.R` (P720): daily PRISM (ppt, tmin, tmax, vpdmax; 1990 to the last
   year) at every NPN grass site cell -> <run_dir>/npn_study/npn_site_daily.rds (sites x days),
-  so metrics and the ladder (51+) run anywhere.
+  so metrics and the ladder (51+) run anywhere. PRISM daily on the P720 starts in 2001, so the
+  study years are 2001-2025 and normals 2002-2025.
+- `scripts/51_npn_metrics.R` (anywhere, seconds; GSI_OBS_DIR): series-years (site x species x
+  year medians over plants, >= 12 readings) with pathway and region (from target_check
+  site_years.csv); site-year metrics (thermal, freeze, seasonal rain, VPD, dry spells, onset,
+  P-PET memory on fixed dates); site normals; green-up-anchored rain windows. Helpers R/npn.R.
+  -> npn_study/npn_metrics.rds, npn_series_years.csv. Oct 16: 707 series-years, 181 series, 86 sites.
+- `scripts/52_npn_ladder.R` (anywhere, < 1 min): L0-L4 with leave-one-year-out CV on
+  series-years (crops out, >= 3 years, |dep| > 90 d dropped as mismatch); "lead" driver set
+  (windows end by typical date - 14 d) vs "hindcast" (adds summer/fall windows). L2 curing =
+  held downward crossing of the 30-d P-PET memory within typical +/- 60 d, or first fall
+  freeze. -> npn_study/ladder/{predictions,scores,selected,importance}.csv.
+  Result Oct 16 (lead set): no level beats the typical date. MAE L0 green-up 24.8 d, curing
+  27.6, cured 23.7; best skill +0.01 (L1 cured, r 0.15); L2-L4 negative; same by pathway,
+  by region and on site-year means. Species at one site-year share only 22-40 % of their
+  departure variance (ICC: green-up 0.22, curing 0.24, cured 0.40), so most year-to-year
+  scatter in NPN dates is plant / observer noise, which caps any weather model.
+- `scripts/53_npn_variance.R` (anywhere, seconds; lme4): variance partition of plant-year dates,
+  y ~ (1|site)+(1|species)+(1|site:species)+(1|year)+(1|region:year)+(1|site:year)+(1|site:species:year),
+  all / C3 / C4 -> npn_study/variance/{components,summary}.csv. Oct 16: place 68-80 % of all
+  variance; of year-to-year, shared by a site's grasses 39 / 26 / 38 % (green-up / curing /
+  cured; ~18 d SD each), region-wide 28 / 10 / 3 %, single plant 39 / 53 / 39 % (C4 curing 62 %);
+  reading gaps explain 1-3 % of the plant part. So a shared signal exists that the 52 drivers
+  miss; curing's is site-local (weather, or management / observer change at the site).
 

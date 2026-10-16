@@ -1249,12 +1249,49 @@ can weather explain a grass's early and late years at its own site?
   for curing and 40 % for the cured date. The rest is specific to the plant or the
   observer, which no weather record can explain.
 
+**How much of the year-to-year variation could weather explain? (variance partition)**
+
+To measure the ceiling directly, each plant's date is split into parts with a mixed model
+on all plant-years (5,780 plant-years, 1,514 plants, 84 sites; plant dates more than 90 days
+from the series' usual date, 5–10 %, are left out): place (site, species, and
+the species at that site), a year signal shared by the grasses at a site (national,
+regional and site-wide), a year signal of one species at one site, and what is left for
+the single plant.
+
+| Date | Plant-years | Place, % of all variation | Year-to-year SD | Shared by the site's grasses | Region-wide part of that | One species only | Single plant |
+|---|---|---|---|---|---|---|---|
+| Green-up | 2,563 | 68 % | 30 days | 39 % | 28 % | 23 % | 39 % |
+| 50 % curing | 4,468 | 72 % | 35 days | 26 % | 10 % | 21 % | 53 % |
+| Cured | 3,225 | 80 % | 30 days | 38 % | 3 % | 22 % | 39 % |
+
+: Variance partition of NPN grass dates; the last four columns are shares of the year-to-year variation {.striped}
+
+- **Place dominates.** Two-thirds to four-fifths of the variation in a plant's date is where
+  it grows and what species it is. That is what the typical-date maps carry.
+- **Of the year-to-year part, a quarter to two-fifths is shared** by the grasses at a site:
+  about 18 days (standard deviation) for each date. That shared part is the most any
+  weather record at the site could explain, and the ladder above explained almost none of
+  it. So the ceiling is real but not zero: the weather drivers tried so far miss a
+  shared signal that exists.
+- **Green-up moves together across a region** (28 % of its year-to-year variation);
+  curing and the cured date mostly do not (10 % and 3 %). Their shared signal is local to
+  the site. Local weather is one explanation; so are things that act on a whole site in a
+  year, such as mowing, grazing, irrigation or a change of observer, which the data cannot
+  separate.
+- **Half of the year-to-year variation in 50 % curing belongs to the single plant**,
+  more for warm-season (C4) grasses (62 %) than cool-season (C3, 36 %). The spacing of
+  readings accounts for only 1–3 % of it, so it is not a sampling artefact: plants of one
+  species at one site really differ (microsite, age, how each observer judges "percent
+  green").
+- **Averaging the plants helps but does not remove it.** In a site-species-year mean
+  (median 3–5 plants) the shared part is about half (45–55 %) of the year-to-year variation.
+
 **What it means.** On the ground, as with the satellite rules checked above, the typical
-date is the baseline to beat, and so far nothing beats it. The study's main results are
-likely to be the record itself, the dates by region and grass type, and how much of the
-year-to-year variation is shared. The next step is to measure that shared part directly
-(a variance partition with site, species, year and plant effects) and to focus on the cured
-date, which carries the most shared signal.
+date is the baseline to beat, and so far nothing beats it. There is a shared year signal of
+about 18 days, regional for green-up and local for curing, that the weather drivers tried
+here do not capture. The next steps are to test whether the site-wide curing signal follows
+local weather at all (or site management), and to describe the record and the dates by
+region and grass type, which are the study's firmest results.
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
@@ -1545,6 +1582,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-16 | NPN curing study: variance partition of plant dates (place, shared year signal, species, plant) |
 | 2026-10-16 | NPN curing study: first comparison of weather models against the typical date on ground dates (methods and results) |
 | 2026-10-15 | First current-year run (2026, as of October 14) of the curing adjustment |
 | 2026-10-15 | Typical-date product made wall to wall (every land cell) with a confidence class per cell |
