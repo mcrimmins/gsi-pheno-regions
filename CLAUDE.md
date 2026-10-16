@@ -551,4 +551,11 @@ satellite dates are not a target here.
   cured; ~18 d SD each), region-wide 28 / 10 / 3 %, single plant 39 / 53 / 39 % (C4 curing 62 %);
   reading gaps explain 1-3 % of the plant part. So a shared signal exists that the 52 drivers
   miss; curing's is site-local (weather, or management / observer change at the site).
+- `scripts/54_npn_site_signal.R` (anywhere; lme4): BLUP shared signal per site-year (year +
+  region:year + site:year) vs weather departures; LOYO forward selection; managed-site refit
+  when data/npn_site_names.csv exists (`scripts/54a_npn_site_names.R`, laptop, rnpn; names kept
+  out of git and off the page). -> npn_study/site_signal/. Oct 16: curing / cured signal
+  follows moisture in the expected direction (within-year r 0.2-0.27: vpd_jja -, p_amj +,
+  events_amjjas +, vpd30_lead -) but LOYO R2 <= 0.04 single driver, <= 0 selected. Green-up
+  links are with summer temperature (after the event): year confounding.
 

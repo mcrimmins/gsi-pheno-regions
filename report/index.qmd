@@ -1286,12 +1286,30 @@ the single plant.
 - **Averaging the plants helps but does not remove it.** In a site-species-year mean
   (median 3–5 plants) the shared part is about half (45–55 %) of the year-to-year variation.
 
+**Does the shared signal follow local weather?** The shared part was estimated for each
+site-year from the same model (203–290 site-years at 64–71 sites) and compared with that
+year's weather departures at the site.
+
+- **For curing and the cured date it does, weakly, and in the expected direction.** Within
+  a year, sites with a wetter spring, more summer rain events or lower summer vapour
+  pressure deficit cure later (correlations 0.2–0.27; strongest: June–August VPD, April–June
+  rain, April–September rain events, and VPD in the 30 days before the typical date).
+- **But not enough to predict it.** Fitted on the other years, the best single driver
+  explains 3–4 % of the shared signal in a left-out year, and a selected set of drivers
+  explains none. So most of the site-wide year signal is something the 4 km weather record
+  does not see: very local weather and soil, or what happens at the site (mowing, grazing,
+  irrigation, a new observer).
+- **For green-up, the links are with summer temperature, after the event,** so they reflect
+  which years were warm overall rather than a cause, and they do not carry over to a
+  left-out year either.
+
 **What it means.** On the ground, as with the satellite rules checked above, the typical
 date is the baseline to beat, and so far nothing beats it. There is a shared year signal of
 about 18 days, regional for green-up and local for curing, that the weather drivers tried
-here do not capture. The next steps are to test whether the site-wide curing signal follows
-local weather at all (or site management), and to describe the record and the dates by
-region and grass type, which are the study's firmest results.
+here capture only weakly (moisture and VPD, in the expected direction). The next steps are
+to check whether that signal is stronger at gardens, campuses and other managed sites, and
+to describe the record and the dates by region and grass type, which are the study's
+firmest results.
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
@@ -1582,6 +1600,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-16 | NPN curing study: shared site-year signal tested against local weather |
 | 2026-10-16 | NPN curing study: variance partition of plant dates (place, shared year signal, species, plant) |
 | 2026-10-16 | NPN curing study: first comparison of weather models against the typical date on ground dates (methods and results) |
 | 2026-10-15 | First current-year run (2026, as of October 14) of the curing adjustment |
