@@ -633,3 +633,11 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   vs FPA-FOD discovery, region x year burned area. State from Event_ID's first two letters.
   Ig_Date parsed whatever its storage (Date, text, epoch days / s / ms). Tested on synthetic
   Albers perimeters (incl. an invalid one): grid area = polygon area to 1e-7, regions right.
+  v12.0 file has lower-case field names: 61 matches fields ignoring case and renames. Full run
+  Oct 17 (2 min): 30,932 perimeters (types Wildfire 16,779, Prescribed Fire 9,639, Other 4,311,
+  Wildland Fire Use 203; "Other" 2 % linked to FPA-FOD, mostly SE: not wildfire); 21,759 in
+  2001-2024 CONUS, 10,428 wildfires; 96.5 % linked to FPA-FOD; ignition vs discovery |d| <= 1 d
+  96 %; completeness (FPA-FOD wildfires >= 1,000 ac found) 0.71-0.91 through 2023, 0.62 in 2024
+  (not finished). Pilot wildfires: 3 1,198 / 6 1,653 / 10 867 / 11 595 / 12 928 / 13 ~186;
+  burned km2 3 48,935 / 6 92,827 / 10 32,442 / 11 38,568 / 12 44,568 / 13 2,959; fuel-weighted
+  share 62-83 % (13: 50 %).

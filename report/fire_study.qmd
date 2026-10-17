@@ -108,7 +108,7 @@ snowmelt as well as green-up.
 |---|---|
 | Design and decisions | Done (October 17) |
 | Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
-| Fire records: MTBS burned area | Script built (October 17); run next |
+| Fire records: MTBS burned area | Done (October 17): 10,428 wildfires; 2024 not yet fully mapped |
 | Fire records: VIIRS | Next |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
@@ -171,6 +171,16 @@ fires peak in June–July, before the monsoon greens the grass.
   hold 5 % on average against 1.4 % for the region. The satellite green-up and curing dates of
   a typical cell in this region (52 % cropland) mostly describe crops.
 
+**Burned area (MTBS).** MTBS maps 10,428 wildfires (types Wildfire and Wildland Fire Use) in
+the lower 48 for 2001–2024; 96 % of them link to an FPA-FOD record, and for 96 % the MTBS
+ignition date is within a day of the FPA-FOD discovery date. Prescribed fires (9,262) and the
+type "Other" (2,069, mostly the Southeast, almost none in FPA-FOD) are left out. Large fires
+(1,000 acres or more in FPA-FOD) are found in MTBS at a steady 71–91 % a year through 2023,
+but only 62 % in 2024: MTBS has not finished mapping 2024. In the pilot regions MTBS wildfires
+burned about 260,000 km² over the period, 62 % (monsoon Southwest) to 83 % (interior West) of it on
+herbaceous fuel; the upper Midwest has few MTBS fires (about 190, 3,000 km²), so burned area
+is a weak outcome there.
+
 **How the study handles them (decided October 17).** The main outcome counts fires of all
 causes, which run continuously through the reporting change; lightning and human starts are
 compared for 2001–2019 only (California: totals only), with a check that counts
@@ -204,7 +214,7 @@ region; fires in the most herbaceous third of cells are a check.
 | 2026-10-17 | FPA-FOD 7th edition fields checked against its metadata; fire-record step built |
 | 2026-10-17 | First look at the fire records: counts, seasonal shape, reporting change from 2020, upper Midwest cover |
 | 2026-10-17 | Decisions on cause reporting and upper Midwest cover |
-| 2026-10-17 | MTBS burned-area step built; checks MTBS completeness against FPA-FOD by year |
+| 2026-10-17 | MTBS burned-area step built and run; 2024 incomplete in MTBS |
 
 ## Data sources and references
 

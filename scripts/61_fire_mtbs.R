@@ -246,6 +246,7 @@ RY <- if (nrow(Cw)) stats::aggregate(cbind(km2, fuel_km2) ~ region + year, Cw, s
   data.frame(region = integer(), year = integer(), km2 = numeric(), fuel_km2 = numeric())
 NF <- if (nrow(W)) stats::aggregate(list(wildfires = rep(1L, nrow(W))), W[, c("region", "year")], sum) else NULL
 if (!is.null(NF)) RY <- merge(RY, NF, all = TRUE)
+for (v in c("km2", "fuel_km2", "wildfires")) if (v %in% names(RY)) RY[[v]][is.na(RY[[v]])] <- 0   # no fire / no area that region-year
 RY <- RY[order(RY$region, RY$year), ]
 RY$km2 <- round(RY$km2, 1); RY$fuel_km2 <- round(RY$fuel_km2, 1)
 utils::write.csv(RY, file.path(out_dir, "mtbs_region_year.csv"), row.names = FALSE)

@@ -357,7 +357,9 @@ default:
       # Thresholds: >= 1,000 ac West, >= 500 ac East (prescribed fires too).
       url: "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/MTBS_Fire/data/composite_data/burned_area_extent_shapefile/mtbs_perimeter_data.zip"
       years: {start: 2001, end: 2024}
-      wildfire_types: ["Wildfire", "Wildland Fire Use"]   # unplanned ignitions; Prescribed Fire and Unknown kept but flagged
+      wildfire_types: ["Wildfire", "Wildland Fire Use"]   # unplanned ignitions; Prescribed Fire and Other kept but flagged
+      # (v12.0 types: Wildfire, Prescribed Fire, Other, Wildland Fire Use; "Other" is 2 % linked to
+      # FPA-FOD, mostly the Southeast: not wildfire)
       exclude_states: [AK, HI, PR]
       check_min_acres: 1000           # completeness check: FPA-FOD wildfires at least this size
       fields: [Event_ID, irwinID, Incid_Name, Incid_Type, Map_Prog, Asmnt_Type, BurnBndAc,
