@@ -348,7 +348,7 @@ default:
                NWCG_CAUSE_CLASSIFICATION, NWCG_GENERAL_CAUSE, CONT_DATE, FIRE_SIZE, FIRE_SIZE_CLASS,
                LATITUDE, LONGITUDE, OWNER_DESCR, STATE, FIPS_CODE]
     firms:
-      # NASA FIRMS area API (checked Oct 17 2026): /api/area/csv/<MAP_KEY>/<SOURCE>/<w,s,e,n>/<days 1-10>/<YYYY-MM-DD>;
+      # NASA FIRMS area API (checked Oct 17 2026): /api/area/csv/<MAP_KEY>/<SOURCE>/<w,s,e,n>/<days 1-5>/<YYYY-MM-DD>;
       # sources VIIRS_SNPP_SP / _NRT (S-NPP from 2012-01-20), VIIRS_NOAA20_SP / _NRT (from 2018-04-01);
       # SP replaces NRT ~5 months after acquisition; 5,000 transactions per 10 min per key.
       # Key from the FIRMS_MAP_KEY environment variable only (~/.Renviron), never here.
@@ -359,6 +359,7 @@ default:
       status_url: "https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/"
       bbox: {xmin: -125.1, ymin: 24.0, xmax: -66.4, ymax: 50.0}   # CONUS request box (as cutb)
       keep_types: [0]                 # SP `type`: 0 vegetation fire; 1 volcano, 2 static land source, 3 offshore dropped
+      window_days: 5                  # days per request: FIRMS rejects more than 5 (checked on the P720, Oct 17 2026)
       sleep_sec: 1
       timeout_sec: 300
       fallback_dates:                 # used only if the data_availability call fails

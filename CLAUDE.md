@@ -645,7 +645,8 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   active fire from the FIRMS area API (config `fire_study: firms:`): key ONLY from env
   FIRMS_MAP_KEY (~/.Renviron; masked in logs; a key error stops the run). Source dates from
   FIRMS data_availability (config fallback_dates if unreachable): SP where it exists, NRT after.
-  10-day pieces over the CONUS box cached as csv.gz in _shared/raw/fire/firms/<SOURCE>/<year>/
+  5-day pieces (config window_days; FIRMS rejects more since Oct 2026; HTTP 400 stops the run)
+  over the CONUS box cached as csv.gz in _shared/raw/fire/firms/<SOURCE>/<year>/
   (never re-fetched; resumes), key transaction count checked before each request (fail-soft).
   Per sensor-year table fire_study/firms/<SENSOR>/firms_<SENSOR>_<year>.parquet: SP type 0 only
   (volcano, static land sources, offshore dropped), all confidence classes kept (conf column),

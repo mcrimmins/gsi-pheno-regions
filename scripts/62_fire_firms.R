@@ -4,7 +4,7 @@
 #   1. Which dates each source holds: FIRMS data_availability (falls back to config dates).
 #      Science-quality "SP" data are used where they exist; the near-real-time "NRT" feed only for
 #      later dates (FIRMS replaces NRT with SP about 5 months after acquisition).
-#   2. Download in 10-day pieces (the FIRMS area API returns at most 10 days per request) over
+#   2. Download in pieces of window_days (the FIRMS area API now takes at most 5 days per request) over
 #      the CONUS box (config fire_study: firms: bbox), one gzipped CSV per piece in
 #      <data_root>/_shared/raw/fire/firms/<SOURCE>/<year>/. Pieces on disk are never fetched again,
 #      so the step resumes where it stopped. Sequential, with a pause, and a check of the key's
@@ -110,11 +110,12 @@ availability <- function() {
   av$min_date <- as.Date(av$min_date); av$max_date <- as.Date(av$max_date)
   av
 }
-# 10-day request windows covering [from, to]
+# request windows of config window_days (FIRMS max: 5 days as of Oct 2026) covering [from, to]
+wdays <- as.integer(fc$window_days %||% 5)
 windows <- function(from, to) {
   if (from > to) return(data.frame(start = as.Date(character()), days = integer()))
-  s <- seq(from, to, by = 10)
-  data.frame(start = s, days = as.integer(pmin(10, as.numeric(to - s) + 1)))
+  s <- seq(from, to, by = wdays)
+  data.frame(start = s, days = as.integer(pmin(wdays, as.numeric(to - s) + 1)))
 }
 piece_file <- function(src, start, days) file.path(fire_cache_dir(cfg, "firms", src, format(start, "%Y")),
                                                   sprintf("%s_%s_%02d.csv.gz", src, format(start, "%Y%m%d"), days))
@@ -134,7 +135,8 @@ fetch_piece <- function(src, start, days) {
       log_warn("  transaction limit reached; waiting 10 min"); Sys.sleep(600)
       return(fetch_piece(src, start, days))
     }
-    stop(sprintf("FIRMS %s %s: HTTP %d: %s", src, format(start), r$status, mask_key(msg)))
+    stop(sprintf("FIRMS %s %s: HTTP %d: %s%s", src, format(start), r$status, mask_key(msg),
+                 if (r$status == 400) " (request rejected: stopping the run; check fire_study: firms: window_days)" else ""))
   }
   tmp <- paste0(f, ".part")
   con <- gzfile(tmp, "w"); writeLines(r$text, con, sep = ""); close(con)
@@ -188,7 +190,7 @@ for (sen in sensors) {
       had <- file.exists(piece_file(W$src[j], W$start[j], W$days[j]))
       files[j] <- tryCatch(fetch_piece(W$src[j], W$start[j], W$days[j]), error = function(e) {
         m <- conditionMessage(e)
-        if (grepl("MAP_KEY", m, ignore.case = TRUE)) stop(m, call. = FALSE)   # bad or missing key: stop the run
+        if (grepl("MAP_KEY|HTTP 400", m, ignore.case = TRUE)) stop(m, call. = FALSE)   # bad key or rejected request: stop the run
         log_err(m); NA })
       if (!had && !is.na(files[j])) n_new <- n_new + 1
     }
