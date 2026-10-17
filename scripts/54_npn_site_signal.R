@@ -17,7 +17,9 @@
 # Output <run_dir>/npn_study/site_signal/: signal.csv (site-year signal + drivers),
 # driver_r.csv, cv.csv, managed.csv (when names exist).
 #
-# Usage: Rscript scripts/54_npn_site_signal.R [profile]
+# Usage: Rscript scripts/54_npn_site_signal.R [profile] [sensitivity]
+#   sensitivity: a name under config npn_study: sensitivity (e.g. no1617); outputs then go to
+#   <run_dir>/npn_study/sens/<name>/site_signal/
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
@@ -35,10 +37,11 @@ source(here::here("R", "npn.R"))
 cfg <- load_cfg(profile)
 log_file <- log_init("54_npn_site_signal", profile)
 ns <- cfg$npn_study %||% list()
-sdir <- file.path(cfg$run_dir, "npn_study"); odir <- file.path(sdir, "site_signal")
+sens <- npn_sensitivity(ns, args)
+sdir <- file.path(cfg$run_dir, "npn_study"); odir <- file.path(sdir, sens$sub, "site_signal")
 dir.create(odir, showWarnings = FALSE, recursive = TRUE)
 t0 <- Sys.time()
-log_msg("=== 54_npn_site_signal | profile: ", profile)
+log_msg("=== 54_npn_site_signal | profile: ", profile, if (nzchar(sens$name)) sprintf(" | sensitivity %s: excluding %s", sens$name, paste(sens$exclude_years, collapse = ", ")) else "")
 if (!requireNamespace("lme4", quietly = TRUE)) stop("needs the lme4 package")
 lead <- ns$lead_days %||% 14
 
@@ -47,7 +50,7 @@ cm <- readRDS(file.path(ddir, "npn_curing_metrics.rds"))
 sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
 M <- readRDS(file.path(sdir, "npn_metrics.rds")); YM <- M$site_years
 D <- readRDS(file.path(sdir, "npn_site_daily.rds"))
-u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12), ]
+u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12) & !(cm$year %in% sens$exclude_years), ]
 m <- match(u$species_id, sp$species_id); u$pathway <- sp$pathway[m]; u <- u[!(sp$crop[m] %in% "yes"), ]
 tc <- file.path(cfg$run_dir, "eval", "target_check", "site_years.csv"); u$region <- 0
 if (file.exists(tc)) {

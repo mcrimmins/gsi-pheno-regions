@@ -17,7 +17,9 @@
 # region from <run_dir>/eval/target_check/site_years.csv. Needs lme4. Runs anywhere (< 1 min).
 # Output <run_dir>/npn_study/variance/components.csv, summary.csv.
 #
-# Usage: Rscript scripts/53_npn_variance.R [profile]
+# Usage: Rscript scripts/53_npn_variance.R [profile] [sensitivity]
+#   sensitivity: a name under config npn_study: sensitivity (e.g. no1617); outputs then go to
+#   <run_dir>/npn_study/sens/<name>/variance/
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
@@ -28,19 +30,21 @@ source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
 source(here::here("R", "obs.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
+source(here::here("R", "npn.R"))
 
 cfg <- load_cfg(profile)
 log_file <- log_init("53_npn_variance", profile)
 ns <- cfg$npn_study %||% list()
-odir <- file.path(cfg$run_dir, "npn_study", "variance"); dir.create(odir, showWarnings = FALSE, recursive = TRUE)
+sens <- npn_sensitivity(ns, args)
+odir <- file.path(cfg$run_dir, "npn_study", sens$sub, "variance"); dir.create(odir, showWarnings = FALSE, recursive = TRUE)
 t0 <- Sys.time()
-log_msg("=== 53_npn_variance | profile: ", profile)
+log_msg("=== 53_npn_variance | profile: ", profile, if (nzchar(sens$name)) sprintf(" | sensitivity %s: excluding %s", sens$name, paste(sens$exclude_years, collapse = ", ")) else "")
 if (!requireNamespace("lme4", quietly = TRUE)) stop("needs the lme4 package")
 
 ddir <- Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg))
 cm <- readRDS(file.path(ddir, "npn_curing_metrics.rds"))
 sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
-u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12), ]
+u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12) & !(cm$year %in% sens$exclude_years), ]
 m <- match(u$species_id, sp$species_id)
 u$pathway <- sp$pathway[m]; u <- u[!(sp$crop[m] %in% "yes"), ]
 tc <- file.path(cfg$run_dir, "eval", "target_check", "site_years.csv")

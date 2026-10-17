@@ -24,7 +24,8 @@
 #   eval_obs        adjusted R^2 of observed site dates on region vs k (eval/obs/obs_r2.csv
 #                   from 31_obs_regions.R; sets in config report: eval_sets)
 #   obs_sites       observation sites (eval/obs/sites.csv)
-#   npn_*           NPN grass curing study (sites, dates, ladder, variance, signal; 51-54)
+#   npn_*           NPN grass curing study (sites, dates, ladder, variance, signal; 51-54;
+#                   record, spatial; 58; sensitivity: 2016-17 check, 52-54 no1617)
 # eval_obs adds bootstrap ranges at report_k when eval/obs/obs_r2_boot.csv exists, and
 # eval_diff_<profile>.csv (paired differences, from obs_r2_diff.csv) is written for the page.
 # Also writes <fig_dir>/eval_summary_<profile>.csv (scores at evaluation: report_k), which the
@@ -53,7 +54,8 @@ source(here::here("R", "evaluate.R"))
 all_figs <- c("domain", "block1_medians", "block1_iqr", "cutb_curves", "cutb_peak",
               "regions", "eval_curves", "eval_obs", "obs_sites", "profiles", "eval_sync", "gsi_model", "gsi_curing", "gsi_curing_eos50",
               "gsi_curing_newforms", "gsi_curing_eos50_newforms", "curing_cues", "curing_adjust", "curing_adjust_ground", "rules_typical", "rules_adjust", "rules_confidence", "rules_current",
-              "npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal")
+              "npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal",
+              "npn_record", "npn_spatial", "npn_sensitivity")
 want <- if (length(args) >= 2) args[-1] else if (exists("gsi_figs", envir = globalenv())) {
   base::get("gsi_figs", envir = globalenv())
 } else all_figs
@@ -1046,7 +1048,16 @@ if (do("profiles") && dir.exists(prof_root)) for (f in list.files(prof_root, "^c
 #   npn_ladder    skill of the model ladder against the typical date (52)
 #   npn_variance  what the year-to-year variation is made of (53)
 #   npn_signal    shared site-year curing signal vs summer VPD, within years (54)
+#   npn_record    the record (58): percent-green bins used, readings per plant-year, second green-ups by region
+#   npn_spatial   typical dates vs site climate (58): leave-one-site-out R2 by model; green-up vs
+#                 Mar-Apr temperature; curing vs aridity
+#   npn_sensitivity  2016-17 check: NEON plants never above 50 % green by year (58); shared year
+#                 signal with and without 2016-17 (53, sens/no1617)
+# npn_sites and npn_dates use the relaxed set (58 record/series_typical.csv) when it exists,
+# else the 51 series-years.
 npn_dir <- file.path(cfg$run_dir, "npn_study")
+rec_dir <- file.path(npn_dir, "record"); st_csv <- file.path(rec_dir, "series_typical.csv")
+TY <- if (file.exists(st_csv)) { x <- utils::read.csv(st_csv, stringsAsFactors = FALSE); x[x$pathway %in% c("C3", "C4"), ] } else NULL
 pw_col <- c(C3 = terra_col, C4 = aqua_col)
 date_lab <- c(greenup = "Green-up (50 % green)", curing = "Curing (below 50 % green)", cured = "Cured")
 sy_csv <- file.path(npn_dir, "npn_series_years.csv")
@@ -1061,14 +1072,21 @@ if (any(c("npn_sites", "npn_dates") %in% want) && have(sy_csv)) {
   SY <- SY[!(SY$crop %in% "yes") & SY$pathway %in% c("C3", "C4"), ]
   yl <- yrs_label(SY$year)
   if (do("npn_sites")) {
-    st <- do.call(rbind, lapply(split(SY, SY$site_id), function(d) data.frame(
-      site_id = d$site_id[1], lon = d$lon[1], lat = d$lat[1], n = nrow(d),
-      type = if (all(d$pathway == "C3")) "C3" else if (all(d$pathway == "C4")) "C4" else "both")))
-    st$neon <- npn_neon(st$site_id)
+    if (!is.null(TY)) {                                   # relaxed set (58): plant-years per site
+      st <- do.call(rbind, lapply(split(TY, TY$site_id), function(d) data.frame(
+        site_id = d$site_id[1], lon = d$lon[1], lat = d$lat[1], n = sum(d$plant_years),
+        type = if (all(d$pathway == "C3")) "C3" else if (all(d$pathway == "C4")) "C4" else "both")))
+      st$neon <- st$site_id %in% TY$site_id[TY$group == "NEON"]; unit <- "plant-years"
+    } else {
+      st <- do.call(rbind, lapply(split(SY, SY$site_id), function(d) data.frame(
+        site_id = d$site_id[1], lon = d$lon[1], lat = d$lat[1], n = nrow(d),
+        type = if (all(d$pathway == "C3")) "C3" else if (all(d$pathway == "C4")) "C4" else "both")))
+      st$neon <- npn_neon(st$site_id); unit <- "series-years"
+    }
     tc <- c(C3 = terra_col, C4 = aqua_col, both = "#7b4fb3")
     fig("npn_sites", yl, 1, 1, function() {
       map_panel(land * NA, "NPN grass curing study sites",
-                sprintf("%d sites, %d series-years; point size = series-years; filled = NEON site", nrow(st), sum(st$n)),
+                sprintf("%d sites, %s %s; point size = %s; filled = NEON site", nrow(st), format(sum(st$n), big.mark = ","), unit, unit),
                 c(0, 1), landgray, NULL)
       cx <- 0.5 + 1.6 * sqrt(st$n / max(st$n))
       filled <- st$neon %in% TRUE | is.na(st$neon)
@@ -1081,13 +1099,14 @@ if (any(c("npn_sites", "npn_dates") %in% want) && have(sy_csv)) {
     }, panel_w = 1600)
   }
   if (do("npn_dates")) {
-    regs <- sort(unique(stats::na.omit(SY$region)))
+    regs <- if (!is.null(TY)) sort(unique(TY$region[TY$region > 0])) else sort(unique(stats::na.omit(SY$region)))
     cmed <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
     plot_png("npn_dates", yl, 2400, 260 + 70 * length(regs) * 2, function() {
       par(mfrow = c(1, 3), mar = c(3.6, 5.6, 3.4, 0.8), oma = c(2.6, 0, 0, 0))
       for (tg in names(date_lab)) {
-        M <- stats::aggregate(SY[[tg]], list(series = SY$series, region = SY$region, pathway = SY$pathway), cmed)
-        M <- M[!is.na(M$x) & !is.na(M$region), ]
+        M <- if (!is.null(TY)) data.frame(series = TY$series, region = TY$region, pathway = TY$pathway, x = TY[[tg]]) else
+          stats::aggregate(SY[[tg]], list(series = SY$series, region = SY$region, pathway = SY$pathway), cmed)
+        M <- M[!is.na(M$x) & !is.na(M$region) & M$region > 0, ]
         rows <- expand.grid(pathway = c("C4", "C3"), region = rev(regs), stringsAsFactors = FALSE)
         rows$y <- seq_len(nrow(rows))
         plot(NA, xlim = c(1, 366), ylim = c(0.5, nrow(rows) + 0.5), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n")
@@ -1186,6 +1205,130 @@ if (do("npn_signal") && have(sg_csv)) {
       mtext(sprintf("%d site-years; within each year; r = %.2f, slope %.1f days per hPa", nrow(s), stats::cor(x, y), stats::coef(f)[2]),
             side = 3, line = 0.5, adj = 0, cex = 0.72, col = ink2)
     }
+  })
+}
+
+# ---- NPN study: record (58) ----
+bn_csv <- file.path(rec_dir, "bins.csv"); rd_csv <- file.path(rec_dir, "readings.csv"); s2_csv <- file.path(rec_dir, "second.csv")
+if (do("npn_record") && have(bn_csv, rd_csv, s2_csv)) {
+  BN <- utils::read.csv(bn_csv, stringsAsFactors = FALSE); RD <- utils::read.csv(rd_csv, stringsAsFactors = FALSE)
+  S2 <- utils::read.csv(s2_csv, stringsAsFactors = FALSE)
+  plot_png("npn_record", "plant-years", 2400, 950, function() {
+    par(mfrow = c(1, 3), mar = c(4.4, 9.6, 3.8, 1.2), oma = c(0, 0, 0, 0))
+    # 1. bins
+    bl <- c("Less than 5%", "5-24%", "25-49%", "50-74%", "75-94%", "95% or more")
+    lab <- c("< 5 %", "5-24 %", "25-49 %", "50-74 %", "75-94 %", ">= 95 %")
+    gc <- c(NEON = ink, other = "#b8b7b2")
+    plot(NA, xlim = c(0, 0.4), ylim = c(0.5, 6.5), yaxt = "n", xaxt = "n", xlab = "share of readings", ylab = "", bty = "n")
+    axis(1, at = seq(0, 0.4, 0.1), labels = paste0(seq(0, 40, 10), " %"), cex.axis = 0.85)
+    axis(2, at = 1:6, labels = lab, tick = FALSE, cex.axis = 0.85)
+    abline(v = seq(0, 0.4, 0.1), col = "#ecebe7")
+    for (g in names(gc)) { d <- BN[BN$group == g, ]; y <- match(d$bin, bl) + ifelse(g == "NEON", 0.17, -0.17)
+      rect(0, y - 0.15, d$share, y + 0.15, col = gc[[g]], border = bg) }
+    mtext("Percent-green class of each reading", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext(sprintf("%s readings; NEON (dark) and other sites (gray)", format(sum(BN$readings[BN$group == "all"]), big.mark = ",")),
+          side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    # 2. readings per plant-year
+    RD$lab <- sprintf("%s\n(%s plant-years)", c(NEON = "NEON", other = "other sites", managed = "gardens, yards,\ncampuses, parks")[RD$group],
+                      format(RD$plant_years, big.mark = ","))
+    plot(NA, xlim = c(0, 52), ylim = c(0.5, nrow(RD) + 0.5), yaxt = "n", xlab = "readings per plant-year", ylab = "", bty = "n", cex.axis = 0.85)
+    abline(v = seq(0, 50, 10), col = "#ecebe7"); abline(v = c(6, 12), col = ink2, lty = 2)
+    axis(2, at = rev(seq_len(nrow(RD))), labels = RD$lab, tick = FALSE, cex.axis = 0.8)
+    for (i in seq_len(nrow(RD))) { y <- nrow(RD) + 1 - i
+      segments(RD$n_obs_p10[i], y, RD$n_obs_p90[i], y, col = ink2, lwd = 1.5)
+      rect(RD$n_obs_p25[i], y - 0.2, RD$n_obs_p75[i], y + 0.2, col = "#9ec5f4", border = bg)
+      segments(RD$n_obs_median[i], y - 0.26, RD$n_obs_median[i], y + 0.26, lwd = 3, col = ink) }
+    mtext("How densely plants are read", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Median, quartiles, 10-90 %; dashed: 6 and 12 readings", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    # 3. second green-ups by region
+    r <- S2[S2$by == "region" & S2$value != "0" & S2$plant_years >= 30, ]
+    r <- r[order(as.integer(r$value), decreasing = TRUE), ]
+    plot(NA, xlim = c(0, 0.6), ylim = c(0.5, nrow(r) + 0.5), yaxt = "n", xaxt = "n", xlab = "share of plant-years", ylab = "", bty = "n")
+    axis(1, at = seq(0, 0.6, 0.2), labels = paste0(seq(0, 60, 20), " %"), cex.axis = 0.85)
+    abline(v = seq(0, 0.6, 0.1), col = "#ecebe7")
+    axis(2, at = seq_len(nrow(r)), labels = paste("Region", r$value), tick = FALSE, cex.axis = 0.85)
+    rect(0, seq_len(nrow(r)) - 0.32, pmin(r$share, 0.6), seq_len(nrow(r)) + 0.32, col = "#6da7ec", border = bg)
+    text(pmin(r$share, 0.6), seq_len(nrow(r)), sprintf(" %d", r$plant_years), adj = 0, cex = 0.68, col = ink2)
+    a <- S2[S2$by == "all", ]
+    mtext("Second green-ups", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext(sprintf("Below 25 %%, then above 50 %% again: %.0f %% overall; numbers: plant-years", 100 * a$share),
+          side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+  })
+}
+
+# ---- NPN study: typical dates vs site climate (58) ----
+sp_csv <- file.path(rec_dir, "spatial.csv"); nm_rds <- file.path(npn_dir, "npn_metrics.rds")
+if (do("npn_spatial") && have(sp_csv, st_csv, nm_rds)) {
+  SPt <- utils::read.csv(sp_csv, stringsAsFactors = FALSE); SPt <- SPt[SPt$set == "relaxed", ]
+  Nn <- readRDS(nm_rds)$normals
+  X <- merge(TY, Nn[, c("site_id", "t_marapr", "aridity", "p_jas_share")], by = "site_id")
+  cmed <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
+  unwrap <- function(x) { m <- cmed(x); d <- (x - m) %% 365.25; m + ifelse(d > 182.625, d - 365.25, d) }
+  mc <- c(species = "#b8b7b2", region = "#1a7f37", climate = ink, both = "#7b4fb3")   # kept apart from the C3 / C4 colours
+  ml <- c(species = "species only", region = "region map", climate = "site climate", both = "region + climate")
+  plot_png("npn_spatial", "site and species typical dates", 2400, 1000, function() {
+    par(mfrow = c(1, 3), mar = c(4.6, 9.4, 3.8, 1.2), oma = c(2.2, 0, 0, 0))
+    rows <- expand.grid(pathway = c("C4", "C3", "all"), target = rev(names(date_lab)), stringsAsFactors = FALSE)
+    plot(NA, xlim = c(-0.4, 0.8), ylim = c(0.5, nrow(rows) + 0.5), yaxt = "n", xlab = "R2, leaving one site out", ylab = "", bty = "n", cex.axis = 0.85)
+    abline(v = seq(-0.4, 0.8, 0.2), col = "#ecebe7"); abline(v = 0, col = ink2); abline(h = c(3.5, 6.5), col = "#e4e3df")
+    pl <- c(all = "all grasses", C3 = "C3", C4 = "C4")
+    axis(2, at = seq_len(nrow(rows)), labels = paste0(c(greenup = "Green-up", curing = "Curing", cured = "Cured")[rows$target], ", ", pl[rows$pathway]), tick = FALSE, cex.axis = 0.8)
+    for (i in seq_len(nrow(rows))) for (k in seq_along(mc)) {
+      v <- SPt$r2_loso[SPt$target == rows$target[i] & SPt$pathway == rows$pathway[i] & SPt$model == names(mc)[k]]
+      if (length(v)) points(max(v, -0.4), i + (k - 2.5) * 0.17, pch = 16, cex = 1.3, col = mc[[k]])
+    }
+    mtext("How well typical dates are predicted at a new site", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Mixed models with a species effect; values below -0.4 drawn at -0.4", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    sc <- function(xv, tg, xlab, main, sub, logx = FALSE) {
+      d <- X[!is.na(X[[tg]]) & !is.na(X[[xv]]), ]; d$y <- unwrap(d[[tg]])
+      plot(d[[xv]], d$y, log = if (logx) "x" else "", pch = 16, cex = 0.5 + 0.3 * sqrt(pmin(d$years, 9)),
+           col = grDevices::adjustcolor(pw_col[d$pathway], 0.6), yaxt = "n", xlab = xlab, ylab = "", bty = "n", cex.axis = 0.85)
+      at <- as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1
+      at <- c(at - 365, at, at + 365); lb <- rep(month.abb, 3); k <- at >= min(d$y) - 20 & at <= max(d$y) + 20
+      axis(2, at = at[k], labels = lb[k], cex.axis = 0.8)
+      for (p in c("C3", "C4")) { e <- d[d$pathway == p, ]; if (nrow(e) < 8) next
+        xx <- if (logx) log(e[[xv]]) else e[[xv]]; f <- stats::lm(e$y ~ xx); o <- order(xx)
+        lines(e[[xv]][o], stats::fitted(f)[o], col = pw_col[[p]], lwd = 2.5)
+        r <- stats::cor(xx, e$y, method = "spearman")
+        text(par("usr")[2], par("usr")[4] - (if (p == "C3") 0.04 else 0.10) * diff(par("usr")[3:4]),
+             sprintf("%s r = %.2f (%d)", p, r, nrow(e)), adj = 1, cex = 0.78, col = pw_col[[p]]) }
+      mtext(main, side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+      mtext(sub, side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    }
+    sc("t_marapr", "greenup", "site March-April mean temperature (deg C)", "Green-up and spring temperature",
+       "One point per site and species; size = years observed")
+    sc("aridity", "curing", "site aridity, P / PET (log scale)", "Curing and site wetness",
+       "Spearman r (series); lines: least squares", logx = TRUE)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+    plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", legend = c(ml, "cool-season (C3)", "warm-season (C4)"), pch = 16, col = c(mc, pw_col[["C3"]], pw_col[["C4"]]),
+           horiz = TRUE, bty = "n", text.col = ink2, cex = 0.95)
+  })
+}
+
+# ---- NPN study: 2016-17 check (58; 53 main and sens/no1617) ----
+pk_csv <- file.path(rec_dir, "peak_lt50.csv")
+vs_main <- file.path(npn_dir, "variance", "summary.csv"); vs_sens <- file.path(npn_dir, "sens", "no1617", "variance", "summary.csv")
+if (do("npn_sensitivity") && have(pk_csv, vs_main, vs_sens)) {
+  PK <- utils::read.csv(pk_csv, stringsAsFactors = FALSE); PK <- PK[PK$level == "NEON_year", ]
+  V0 <- utils::read.csv(vs_main, stringsAsFactors = FALSE); V1 <- utils::read.csv(vs_sens, stringsAsFactors = FALSE)
+  plot_png("npn_sensitivity", "plant-years", 2200, 900, function() {
+    par(mfrow = c(1, 2), mar = c(4.4, 5, 3.8, 1.2))
+    odd <- PK$year %in% c(2016, 2017)
+    b <- graphics::barplot(PK$share, names.arg = PK$year, col = ifelse(odd, aqua_col, "#b8b7b2"), border = bg, ylim = c(0, 0.35),
+                           yaxt = "n", cex.names = 0.8, las = 2)
+    axis(2, at = seq(0, 0.3, 0.1), labels = paste0(seq(0, 30, 10), " %"), cex.axis = 0.85)
+    text(b, PK$share, sprintf("%d", PK$site_years), pos = 3, cex = 0.62, col = ink2)
+    mtext("NEON plants that never pass 50 % green", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Share of plant-years with >= 6 readings, by year (numbers: sites)", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    tl <- c(greenup = "Green-up", curing = "Curing", cured = "Cured")
+    sh <- function(V) vapply(names(tl), function(t) V$shared_share[V$target == t & V$group == "all"][1], 0)
+    m <- rbind(sh(V0), sh(V1))
+    b <- graphics::barplot(m, beside = TRUE, names.arg = tl, col = c(ink, "#9ec5f4"), border = bg, ylim = c(0, 0.5), yaxt = "n", cex.names = 0.9)
+    axis(2, at = seq(0, 0.5, 0.1), labels = paste0(seq(0, 50, 10), " %"), cex.axis = 0.85)
+    text(b, m, sprintf("%.0f %%", 100 * m), pos = 3, cex = 0.72, col = ink2)
+    mtext("Year signal shared by a site's grasses", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Share of the year-to-year variation; all years (dark) and without 2016-17 (light)", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
   })
 }
 
