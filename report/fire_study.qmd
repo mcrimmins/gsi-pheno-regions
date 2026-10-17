@@ -107,13 +107,64 @@ snowmelt as well as green-up.
 | Component | Status |
 |---|---|
 | Design and decisions | Done (October 17) |
-| Fire records: FPA-FOD | Script built and field check done (October 17); CONUS run next |
+| Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
 | Fire records: MTBS, VIIRS | Next |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
 
 : Study status {.striped}
+
+## First look: fire records (October 17)
+
+The FPA-FOD 7th edition holds 2.66 million records for 1992–2024. For 2001–2024 in the lower 48,
+1.94 million fall on the analysis grid; 193,000 reached 10 acres or more and were not debris or
+open burning, 52,900 of them in the six pilot regions. Fire names that look like prescribed
+burns are negligible (under 20 per region).
+
+| Region | Fires ≥ 10 ac | Lightning | Human | Unknown cause | Debris share of human fires ≥ 10 ac | On strict herbaceous cells |
+|---|---|---|---|---|---|---|
+| 3 Monsoon Southwest | 9,051 | 51 % | 43 % | 6 % | 13 % | 68 % |
+| 6 Interior West | 9,603 | 57 % | 40 % | 3 % | 15 % | 71 % |
+| 12 Interior West | 5,161 | 41 % | 54 % | 5 % | 15 % | 75 % |
+| 11 California annual grasslands | 9,349 | 4 % | 68 % | 27 % | 6 % | 64 % |
+| 10 Northern and central Great Plains | 12,355 | 40 % | 53 % | 7 % | 18 % | 70 % |
+| 13 Upper Midwest | 7,405 | 4 % | 85 % | 12 % | 36 % | 5 % |
+
+: Wildfires of 10 acres or more (debris and open burning removed), 2001–2024 {.striped}
+
+**Seasonal shape.** The share of each region's fires by month already shows the windows the
+study is about:
+
+| Region | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 3 | 2 | 5 | 7 | 10 | 13 | 23 | 20 | 11 | 3 | 3 | 2 | 2 |
+| 6 | 0 | 0 | 1 | 2 | 3 | 13 | 36 | 31 | 10 | 3 | 1 | 0 |
+| 12 | 0 | 0 | 2 | 2 | 6 | 20 | 35 | 22 | 9 | 3 | 1 | 0 |
+| 11 | 1 | 0 | 1 | 2 | 11 | 22 | 24 | 17 | 11 | 7 | 2 | 1 |
+| 10 | 1 | 2 | 6 | 6 | 3 | 8 | 29 | 26 | 11 | 5 | 3 | 1 |
+| 13 | 1 | 2 | 13 | 36 | 16 | 2 | 5 | 5 | 5 | 9 | 5 | 1 |
+
+: Percent of each region's fires of 10 acres or more by discovery month {.striped}
+
+The upper Midwest (13) has a sharp spring peak (March–May, 65 %) that collapses in June, and a
+smaller fall rise in October: the dormant-grass windows on either side of the growing season.
+The Great Plains (10) shows a human-caused March–April window before green-up and a summer
+lightning season. In the monsoon Southwest (3) human fires run February–June and lightning
+fires peak in June–July, before the monsoon greens the grass.
+
+**Data issues found.**
+
+- *Reporting change from 2020.* Records switch from separate federal and non-federal sources
+  to a single interagency source in 2020–2021. Yearly counts stay continuous, but the share
+  with an unknown cause rises in every pilot region (to 10–30 %), and in California (11) to
+  50–86 % in 2020–2024, mostly state and local records. Splitting lightning from human starts
+  is reliable only to 2019 in California, and less reliable after 2019 elsewhere.
+- *Fire locations in the upper Midwest.* Only 5 % of region 13's fires are on strict
+  herbaceous cells; the typical fire cell is 1 % grassland and shrub, 14 % open herbaceous
+  including pasture and hay, and 37 % cropland. Herbaceous fuels there sit in small patches
+  (pasture, roadsides, conservation grassland, wetland edges) inside mixed cells, so a cover
+  filter would drop most of the region's fires.
 
 ## Decisions so far
 
@@ -134,6 +185,7 @@ snowmelt as well as green-up.
 |---|---|
 | 2026-10-17 | Page created: question, design and decisions |
 | 2026-10-17 | FPA-FOD 7th edition fields checked against its metadata; fire-record step built |
+| 2026-10-17 | First look at the fire records: counts, seasonal shape, reporting change from 2020, upper Midwest cover |
 
 ## Data sources and references
 

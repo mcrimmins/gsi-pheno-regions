@@ -607,3 +607,8 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   excluded except escapes needing suppression (Short 2014; the 7th edition metadata is
   silent). Cite as "7th Edition" (the abstract says "sixth update"). Tested on a synthetic
   GeoPackage in the cloud workspace (filters, flags, region lookup checked independently).
+  Full run Oct 17 (63 s): 1,941,893 fires on the grid; 193,405 C+ wildfires (no debris), 52,924
+  in pilot regions. OPEN (ask Mike): (1) reporting change 2020-21 (all INTERAGCY from 2021):
+  unknown cause rises to 10-30 % in pilot regions and 50-86 % in CA (11) 2020-24, so the
+  lightning / human split is weak after 2019; (2) region 13: only 5 % of C+ fires on strict
+  herb cells (median cell 14 % open herb, 37 % crops), so a cover filter would drop most fires.
