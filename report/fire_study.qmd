@@ -79,13 +79,13 @@ activity dip in the gap between the cool-season and warm-season growth pulses?
 
 | Element | Choice |
 |---|---|
-| Fire starts | FPA-FOD 7th edition (1992–2024): wildfires reaching 10 acres or more, by discovery week, lightning and human causes separately |
+| Fire starts | FPA-FOD 7th edition (1992–2024): wildfires reaching 10 acres or more, by discovery week, all causes; lightning and human separately for 2001–2019 |
 | Fire growth | VIIRS active fire (S-NPP, 2012 onward): unique 375 m pixel-days |
 | Burned area | MTBS, by start date (large fires) |
 | Phenology | Yearly satellite green-up (NDVI 20 %) and curing (NDVI end of season, 50 %) dates for every 4 km cell, 2001–2025, and the typical-date maps |
 | Dead-fuel baseline | 1000-hour dead fuel moisture computed from PRISM (NFDRS equations); checks: Keetch–Byram drought index and 30-day mean vapour pressure deficit |
 | Weather | PRISM daily 4 km only |
-| Herbaceous cover | NLCD grassland and shrub/scrub share, as in the regions work |
+| Herbaceous cover | NLCD grassland, shrub/scrub, pasture/hay and herbaceous wetland share; in the upper Midwest and Great Plains, phenology from cells at least 35 % herbaceous |
 | Unit | Region × week × year, herbaceous cells |
 | Model | One pooled count model with region effects; skill judged leaving one year out |
 | Years | 2001–2024 for fire starts; 2012–2024 where starts and growth overlap |
@@ -108,7 +108,8 @@ snowmelt as well as green-up.
 |---|---|
 | Design and decisions | Done (October 17) |
 | Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
-| Fire records: MTBS, VIIRS | Next |
+| Fire records: MTBS burned area | Script built (October 17); run next |
+| Fire records: VIIRS | Next |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
@@ -164,7 +165,20 @@ fires peak in June–July, before the monsoon greens the grass.
   herbaceous cells; the typical fire cell is 1 % grassland and shrub, 14 % open herbaceous
   including pasture and hay, and 37 % cropland. Herbaceous fuels there sit in small patches
   (pasture, roadsides, conservation grassland, wetland edges) inside mixed cells, so a cover
-  filter would drop most of the region's fires.
+  filter would drop most of the region's fires. Fire density still rises about five-fold from
+  the least to the most herbaceous cells, and the seasonal shape is the same at every level of
+  cover, so these are fires in herbaceous patches. Herbaceous wetland matters here: fire cells
+  hold 5 % on average against 1.4 % for the region. The satellite green-up and curing dates of
+  a typical cell in this region (52 % cropland) mostly describe crops.
+
+**How the study handles them (decided October 17).** The main outcome counts fires of all
+causes, which run continuously through the reporting change; lightning and human starts are
+compared for 2001–2019 only (California: totals only), with a check that counts
+unknown-cause fires as human, since their seasonal pattern matches human fires (r 0.90–1.00).
+Lightning fire counts are no longer used as an ignition term. In the upper Midwest every fire
+is kept, herbaceous wetland counts as herbaceous fuel, and the green-up and curing timing comes
+from cells that are at least 35 % herbaceous (also in the Great Plains), applied to the whole
+region; fires in the most herbaceous third of cells are a check.
 
 ## Decisions so far
 
@@ -176,6 +190,9 @@ fires peak in June–July, before the monsoon greens the grass.
 | Oct 17 2026 | FPA-FOD 7th edition (1992–2024), MTBS, VIIRS S-NPP | Long record of starts; consistent single-sensor growth series |
 | Oct 17 2026 | Main outcome: wildfires of 10 acres or more by week, by cause | Fuel condition decides whether a start grows; larger fires are reported consistently |
 | Oct 17 2026 | Pilot regions 3, 6, 12, 11, 10 and 13 | Grass and shrub fire regimes in the West, plus the northern Plains and upper Midwest partners |
+| Oct 17 2026 | Main outcome counts all causes; lightning vs human for 2001–2019 only; California totals only | Cause reporting changed in 2020–21 (unknown causes up to 50–86 % in California); total counts are unaffected |
+| Oct 17 2026 | No lightning-count ignition term; a 2020-onward indicator as a check | Lightning counts were relabelled after 2019 and are partly the outcome |
+| Oct 17 2026 | Upper Midwest: all fires kept; herbaceous wetland counted as fuel; phenology from cells at least 35 % herbaceous (also Great Plains) | Fires sit in small herbaceous patches inside cropland cells, whose satellite dates track crops |
 
 : Study decisions {.striped}
 
@@ -186,6 +203,8 @@ fires peak in June–July, before the monsoon greens the grass.
 | 2026-10-17 | Page created: question, design and decisions |
 | 2026-10-17 | FPA-FOD 7th edition fields checked against its metadata; fire-record step built |
 | 2026-10-17 | First look at the fire records: counts, seasonal shape, reporting change from 2020, upper Midwest cover |
+| 2026-10-17 | Decisions on cause reporting and upper Midwest cover |
+| 2026-10-17 | MTBS burned-area step built; checks MTBS completeness against FPA-FOD by year |
 
 ## Data sources and references
 
@@ -194,7 +213,9 @@ fires peak in June–July, before the monsoon greens the grass.
   <https://www.fs.usda.gov/rds/archive/catalog/RDS-2013-0009.7>.
 - Short, K. C. (2014). A spatial database of wildfires in the United States, 1992–2011.
   Earth System Science Data 6, 1–27.
-- Monitoring Trends in Burn Severity (MTBS), <https://www.mtbs.gov>.
+- U.S. Geological Survey, U.S. Forest Service and Nelson, K. (2022). Monitoring Trends in Burn
+  Severity (ver. 12.0, April 2025). U.S. Geological Survey data release,
+  <https://doi.org/10.5066/P9IED7RZ>; <https://www.mtbs.gov>.
 - NASA Fire Information for Resource Management System (FIRMS), VIIRS 375 m active fire,
   <https://firms.modaps.eosdis.nasa.gov>.
 - PRISM Group, Oregon State University, <https://prism.oregonstate.edu>.

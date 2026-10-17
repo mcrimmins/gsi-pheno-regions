@@ -52,7 +52,11 @@ fire_read_table <- function(stem) {
 fire_parse_date <- function(x) {
   if (inherits(x, "Date")) return(x)
   if (inherits(x, "POSIXt")) return(as.Date(x))
-  if (is.numeric(x)) return(as.Date(x, origin = "1970-01-01"))
+  if (is.character(x) && all(grepl("^-?[0-9]+(\\.[0-9]+)?$", x[!is.na(x) & nzchar(x)]))) x <- as.numeric(x)
+  if (is.numeric(x)) {          # epoch days, seconds or milliseconds (MTBS Ig_Date differs between copies)
+    d <- ifelse(abs(x) > 1e11, x / 86400000, ifelse(abs(x) > 1e7, x / 86400, x))
+    return(as.Date(floor(d), origin = "1970-01-01"))
+  }
   x <- trimws(as.character(x))
   out <- as.Date(substr(x, 1, 10), format = "%Y-%m-%d")
   for (fm in c("%Y/%m/%d", "%m/%d/%Y")) {
@@ -75,4 +79,21 @@ fire_region_values <- function(cfg, grid, partition = "A2_groups", k = 13) {
   D <- region_display(cfg, grid, list(list(partition = partition, k = k)))[[1]]
   v <- rep(NA_real_, terra::ncell(grid)); v[land] <- D$num
   list(v = v, src = sprintf("region_display(%s, k%d)", partition, k))
+}
+
+# Herbaceous fuel share of land per grid cell (decided Oct 17 2026): sum of the NLCD class shares
+# in config fire_study: fuel_classes (grass, shrub, pasture, wetland_herb) from
+# static/nlcd_shares.tif, divided by the land share (1 - water). Returns a vector over all cells.
+fire_fuel_share <- function(cfg) {
+  f <- file.path(cfg$run_dir, "static", "nlcd_shares.tif")
+  if (!file.exists(f)) stop("no ", f, " (run 03_herb_mask.R)")
+  r <- terra::rast(f)
+  cls <- unlist(cfg$fire_study$fuel_classes %||% list("grass", "shrub", "pasture", "wetland_herb"))
+  miss <- setdiff(c(cls, "water"), names(r))
+  if (length(miss)) stop("nlcd_shares.tif lacks band(s) ", paste(miss, collapse = ", "))
+  v <- terra::values(r[[c(cls, "water")]])
+  land <- 1 - v[, "water"]; land[land <= 0.01] <- NA     # as 03_herb_mask.R
+  out <- rowSums(v[, cls, drop = FALSE]) / land
+  out[!is.finite(out)] <- NA
+  pmin(pmax(out, 0), 1)
 }

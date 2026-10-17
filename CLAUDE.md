@@ -608,7 +608,28 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   silent). Cite as "7th Edition" (the abstract says "sixth update"). Tested on a synthetic
   GeoPackage in the cloud workspace (filters, flags, region lookup checked independently).
   Full run Oct 17 (63 s): 1,941,893 fires on the grid; 193,405 C+ wildfires (no debris), 52,924
-  in pilot regions. OPEN (ask Mike): (1) reporting change 2020-21 (all INTERAGCY from 2021):
-  unknown cause rises to 10-30 % in pilot regions and 50-86 % in CA (11) 2020-24, so the
-  lightning / human split is weak after 2019; (2) region 13: only 5 % of C+ fires on strict
-  herb cells (median cell 14 % open herb, 37 % crops), so a cover filter would drop most fires.
+  in pilot regions. Found: (1) reporting change 2020-21 (all INTERAGCY from 2021): all-cause
+  totals continuous, but unknown cause rises to 10-30 % in pilot regions and 50-86 % in CA (11);
+  unknown fires' seasonal profile matches human (r 0.90-1.00); lightning all-size counts drop
+  ~40-47 % in 3, 6, 12, 11 after 2019. (2) Region 13: 5 % of C+ fires on strict herb cells, but
+  fire density rises ~5x from the least to the most herbaceous cells (grass + shrub + pasture +
+  wetland herb), seasonal shape identical across cover terciles; fire cells 5 % wetland herb vs
+  1.4 % landscape; landscape median 52 % crops (satellite dates track crops).
+  DECIDED Oct 17 (Mike, config fire_study: outcome / ignition_term / era_check / fuel_classes /
+  pheno_source / cover_sensitivity): primary outcome = all-cause C+ wildfires (debris removed);
+  lightning vs human only 2001-2019, unknown left out, sensitivity unknown = human; region 11
+  totals only; no lightning-count ignition term (region x year>=2020 indicator as a check only);
+  fuel share = grass + shrub + pasture + wetland_herb; region 13 keeps all fires, phenology
+  weighted by fuel share; phenology predictor in 13 and 10 from cells with fuel share >= 0.35,
+  applied regionwide; sensitivity = fires in the top third of 13's cells by fuel share.
+  R/fire.R fire_fuel_share(cfg): that fuel share per grid cell from static/nlcd_shares.tif.
+- `scripts/61_fire_mtbs.R [profile] [force]` (P720, minutes; built Oct 17): MTBS burned area
+  boundaries (v12.0 April 2025, 1984-2024; 2023-24 still being mapped per the MTBS schedule;
+  config `fire_study: mtbs:`) -> fire_study/mtbs/: mtbs_fires (event_id, type, wildfire =
+  Wildfire or Wildland Fire Use, ig_date, acres, area_km2 on the grid, majority region,
+  herb-mask and fuel-weighted km2, linked fod_id) and mtbs_cells (fire x cell: exact covered
+  fraction x cell area, region, fuel_share), plus completeness by year (share of FPA-FOD
+  wildfires >= 1,000 ac whose MTBS_ID is in MTBS: flags unfinished recent years), date check
+  vs FPA-FOD discovery, region x year burned area. State from Event_ID's first two letters.
+  Ig_Date parsed whatever its storage (Date, text, epoch days / s / ms). Tested on synthetic
+  Albers perimeters (incl. an invalid one): grid area = polygon area to 1e-7, regions right.

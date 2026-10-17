@@ -351,9 +351,33 @@ default:
       primary: "VIIRS_SNPP"           # single primary series; NOAA-20 as a check (verify S-NPP record)
       check: "VIIRS_NOAA20"
       years: {start: 2012, end: 2025}
-    mtbs: {years: {start: 2001, end: 2024}}
+    mtbs:
+      # MTBS burned area boundaries (v12.0, April 2025: 1984-2024; 2023-2024 still being mapped per
+      # the MTBS release schedule, checked Oct 17 2026; 61 measures completeness against FPA-FOD).
+      # Thresholds: >= 1,000 ac West, >= 500 ac East (prescribed fires too).
+      url: "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/MTBS_Fire/data/composite_data/burned_area_extent_shapefile/mtbs_perimeter_data.zip"
+      years: {start: 2001, end: 2024}
+      wildfire_types: ["Wildfire", "Wildland Fire Use"]   # unplanned ignitions; Prescribed Fire and Unknown kept but flagged
+      exclude_states: [AK, HI, PR]
+      check_min_acres: 1000           # completeness check: FPA-FOD wildfires at least this size
+      fields: [Event_ID, irwinID, Incid_Name, Incid_Type, Map_Prog, Asmnt_Type, BurnBndAc,
+               BurnBndLat, BurnBndLon, Ig_Date]
     pilot_regions: [3, 6, 12, 11, 10, 13]   # A2 k13 map numbers
-    herb_weighted_regions: [13]       # mixed cover: herbaceous-share weighting (strict mask as a check)
+    # Outcome and cover decisions (Oct 17 2026, after the first FPA-FOD run):
+    outcome:
+      primary: all_causes             # C+ wildfires, debris burning removed, all causes (continuous across the 2020-21 reporting change)
+      cause_split_years: {start: 2001, end: 2019}   # lightning vs human only before the change; unknown left out
+      unknown_as_human_sensitivity: true            # extra run counting unknown cause as human
+      cause_split_skip_regions: [11]  # California: totals only (lightning ~4 %)
+    ignition_term: none               # lightning fire counts dropped as the ignition proxy (relabelled after 2019; partly the outcome)
+    era_check: {from_year: 2020}      # sensitivity only: region x (year >= 2020) indicator
+    # Herbaceous share used for weighting and cover screens: NLCD shares of land (nlcd_shares.tif)
+    fuel_classes: [grass, shrub, pasture, wetland_herb]
+    herb_weighted_regions: [13]       # mixed cover: all fires kept, phenology weighted by fuel share
+    # Phenology predictor taken from herbaceous-dominated cells only, applied to the whole region
+    # (satellite dates in crop-dominated cells track crops)
+    pheno_source: {regions: [13, 10], min_fuel_share: 0.35}
+    cover_sensitivity: {regions: [13], top_fraction: 0.333}   # fires in the top third of cells by fuel share (instead of the strict mask)
     snow_regions: [10, 13]            # snow-off date in the baseline
     baseline: {primary: dfm1000, checks: [kbdi, vpd30]}   # all from PRISM
     curing_metric: eos50
@@ -639,7 +663,7 @@ default:
   sync:
     remote_repo: "~/RProjects/gsi-pheno-regions"
     remote_data_root: "~/data/gsi-pheno-regions"
-    fire_tables: [fod]        # 91 fire: also copy these steps' per-record tables (not FIRMS: too big)
+    fire_tables: [fod, mtbs]  # 91 fire: also copy these steps' per-record tables (not FIRMS: too big)
 
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:
