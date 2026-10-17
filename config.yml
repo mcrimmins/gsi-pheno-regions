@@ -322,13 +322,31 @@ default:
 
   # Fire activity study (companion; scripts 60-69, page report/fire_study.qmd; scope in the
   # project doc gsi-fire-study-scope.md). Decided Oct 17 2026; values marked (verify) are
-  # checked when the build starts.
+  # checked when the build starts (FPA-FOD checked Oct 17).
   fire_study:
+    partition: A2_groups              # regions = A2 k13 map numbers (rules/typical_dates.tif `region`)
+    k: 13
     fod:
-      edition: "FPA_FOD_20260615"     # 7th edition, 1992-2024 (RDS-2013-0009.7); GeoPackage
+      # 7th edition (Short 2026, RDS-2013-0009.7; the abstract calls it the "sixth update"),
+      # 1992-2024, 2.66 M records. Checked Oct 17 2026 against the metadata: field names as in
+      # the 6th edition; cause classes Human / Natural / Missing data/not specified/undetermined;
+      # size classes A-G (C = 10.0-99.9 ac); NAD83 lon/lat; tables Fires and
+      # NWCG_UnitIDActive_20200123. Planned ignitions (prescribed fires) are excluded except
+      # escapes that needed suppression (Short 2014, ESSD); the 7th edition metadata is silent.
+      edition: "FPA_FOD_20260615"
+      url: "https://www.fs.usda.gov/rds/archive/products/RDS-2013-0009.7/RDS-2013-0009.7_Data_Format3_GPKG.zip"
+      layer: Fires
       years: {start: 2001, end: 2024}
       min_size_ac: 10                 # size class C and up = primary outcome
-      drop_general_causes: ["Debris and open burning"]   # (verify field values); sensitivity keeps them
+      lightning_class: "Natural"      # NWCG_CAUSE_CLASSIFICATION values
+      human_class: "Human"
+      drop_general_causes: ["Debris and open burning"]   # flagged in 60, dropped in 65; sensitivity keeps them
+      exclude_states: [AK, HI, PR]
+      rx_name_pattern: "\\bRX\\b|PRESCRIB|\\bBROADCAST BURN|\\bPILE BURN"   # flag only (prescribed-looking names)
+      fields: [FOD_ID, FPA_ID, SOURCE_SYSTEM_TYPE, NWCG_REPORTING_AGENCY, FIRE_NAME, MTBS_ID,
+               ICS_209_PLUS_INCIDENT_JOIN_ID, FIRE_YEAR, DISCOVERY_DATE, DISCOVERY_DOY,
+               NWCG_CAUSE_CLASSIFICATION, NWCG_GENERAL_CAUSE, CONT_DATE, FIRE_SIZE, FIRE_SIZE_CLASS,
+               LATITUDE, LONGITUDE, OWNER_DESCR, STATE, FIPS_CODE]
     firms:
       primary: "VIIRS_SNPP"           # single primary series; NOAA-20 as a check (verify S-NPP record)
       check: "VIIRS_NOAA20"

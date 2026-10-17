@@ -587,4 +587,20 @@ it; KBDI and VPD30 as checks; no gridMET); FPA-FOD 7th edition (1992-2024), MTBS
 (NOAA-20 check); windows 2001-2024 (starts) and 2012-2024 (starts + growth); primary outcome
 wildfires >= 10 ac by discovery week, lightning vs human; pilot regions 3, 6, 12, 11, 10, 13;
 NLCD herbaceous cover; region x week x year, pooled count model, leave-one-year-out.
-Downloads run on the P720. Nothing built yet.
+Downloads run on the P720. Raw downloads go to <data_root>/_shared/raw/fire/ (shared by
+profiles). Tables via R/fire.R fire_write_table(): Parquet with arrow, .rds without it.
+- `scripts/60_fire_fod.R [profile] [force]` (P720, minutes; built Oct 17): FPA-FOD 7th edition
+  GeoPackage (config `fire_study: fod: url`, downloaded once) -> <run_dir>/fire_study/fod/
+  fod_fires.parquet, one row per fire in the study years on a grid land cell (AK/HI/PR out):
+  date, doy, cause (lightning = NWCG_CAUSE_CLASSIFICATION "Natural", human, unknown),
+  size_ac, c_plus (>= 10 ac), debris (general cause "Debris and open burning"), rx_name
+  (prescribed-looking name; flag only), mtbs_id, ics209_id, cell, region (A2 k13 map number
+  from rules/typical_dates.tif, else region_display), herb_mask, herb/open_herb/crop share of
+  the 4 km cell, pilot. Also fod_fields.csv (field check; stops if a required field is
+  missing), fod_values.csv (cause and size-class counts), fod_filters.csv,
+  fod_region_summary.csv, fod_region_year.csv. Discovery week is set in 65, not here.
+  FPA-FOD 7th edition checked Oct 17 (metadata): field names as in the 6th edition; cause
+  classes Human / Natural / Missing data/not specified/undetermined; NAD83; planned ignitions
+  excluded except escapes needing suppression (Short 2014; the 7th edition metadata is
+  silent). Cite as "7th Edition" (the abstract says "sixth update"). Tested on a synthetic
+  GeoPackage in the cloud workspace (filters, flags, region lookup checked independently).

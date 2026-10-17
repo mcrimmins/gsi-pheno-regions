@@ -1,0 +1,78 @@
+# Fire activity study helpers (scripts 60-69; config `fire_study:`; scope in the project doc
+# claude/gsi-fire-study-scope.md). Data live under <run_dir>/fire_study/ (never in git); raw
+# downloads in <data_root>/_shared/raw/fire/ so every profile shares one copy.
+if (!exists("%||%", mode = "function")) `%||%` <- function(a, b) if (is.null(a)) b else a
+
+fire_dir <- function(cfg, ...) file.path(cfg$run_dir, "fire_study", ...)
+fire_cache_dir <- function(cfg, ...) file.path(cfg$data_root, "_shared", "raw", "fire", ...)
+
+# Download url to dest once (temp file, renamed on success). Never re-fetches a file on disk.
+fire_download <- function(url, dest, timeout_sec = 3600, ua = "gsi-pheno-regions (R httr2)") {
+  if (file.exists(dest) && file.size(dest) > 0) return(invisible(dest))
+  dir.create(dirname(dest), showWarnings = FALSE, recursive = TRUE)
+  tmp <- paste0(dest, ".part")
+  on.exit(if (file.exists(tmp)) unlink(tmp), add = TRUE)
+  httr2::request(url) |>
+    httr2::req_user_agent(ua) |>
+    httr2::req_timeout(timeout_sec) |>
+    httr2::req_retry(max_tries = 2, backoff = function(i) 60) |>
+    httr2::req_perform(path = tmp)
+  if (!file.exists(tmp) || file.size(tmp) == 0) stop("empty download: ", url)
+  file.rename(tmp, dest)
+  invisible(dest)
+}
+
+# Tables: Parquet when arrow is installed (FIRMS needs it anyway), else .rds. `stem` has no
+# extension; the reader takes whichever exists (Parquet first).
+fire_write_table <- function(df, stem) {
+  dir.create(dirname(stem), showWarnings = FALSE, recursive = TRUE)
+  if (requireNamespace("arrow", quietly = TRUE)) {
+    f <- paste0(stem, ".parquet"); tmp <- paste0(stem, ".tmp.parquet")
+    arrow::write_parquet(df, tmp)
+  } else {
+    f <- paste0(stem, ".rds"); tmp <- paste0(stem, ".tmp.rds")
+    saveRDS(df, tmp)
+  }
+  if (file.exists(f)) unlink(f)
+  file.rename(tmp, f)
+  f
+}
+fire_table_file <- function(stem) {
+  f <- paste0(stem, c(".parquet", ".rds")); f <- f[file.exists(f)]
+  if (length(f)) f[1] else NA_character_
+}
+fire_read_table <- function(stem) {
+  f <- fire_table_file(stem)
+  if (is.na(f)) stop("no table ", stem, ".parquet / .rds")
+  if (grepl("\\.parquet$", f)) as.data.frame(arrow::read_parquet(f)) else readRDS(f)
+}
+
+# Dates in FPA-FOD can arrive as Date, POSIXct or text depending on the format and driver.
+# Parse what we can; the caller cross-checks against FIRE_YEAR + DISCOVERY_DOY.
+fire_parse_date <- function(x) {
+  if (inherits(x, "Date")) return(x)
+  if (inherits(x, "POSIXt")) return(as.Date(x))
+  if (is.numeric(x)) return(as.Date(x, origin = "1970-01-01"))
+  x <- trimws(as.character(x))
+  out <- as.Date(substr(x, 1, 10), format = "%Y-%m-%d")
+  for (fm in c("%Y/%m/%d", "%m/%d/%Y")) {
+    i <- is.na(out) & !is.na(x) & nzchar(x)
+    if (!any(i)) break
+    out[i] <- as.Date(sub("[ T].*$", "", x[i]), format = fm)
+  }
+  out
+}
+
+# Region (A2 k13 map number) for every grid cell. The rules package (40) stores it with the
+# typical dates; without it, rebuild from the cluster rasters exactly as 40 does.
+fire_region_values <- function(cfg, grid, partition = "A2_groups", k = 13) {
+  td <- file.path(cfg$run_dir, "rules", "typical_dates.tif")
+  if (file.exists(td)) {
+    r <- terra::rast(td)
+    if ("region" %in% names(r)) return(list(v = terra::values(r[["region"]], mat = FALSE), src = "rules/typical_dates.tif"))
+  }
+  land <- which(!is.na(terra::values(grid, mat = FALSE)))
+  D <- region_display(cfg, grid, list(list(partition = partition, k = k)))[[1]]
+  v <- rep(NA_real_, terra::ncell(grid)); v[land] <- D$num
+  list(v = v, src = sprintf("region_display(%s, k%d)", partition, k))
+}

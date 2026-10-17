@@ -93,6 +93,9 @@ activity dip in the gap between the cool-season and warm-season growth pulses?
 
 : Study design {.striped}
 
+The FPA-FOD record holds wildfires only: planned ignitions (prescribed fires) were left out
+when the database was built, except prescribed fires that escaped and needed suppression
+(Short 2014). Fire names that look like prescribed burns are counted by region as a check.
 Agricultural and prescribed burning are screened out (fire records coded as debris or open
 burning; satellite detections on cropland or not linked to a reported fire), and the share
 each screen removes is reported by region. In the northern Plains and upper Midwest a
@@ -104,7 +107,8 @@ snowmelt as well as green-up.
 | Component | Status |
 |---|---|
 | Design and decisions | Done (October 17) |
-| Fire records (FPA-FOD, MTBS, VIIRS) | Next |
+| Fire records: FPA-FOD | Script built and field check done (October 17); CONUS run next |
+| Fire records: MTBS, VIIRS | Next |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
@@ -129,12 +133,15 @@ snowmelt as well as green-up.
 | Date | Change |
 |---|---|
 | 2026-10-17 | Page created: question, design and decisions |
+| 2026-10-17 | FPA-FOD 7th edition fields checked against its metadata; fire-record step built |
 
 ## Data sources and references
 
 - Short, K. C. (2026). Spatial wildfire occurrence data for the United States, 1992–2024
   (FPA_FOD_20260615), 7th edition. Forest Service Research Data Archive,
   <https://www.fs.usda.gov/rds/archive/catalog/RDS-2013-0009.7>.
+- Short, K. C. (2014). A spatial database of wildfires in the United States, 1992–2011.
+  Earth System Science Data 6, 1–27.
 - Monitoring Trends in Burn Severity (MTBS), <https://www.mtbs.gov>.
 - NASA Fire Information for Resource Management System (FIRMS), VIIRS 375 m active fire,
   <https://firms.modaps.eosdis.nasa.gov>.
