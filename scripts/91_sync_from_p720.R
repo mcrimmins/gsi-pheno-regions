@@ -6,8 +6,8 @@
 #   summaries  full-run across-year summaries and static layers, into the local data
 #              root (<data_root>/full/summaries, <data_root>/full/static) for plotting
 #   logs       the P720 logs/ folder, into logs/p720/
-#   render     quarto render every page: report/index.qmd and report/npn_study.qmd (the NPN
-#              curing study companion page) -> report/<page>.html
+#   render     quarto render every page: report/index.qmd, report/npn_study.qmd (NPN curing
+#              study) and report/fire_study.qmd (fire activity study) -> report/<page>.html
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
 #              invalidation). Never runs unless asked for ("publish" or "all").
 #   all        figs + render + publish
@@ -119,7 +119,7 @@ if ("logs" %in% what) {
 }
 
 # ---- render -------------------------------------------------------------------------------
-pages <- c("index", "npn_study")                     # report/<page>.qmd -> <page>.html
+pages <- c("index", "npn_study", "fire_study")                     # report/<page>.qmd -> <page>.html
 pages <- pages[file.exists(here::here("report", paste0(pages, ".qmd")))]
 html <- here::here("report", "index.html")
 find_quarto <- function() {

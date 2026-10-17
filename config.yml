@@ -304,12 +304,42 @@ default:
   # Oct 15 2026: code here; managed sites flagged and reported both ways; C3/C4 drafted from
   # the literature for review; defaults below as starting values, each a sensitivity.
   npn_study:
-    years: {start: 1990, end: 2025}   # 1991-2020 normals + observation years and the year before
+    years: {start: 2001, end: 2025}   # PRISM daily available from 2001
     vars: [ppt, tmin, tmax, vpdmax]
     min_readings: 12                  # per plant-year
     memory_days: [15, 30, 60]         # time constants of the antecedent P - PET index
     daylength_gates_h: [12, 11]       # fall gates for northern C3 curing
-    normals: {start: 1991, end: 2020}
+    normals: {start: 2002, end: 2025}   # PRISM daily on the P720 starts in 2001 (needed as the year before)
+    min_years: 3                      # 52: series need >= 3 years with the date
+    lead_days: 14                     # 52: lead-time drivers end at the typical date minus this
+    max_predictors: 4                 # 52: L3 forward selection
+    l2_window_days: 60                # 52: L2 curing rule searches the typical date +/- this
+    # Sensitivity runs of 52-54: `Rscript scripts/5x_*.R full <name>`; outputs go to
+    # <run_dir>/npn_study/sens/<name>/ (main results untouched).
+    sensitivity:
+      no1617:                         # 16 Oct: NEON plants peaked lower in 2016-17 at 11 of 18
+        exclude_years: [2016, 2017]   #   sites (likely a judging / protocol change, not weather)
+
+  # Fire activity study (companion; scripts 60-69, page report/fire_study.qmd; scope in the
+  # project doc gsi-fire-study-scope.md). Decided Oct 17 2026; values marked (verify) are
+  # checked when the build starts.
+  fire_study:
+    fod:
+      edition: "FPA_FOD_20260615"     # 7th edition, 1992-2024 (RDS-2013-0009.7); GeoPackage
+      years: {start: 2001, end: 2024}
+      min_size_ac: 10                 # size class C and up = primary outcome
+      drop_general_causes: ["Debris and open burning"]   # (verify field values); sensitivity keeps them
+    firms:
+      primary: "VIIRS_SNPP"           # single primary series; NOAA-20 as a check (verify S-NPP record)
+      check: "VIIRS_NOAA20"
+      years: {start: 2012, end: 2025}
+    mtbs: {years: {start: 2001, end: 2024}}
+    pilot_regions: [3, 6, 12, 11, 10, 13]   # A2 k13 map numbers
+    herb_weighted_regions: [13]       # mixed cover: herbaceous-share weighting (strict mask as a check)
+    snow_regions: [10, 13]            # snow-off date in the baseline
+    baseline: {primary: dfm1000, checks: [kbdi, vpd30]}   # all from PRISM
+    curing_metric: eos50
+    greenup_metric: sos20
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season

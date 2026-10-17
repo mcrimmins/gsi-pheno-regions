@@ -1,0 +1,143 @@
+---
+title: "Herbaceous phenology and fire activity"
+subtitle: "A companion study to the fuel phenology regions: design, decisions and results"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Figures come from scripts/90_report_figs.R (figs/<figure>_<profile>.png + manifest.csv).
+# The CONUS ("full") version of a figure is shown when it exists, otherwise the dev one.
+figs <- if (file.exists("figs/manifest.csv")) {
+  utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
+} else data.frame(figure = character(), profile = character())
+
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n',
+                caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s · %s · figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+```
+
+::: {.callout-important appearance="simple"}
+## Planned study
+This study is designed but not yet built. The page will be updated as the analysis runs.
+It is a companion to the [fuel phenology regions page](index.html) and the
+[NPN curing study](npn_study.html).
+:::
+
+## At a glance
+
+**The question.** At the scale of a region and a season, does the green-up and curing of
+grasses and other herbaceous plants shape fire activity? The regions work built typical
+green-up and curing dates for every 4 km cell, and both its ground check and the NPN curing
+study found that weather rules don't beat the typical date against single-plant ground
+dates. Fire activity is a regional, fuel-bed-scale response, the scale fire managers care
+about, and it is the one verification source with good coverage of herbaceous fuels in the
+Southwest and California.
+
+**Two tests.**
+
+1. **Seasonal:** does each region's fire season open and close at green-up and curing, for
+   example a spring window on last year's cured grass that closes at green-up, and a fall
+   window that opens at curing?
+2. **Year to year:** in years when curing or green-up runs early or late, does fire activity
+   shift with it, once dead-fuel dryness and the number of ignitions are accounted for? The
+   answer is how much the phenology improves predictions for years left out of the fit, not
+   a correlation.
+
+A third question comes from partners in the northern Plains: in mixed prairie, does fire
+activity dip in the gap between the cool-season and warm-season growth pulses?
+
+## Design
+
+| Element | Choice |
+|---|---|
+| Fire starts | FPA-FOD 7th edition (1992–2024): wildfires reaching 10 acres or more, by discovery week, lightning and human causes separately |
+| Fire growth | VIIRS active fire (S-NPP, 2012 onward): unique 375 m pixel-days |
+| Burned area | MTBS, by start date (large fires) |
+| Phenology | Yearly satellite green-up (NDVI 20 %) and curing (NDVI end of season, 50 %) dates for every 4 km cell, 2001–2025, and the typical-date maps |
+| Dead-fuel baseline | 1000-hour dead fuel moisture computed from PRISM (NFDRS equations); checks: Keetch–Byram drought index and 30-day mean vapour pressure deficit |
+| Weather | PRISM daily 4 km only |
+| Herbaceous cover | NLCD grassland and shrub/scrub share, as in the regions work |
+| Unit | Region × week × year, herbaceous cells |
+| Model | One pooled count model with region effects; skill judged leaving one year out |
+| Years | 2001–2024 for fire starts; 2012–2024 where starts and growth overlap |
+| Pilot regions | Monsoon Southwest (3), interior West (6, 12), California annual grasslands (11), northern and central Great Plains (10), upper Midwest (13) |
+
+: Study design {.striped}
+
+Agricultural and prescribed burning are screened out (fire records coded as debris or open
+burning; satellite detections on cropland or not linked to a reported fire), and the share
+each screen removes is reported by region. In the northern Plains and upper Midwest a
+snow-off date from PRISM is part of the baseline, because spring fire there depends on
+snowmelt as well as green-up.
+
+## Status
+
+| Component | Status |
+|---|---|
+| Design and decisions | Done (October 17) |
+| Fire records (FPA-FOD, MTBS, VIIRS) | Next |
+| Dead-fuel baseline from PRISM | Next |
+| Seasonal fire curves by region | Planned |
+| Seasonal and year-to-year tests | Planned |
+
+: Study status {.striped}
+
+## Decisions so far
+
+| Date | Decision | Why |
+|---|---|---|
+| Oct 1 2026 | Fire activity as a regional, seasonal check on phenology, not fire by fire | Removes the scale mismatch between fires and point observations |
+| Oct 17 2026 | A companion study with its own page; code shared with the regions work | Uses the regions, satellite dates and typical-date maps directly |
+| Oct 17 2026 | PRISM as the only weather source; dead-fuel moisture computed from it | One weather source across the project keeps the methods simple |
+| Oct 17 2026 | FPA-FOD 7th edition (1992–2024), MTBS, VIIRS S-NPP | Long record of starts; consistent single-sensor growth series |
+| Oct 17 2026 | Main outcome: wildfires of 10 acres or more by week, by cause | Fuel condition decides whether a start grows; larger fires are reported consistently |
+| Oct 17 2026 | Pilot regions 3, 6, 12, 11, 10 and 13 | Grass and shrub fire regimes in the West, plus the northern Plains and upper Midwest partners |
+
+: Study decisions {.striped}
+
+## Changelog
+
+| Date | Change |
+|---|---|
+| 2026-10-17 | Page created: question, design and decisions |
+
+## Data sources and references
+
+- Short, K. C. (2026). Spatial wildfire occurrence data for the United States, 1992–2024
+  (FPA_FOD_20260615), 7th edition. Forest Service Research Data Archive,
+  <https://www.fs.usda.gov/rds/archive/catalog/RDS-2013-0009.7>.
+- Monitoring Trends in Burn Severity (MTBS), <https://www.mtbs.gov>.
+- NASA Fire Information for Resource Management System (FIRMS), VIIRS 375 m active fire,
+  <https://firms.modaps.eosdis.nasa.gov>.
+- PRISM Group, Oregon State University, <https://prism.oregonstate.edu>.
+- Cohen, J. D. and Deeming, J. E. (1985). The National Fire-Danger Rating System: basic
+  equations. USDA Forest Service General Technical Report PSW-82.

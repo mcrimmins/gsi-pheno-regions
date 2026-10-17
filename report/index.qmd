@@ -89,7 +89,7 @@ models. Where they disagree is where to look for what's missing.
 | Comparison with satellite curves and ground observations (NPN, live fuel moisture, iNaturalist) | Done; working regions chosen (A2, 13 regions nested in 7) |
 | Phenology model tests by region | Done: GSI threshold tuning, curing forms, two curing targets, a soil-water bucket, a weather adjustment of the typical date; each scored against satellite dates and then checked against NPN grass sites |
 | Curing and green-up rules | Final after the ground checks (October 13); packaged as typical-date maps and a yearly adjustment run (October 15) |
-| NPN curing study (models fitted to ground dates) | Companion study on its own page; first results October 16 |
+| NPN curing study (models fitted to ground dates) | Companion study on its own page; record, typical dates and climate across space added October 16 |
 
 : Pipeline status {.striped}
 
@@ -113,7 +113,8 @@ models. Where they disagree is where to look for what's missing.
   directly, from one weather driver up to a random forest, also do no better than each
   grass's typical date. Much of the year-to-year scatter in single-plant dates is not
   shared between species at a site, which caps what any weather model can explain.
-  The [NPN curing study](npn_study.html) has the details.
+  Across sites, typical warm-season green-up follows site climate better than the region
+  map does; typical curing much less. The [NPN curing study](npn_study.html) has the details.
 
 ## Why regions?
 
@@ -1196,7 +1197,15 @@ In short: no weather model, from one driver to a random forest, beats each grass
 date on the ground; two-thirds or more of the variation in a grass's dates is place and
 species; and the year-to-year part that grasses at a site share is tracked only weakly by
 moisture and summer vapour pressure deficit. That supports the typical-date product on this
-page as the baseline. 96 % of the usable record comes from NEON field sites.
+page as the baseline. Across sites, warm-season green-up follows site climate (spring
+temperature and the summer share of rain) better than the 13-region map, while curing dates
+follow the species for cool-season grasses and nothing measured for warm-season ones. 94 %
+of the record (6,331 plant-years at 130 sites) comes from NEON field sites.
+
+A second companion study, **[Herbaceous phenology and fire activity](fire_study.html)**,
+tests the same green-up and curing dates against fire records (fire starts, satellite
+active-fire detections and burned area) at the scale of regions and weeks. It is designed
+and about to be built.
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
@@ -1487,6 +1496,8 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-17 | Fire activity study designed; companion page added (fire_study.html) |
+| 2026-10-16 | NPN curing study: the record, typical dates on all usable curves, and typical dates against site climate; 2016–17 check (on the study page) |
 | 2026-10-16 | NPN curing study moved to its own companion page (npn_study.html); a summary and link stay here |
 | 2026-10-16 | NPN curing study: first results (model ladder, variance partition, shared signal, NEON check) |
 | 2026-10-15 | First current-year run (2026, as of October 14) of the curing adjustment |

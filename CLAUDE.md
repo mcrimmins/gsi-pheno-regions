@@ -576,3 +576,15 @@ satellite dates are not a target here.
   data/npn_site_names.csv only for the NEON flag, names never drawn), npn_dates, npn_ladder,
   npn_variance, npn_signal.
 
+## Fire activity study (designed Oct 17 2026) — separate companion study
+Scope and decisions: project doc claude/gsi-fire-study-scope.md (replaces
+gsi-fire-activity-design.md where they differ). Own chat thread, page report/fire_study.qmd
+(-> fire_study.html, rendered and published with the other pages by 91), code here as scripts
+60-69 with helpers R/fire.R and config `fire_study:`; data under <run_dir>/fire_study/ (never
+in git; FIRMS as Parquet). Put fire methods, figures and results on fire_study.qmd, not
+index.qmd. Decided: PRISM is the only weather source (1000-h dead fuel moisture computed from
+it; KBDI and VPD30 as checks; no gridMET); FPA-FOD 7th edition (1992-2024), MTBS, VIIRS S-NPP
+(NOAA-20 check); windows 2001-2024 (starts) and 2012-2024 (starts + growth); primary outcome
+wildfires >= 10 ac by discovery week, lightning vs human; pilot regions 3, 6, 12, 11, 10, 13;
+NLCD herbaceous cover; region x week x year, pooled count model, leave-one-year-out.
+Downloads run on the P720. Nothing built yet.
