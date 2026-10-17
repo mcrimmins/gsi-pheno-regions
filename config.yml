@@ -348,9 +348,24 @@ default:
                NWCG_CAUSE_CLASSIFICATION, NWCG_GENERAL_CAUSE, CONT_DATE, FIRE_SIZE, FIRE_SIZE_CLASS,
                LATITUDE, LONGITUDE, OWNER_DESCR, STATE, FIPS_CODE]
     firms:
-      primary: "VIIRS_SNPP"           # single primary series; NOAA-20 as a check (verify S-NPP record)
+      # NASA FIRMS area API (checked Oct 17 2026): /api/area/csv/<MAP_KEY>/<SOURCE>/<w,s,e,n>/<days 1-10>/<YYYY-MM-DD>;
+      # sources VIIRS_SNPP_SP / _NRT (S-NPP from 2012-01-20), VIIRS_NOAA20_SP / _NRT (from 2018-04-01);
+      # SP replaces NRT ~5 months after acquisition; 5,000 transactions per 10 min per key.
+      # Key from the FIRMS_MAP_KEY environment variable only (~/.Renviron), never here.
+      primary: "VIIRS_SNPP"           # single primary series; NOAA-20 as a check
       check: "VIIRS_NOAA20"
       years: {start: 2012, end: 2025}
+      api: "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
+      status_url: "https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/"
+      bbox: {xmin: -125.1, ymin: 24.0, xmax: -66.4, ymax: 50.0}   # CONUS request box (as cutb)
+      keep_types: [0]                 # SP `type`: 0 vegetation fire; 1 volcano, 2 static land source, 3 offshore dropped
+      sleep_sec: 1
+      timeout_sec: 300
+      fallback_dates:                 # used only if the data_availability call fails
+        VIIRS_SNPP_SP: {min: "2012-01-20", max: "2026-04-30"}
+        VIIRS_SNPP_NRT: {min: "2026-05-01", max: "2026-10-16"}
+        VIIRS_NOAA20_SP: {min: "2018-04-01", max: "2026-04-30"}
+        VIIRS_NOAA20_NRT: {min: "2026-05-01", max: "2026-10-16"}
     mtbs:
       # MTBS burned area boundaries (v12.0, April 2025: 1984-2024; 2023-2024 still being mapped per
       # the MTBS release schedule, checked Oct 17 2026; 61 measures completeness against FPA-FOD).

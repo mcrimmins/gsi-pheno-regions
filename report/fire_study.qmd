@@ -109,7 +109,7 @@ snowmelt as well as green-up.
 | Design and decisions | Done (October 17) |
 | Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
 | Fire records: MTBS burned area | Done (October 17): 10,428 wildfires; 2024 not yet fully mapped |
-| Fire records: VIIRS | Next |
+| Fire records: VIIRS active fire | Script built (October 17); download next |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
@@ -215,6 +215,7 @@ region; fires in the most herbaceous third of cells are a check.
 | 2026-10-17 | First look at the fire records: counts, seasonal shape, reporting change from 2020, upper Midwest cover |
 | 2026-10-17 | Decisions on cause reporting and upper Midwest cover |
 | 2026-10-17 | MTBS burned-area step built and run; 2024 incomplete in MTBS |
+| 2026-10-17 | VIIRS active-fire download step built |
 
 ## Data sources and references
 
