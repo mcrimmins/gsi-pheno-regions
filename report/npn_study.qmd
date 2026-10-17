@@ -81,9 +81,15 @@ ground-fitted rules.
 
 **What we have found so far (October 2026).**
 
-- **The record is mostly NEON.** 96 % of the usable plant-years come from 36 National
-  Ecological Observatory Network field sites, where technicians follow five tagged plants
-  per species in natural plots.
+- **The record is mostly NEON.** 6,331 plant-years of percent-green curves (1,617 plants,
+  130 sites, 70 species, 2014–2024). 94 % come from 36 National Ecological Observatory
+  Network field sites, where technicians follow five tagged plants per species in natural
+  plots; the other 94 sites add spatial coverage but few years each.
+- **Typical green-up follows site climate; typical curing much less.** Across sites,
+  warm-season grasses green up earlier where spring is warmer and later where more of the
+  rain falls in summer, and site climate predicts their typical green-up at a new site
+  better than the region map does. Cool-season curing follows the species and the site's
+  wetness; warm-season curing dates are not explained by species, region or climate.
 - **Place dominates.** Two-thirds to four-fifths of the variation in a grass's dates is
   where it grows and which species it is.
 - **No weather model beats the typical date.** From one driver to a random forest, every
@@ -93,6 +99,10 @@ ground-fitted rules.
   year-to-year variation is shared by the grasses at a site (about 18 days), regional for
   green-up and local for curing. Moisture and summer vapour pressure deficit track it in the
   expected direction, but too weakly to predict it.
+- **2016 and 2017 look different.** In those two years many NEON plants never reached
+  their usual peak greenness, at most sites at once, which points to a change in how
+  percent green was judged rather than weather. Leaving them out leaves every conclusion
+  unchanged but removes about a third of the shared curing signal.
 
 **Status (October 2026).**
 
@@ -103,23 +113,29 @@ ground-fitted rules.
 | Model ladder (L0–L4), leave-one-year-out | Done |
 | Variance partition (place, shared year, species, plant) | Done |
 | Shared signal against local weather; managed and NEON sites | Done |
-| PhenoCam check of the shared signal | Next |
-| Record and climatology by region and grass type (Q1, Q2, Q4) | Started (figures below); write-up next |
-| Manuscript | Not started |
+| The record, climatology by region and grass type, climate across space (Q1, Q2, Q4) | Done |
+| Check without 2016–2017 | Done; question sent to USA-NPN / NEON next |
+| PhenoCam check of the shared signal | First comparison not a fair test (see below); on hold |
+| Manuscript | Outline next |
 
 : Study status {.striped}
 
 ## Data and methods
 
-- **Unit.** One series-year per site, species and year, the median over that site-year's
-  observed plants, from plants with at least 12 readings. Green-up and curing are the dates
-  the plant passes 50 % green going up and coming down; the cured date is when it is fully
-  cured. Crops (wheat, corn) are left out, and species are labeled C3 (cool-season) or C4
-  (warm-season) from the literature.
-- **Record.** 707 series-years in 181 series (86 sites, 67 species), 2014–2024. A series
-  needs at least 3 years with the date to be scored: 289 green-up, 529 curing and 461 cured
-  series-years. Dates more than 90 days from the series' usual date (2–4 %) count as a
-  season mismatch and are not scored.
+- **Dates.** Green-up and curing are the dates a tagged plant passes 50 % green going up and
+  coming down; the cured date is when it is fully cured. Crops (wheat, corn) are left out,
+  and species are labeled C3 (cool-season) or C4 (warm-season) from the literature. Dates
+  more than 90 days from the series' usual date count as a season mismatch and are not used.
+- **Two sets of plants.** *The record, the typical dates and climate across space* use
+  every plant-year with at least 6 readings and a peak above 50 % green (the NPN-derived
+  "usable" curves), and a site and species with even one year: 6,331 plant-years. *The
+  year-to-year analyses* need at least 12 readings per plant-year and 3 or more years per
+  site and species: 707 series-years in 181 series (86 sites, 67 species), of which 289
+  green-up, 529 curing and 461 cured series-years are scored. A series-year is one site,
+  species and year, the median over that site-year's plants.
+- **Typical date.** For each site and species, the circular median of its plants' dates
+  over all years.
+- **Regions.** The A2 13-region map numbers, assigned to every site from its 4 km cell.
 - **Weather.** Daily PRISM at each site, 2001–2025: growing degree-days, seasonal
   temperature, freeze dates, chilling, seasonal rain, vapour pressure deficit, rain events
   and dry spells, monsoon onset, and a moisture memory (a running average of daily
@@ -142,19 +158,116 @@ ground-fitted rules.
   error in days; skill = 1 − error / error of the typical date; and the correlation of each
   model's predicted departure with the observed one.
 
+## The record
+
+| | Plant-years | Plants | Sites | Species | Readings | Dated: green-up / curing / cured |
+|---|---|---|---|---|---|---|
+| All usable curves | 6,331 | 1,617 | 130 | 70 | 203,290 | 2,638 / 4,611 / 3,361 |
+| NEON field sites | 5,960 | 1,438 | 36 | 56 | 195,630 | 2,478 / 4,411 / 3,178 |
+| Other NPN sites | 371 | 179 | 94 | 34 | 7,660 | 160 / 200 / 183 |
+| Year-to-year set (≥ 12 readings, ≥ 3 years) | 5,668 | 1,417 | 48 | 60 | 195,405 | 2,514 / 4,385 / 3,171 |
+
+: The NPN grass percent-green record, 2014–2024 {.striped}
+
 ```{r fig-npn-sites}
 #| results: asis
 show_fig("npn_sites",
-  "Where the NPN grass curing study sites are. Filled points are NEON field sites, which hold 96 % of the usable record; open points are other NPN sites. Point size is the number of series-years (site, species and year) used.",
-  "Map of the contiguous U.S. with NPN grass study sites coloured by cool-season, warm-season or both grass types, sized by series-years, filled for NEON sites.")
+  "Where the NPN grass curing study sites are. Filled points are NEON field sites, which hold 94 % of the plant-years; open points are other NPN sites. Point size is the number of plant-years.",
+  "Map of the contiguous U.S. with NPN grass study sites coloured by cool-season, warm-season or both grass types, sized by plant-years, filled for NEON sites.")
 ```
+
+```{r fig-npn-record}
+#| results: asis
+show_fig("npn_record",
+  "What the record is made of: the percent-green class of each reading, how many readings each plant-year carries, and how often a plant greens up a second time after curing, by region.",
+  "Three panels: horizontal bars of reading shares by percent-green class; box summaries of readings per plant-year for NEON, other and managed sites; bars of second green-up share by region.")
+```
+
+- **NEON carries the record.** 94 % of plant-years, and 96 % of the readings, come from the
+  36 NEON sites. Their plants are read about weekly through most of the year (median 35
+  readings per plant-year). The other 94 sites are read just as often while observed, but
+  over shorter spans (median 14–16 readings), so they add places, not years: in the
+  year-to-year set they are only 16 sites.
+- **The whole scale is used.** A third of all readings are in the top class (95 % green or
+  more); each of the other classes holds 10–20 %.
+- **Second green-ups are common.** 18 % of plant-years fall below 25 % green and then come
+  back above 50 % at least three weeks later (cool-season 15 %, warm-season 19 %), most often
+  in California (44 %, the annual grasses greening again with the first fall rains within
+  the same calendar year), on the Southeast coastal plain (34 %) and in the monsoon Southwest
+  (25 %). In 276 plant-years the 50 % curing date belongs to the second cycle.
+- **Some plants never pass 50 % green.** 6 % of NEON plant-years with enough readings stay
+  below 50 % all year, so they have no green-up or curing date. Almost all are in 2016 and
+  2017 (see [the check below](#a-check-2016-and-2017)).
+
+## When grasses green up and cure
 
 ```{r fig-npn-dates}
 #| results: asis
 show_fig("npn_dates",
-  "Typical green-up, 50 % curing and cured dates by region (map numbers as on the region maps) and grass type. Each point is one site and species, the median over its years; the bar is the region median where it has three or more.",
+  "Typical green-up, 50 % curing and cured dates by region (map numbers as on the region maps) and grass type. Each point is one site and species (its typical date over all years observed); the bar is the region median where it has three or more.",
   "Three panels of dot plots: green-up, curing and cured dates by region, cool-season grasses in blue and warm-season in orange.")
 ```
+
+- **The season moves with region and grass type.** On the Southeast coastal plain
+  (region 1) cool-season grasses green up in early February and cure in early December;
+  warm-season grasses there cure in late October. Warm-season grasses in the monsoon
+  Southwest (region 3) green up in early June and cure in early October. California's annual
+  grasslands (region 11) cure in late May, and Great Basin cool-season grasses (region 12,
+  few sites) in mid-June. On the northern Plains (regions 10 and 13) both types green up in
+  mid to late May and cure from late August to late September.
+- **Cool- versus warm-season depends on the region.** Where both are observed in three or
+  more series each, warm-season grasses cure 40 days earlier than cool-season ones on the
+  Southeast coastal plain (a 40-day shorter season), green up 74 days later in the East
+  (region 5), and differ by less than three weeks in regions 8, 10 and 13.
+- **Small cells need care.** Many region and grass-type combinations rest on 2–5 sites;
+  a few (for example cool-season green-up in August in region 7, three series) more likely
+  reflect fall green-up at one or two sites than a regional pattern.
+
+## Do typical dates follow site climate?
+
+Each site and species' typical date was modelled on the site's climate normals (PRISM,
+2002–2025), with a random effect for species, and compared with a model of species alone,
+one with the region map instead of climate, and one with both. Climate is a small set
+chosen in advance: March–April mean temperature for green-up, July–August mean temperature
+for curing, and for both aridity (precipitation / potential evapotranspiration), the share
+of rain falling July–September and latitude. Each model is scored by refitting it with one
+site left out at a time and predicting that site.
+
+| Date | Grass type | Series (sites) | Species only | Region map | Site climate | Region + climate |
+|---|---|---|---|---|---|---|
+| Green-up | warm-season (C4) | 115 (66) | 0.39 | 0.49 | **0.61** | 0.54 |
+| Green-up | cool-season (C3) | 36 (25) | −0.23 | 0.24 | 0.19 | −0.32 |
+| 50 % curing | warm-season (C4) | 123 (61) | 0.02 | −0.17 | 0.00 | −0.38 |
+| 50 % curing | cool-season (C3) | 62 (38) | **0.63** | 0.38 | **0.63** | 0.35 |
+| Cured | warm-season (C4) | 110 (56) | −0.10 | −0.06 | −0.01 | −0.05 |
+| Cured | cool-season (C3) | 58 (34) | **0.65** | 0.34 | 0.64 | 0.15 |
+
+: Share of the variation in typical dates predicted at a site left out (R², 0 = no better than the mean) {.striped}
+
+```{r fig-npn-spatial}
+#| results: asis
+show_fig("npn_spatial",
+  "Typical dates against site climate. Left: how well each model predicts a left-out site. Middle: typical green-up against March–April temperature. Right: typical 50 % curing against site aridity.",
+  "Three panels: dot chart of leave-one-site-out R-squared for four models, three dates and three grass groups; scatter of green-up date against spring temperature; scatter of curing date against aridity.")
+```
+
+- **Warm-season green-up follows site climate,** better than the region map does: about
+  38 days earlier per standard deviation of warmer March–April temperature, and 27 days
+  later per standard deviation more of the rain in summer (the monsoon sites green up with
+  the summer rains).
+- **Cool-season green-up tracks spring temperature too** (rank correlation about −0.8 to
+  −0.9 depending on the series included), but with 25 sites the models do not hold up at a
+  left-out site.
+- **Cool-season curing and the cured date follow the species about as well as the climate.**
+  Wetter sites, and sites with more summer rain, cure 20–25 days later per standard
+  deviation; but which species grow where already carries most of that.
+- **Warm-season curing and cured dates are not explained across sites** by species, region
+  or climate.
+- **Adding the region map to the climate overfits.** With 13 regions and a few dozen sites
+  per grass type, region plus climate does worse at a left-out site than climate alone.
+- The pattern matches the region test on the [regions page](index.html): green-up follows
+  climate and region well, curing much less. The same holds, more weakly, in the stricter
+  year-to-year set.
 
 ## Can weather beat the typical date?
 
@@ -254,10 +367,10 @@ show_fig("npn_signal",
 - **Managed sites are not the explanation.** Gardens, yards, campuses and parks are only
   about 4 % of the usable plant-years, too few to fit on their own; the results without them
   are unchanged.
-- **The record is mostly NEON.** 96 % of the usable plant-years come from the 36 National
-  Ecological Observatory Network field sites, where trained technicians follow five tagged
-  plants per species in natural plots. Results without NEON sites are too thin to compare
-  (124–154 plant-years). So the large plant share is not volunteer noise: it is real
+- **The year-to-year record is mostly NEON.** 96 % of the plant-years in this set come from
+  the 36 National Ecological Observatory Network field sites, where trained technicians
+  follow five tagged plants per species in natural plots. Results without NEON sites are too
+  thin to compare (124–154 plant-years). So the large plant share is not volunteer noise: it is real
   plant-to-plant variation within a plot plus how each technician judges "percent green",
   and the site-wide year signal may include crew changes and visit schedules as well as
   weather.
@@ -265,16 +378,57 @@ show_fig("npn_signal",
   which years were warm overall rather than a cause, and they do not carry over to a
   left-out year either.
 
+## A check: 2016 and 2017
+
+In most years about 1 % of NEON plant-years never pass 50 % green. In 2016 it was 16 % and
+in 2017 30 %, at 11 of the 18 NEON sites observed then; in those two years only 53 % of
+plant-years reached the top class (95 % green or more), against 89 % in other years. A
+change that shows up at most sites at once, in two consecutive years, points to how
+percent green was judged rather than to weather. A plant that peaks lower crosses 50 % on
+the way down earlier, so those years could look like early-curing years everywhere.
+
+```{r fig-npn-sensitivity}
+#| results: asis
+show_fig("npn_sensitivity",
+  "Left: share of NEON plant-years that never pass 50 % green, by year. Right: the share of the year-to-year variation shared by a site's grasses, with all years and without 2016–2017.",
+  "Bar chart by year with 2016 and 2017 standing out; paired bars for green-up, curing and cured.")
+```
+
+| | All years | Without 2016–17 |
+|---|---|---|
+| Best model skill against the typical date: green-up / curing / cured | 0.00 / 0.00 / +0.01 | +0.02 / 0.00 / +0.01 |
+| Shared by the site's grasses (% of year-to-year): green-up | 39 % | 32 % |
+| — 50 % curing | 26 % | 18 % |
+| — cured | 38 % | 37 % |
+| Region-wide part: green-up / curing / cured | 28 / 10 / 3 % | 21 / 8 / 6 % |
+
+: The year-to-year results with and without 2016–2017 (series-years and plant-years in those years dropped) {.striped}
+
+- **The conclusions do not change.** Nothing beats the typical date either way.
+- **But a third of the shared curing signal was 2016–17.** Without them, the year signal
+  shared by a site's grasses is 18 % of the year-to-year variation in 50 % curing rather
+  than 26 %; the cured date is unaffected, as expected if those years mostly lowered the
+  peak.
+- **Without them, curing follows moisture more clearly.** Wetter years cure later, with
+  correlations of about 0.26 for annual rain, April–June rain and April–September rain
+  events (27 of 61 drivers significant, against 9 with all years), yet still too weakly to
+  predict a left-out year.
+- The main results keep all years; this check is reported alongside until USA-NPN and NEON
+  can say whether guidance or training for percent green changed around 2018.
+
 ## What it means so far
 
 On the ground, as with the satellite rules on the [regions page](index.html), the typical
-date is the baseline to beat, and so far nothing beats it. There is a shared year signal of
-about 18 days, regional for green-up and local for curing, that the weather drivers tried
-here capture only weakly (moisture and VPD, in the expected direction). An independent,
-observer-free check is available at the same NEON sites: PhenoCam cameras photograph the
-plots daily. If the camera's grass greenness shows the same early and late years, the
-site-wide signal is real vegetation; if not, it is mostly how the plants were observed.
-That check, and the record and dates by region and grass type, are the next steps.
+date is the baseline to beat, and so far nothing beats it. The typical date itself is
+predictable for green-up, which follows site climate, and much less so for curing, which
+follows the species for cool-season grasses and nothing measured here for warm-season
+ones. There is a shared year signal, regional for green-up and local for curing, that
+moisture and VPD track only weakly; part of the curing signal looks like a 2016–17 change
+in how plants were judged. A first check with the PhenoCam cameras at the NEON plots was
+not a fair test: the camera transition dates skip years with a weak green-up, mark a
+different stage of the season (the end of the spring flush rather than half-cured plants),
+and switch between seasons at sites that green up twice. A comparison based on camera
+greenness around each site's typical curing date would avoid those problems; it is on hold.
 
 ## Decisions so far
 
@@ -287,6 +441,11 @@ That check, and the record and dates by region and grass type, are the next step
 | Oct 15 2026 | At least 12 readings per plant-year; series need 3 or more years; dates more than 90 days from a series' usual date counted as a season mismatch | Enough readings to place the crossings; mismatches would dominate the errors |
 | Oct 15 2026 | Likely managed sites flagged and reported both ways | Gardens and yards may not follow local weather |
 | Oct 16 2026 | Normals over 2002–2025 | Daily PRISM used here starts in 2001 |
+| Oct 16 2026 | No other plant groups (forbs, shrubs) and no NEON observer or tower-sensor tests | Other groups answer a different percent question; keep the study focused |
+| Oct 16 2026 | Two sets: every usable curve (≥ 6 readings, any number of years) for the record, typical dates and climate across space; ≥ 12 readings and ≥ 3 years for the year-to-year analyses | Short volunteer series still give typical dates; year-to-year needs repeated years |
+| Oct 16 2026 | NPN-derived "usable" rule (≥ 6 readings, peak above 50 % green) left as is | Sparser volunteer records cannot place a crossing |
+| Oct 16 2026 | 2016–2017 reported as a sensitivity check; main results keep all years | Likely a judging change, not yet confirmed with USA-NPN and NEON |
+| Oct 16 2026 | Second green-up: below 25 % green, then above 50 % on two readings at least three weeks later | A looser rule mostly caught readings flickering around 50 % |
 
 : Study decisions {.striped}
 
@@ -294,6 +453,7 @@ That check, and the record and dates by region and grass type, are the next step
 
 | Date | Change |
 |---|---|
+| 2026-10-16 | The record, typical dates by region and grass type on all usable curves, and typical dates against site climate; 2016–17 check; PhenoCam first comparison (on hold) |
 | 2026-10-16 | Study moved to its own page, with figures (sites, dates by region, model ladder, variance partition, shared signal against VPD) |
 | 2026-10-16 | Managed-site and NEON check (96 % of the record is NEON) |
 | 2026-10-16 | Shared site-year signal tested against local weather |
