@@ -88,7 +88,15 @@ log_msg("shapefile ", basename(shp), " (", format(file.mtime(shp), "%Y-%m-%d"), 
 # ---- 2. read and field check ---------------------------------------------------------------------
 t1 <- Sys.time()
 V <- terra::vect(shp)
-have <- names(V); need <- unlist(mc$fields)
+need <- unlist(mc$fields)
+# Field names change case between MTBS releases (v12.0 file: all lower case); match ignoring case
+# and rename to the names used here.
+nm <- names(V); hit <- match(tolower(nm), tolower(need))
+if (any(!is.na(hit) & nm != need[hit])) {
+  log_msg("  renaming ", sum(!is.na(hit) & nm != need[hit]), " fields to the expected case (", paste(utils::head(nm[!is.na(hit) & nm != need[hit]], 4), collapse = ", "), ", ...)")
+  nm[!is.na(hit)] <- need[hit[!is.na(hit)]]; names(V) <- nm
+}
+have <- names(V)
 FLD <- data.frame(field = union(need, have), required = union(need, have) %in% need, present = union(need, have) %in% have)
 utils::write.csv(FLD, file.path(out_dir, "mtbs_fields.csv"), row.names = FALSE)
 log_msg(sprintf("read %s perimeters in %s | CRS %s | fields: %s", format(nrow(V), big.mark = ","),
