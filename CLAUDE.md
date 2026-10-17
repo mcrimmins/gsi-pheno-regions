@@ -589,6 +589,9 @@ wildfires >= 10 ac by discovery week, lightning vs human; pilot regions 3, 6, 12
 NLCD herbaceous cover; region x week x year, pooled count model, leave-one-year-out.
 Downloads run on the P720. Raw downloads go to <data_root>/_shared/raw/fire/ (shared by
 profiles). Tables via R/fire.R fire_write_table(): Parquet with arrow, .rds without it.
+Results come back to the laptop with `Rscript scripts/91_sync_from_p720.R fire` (every
+fire_study/<step>/*.csv, plus the tables of the steps in config `sync: fire_tables`, default fod)
+into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by git.
 - `scripts/60_fire_fod.R [profile] [force]` (P720, minutes; built Oct 17): FPA-FOD 7th edition
   GeoPackage (config `fire_study: fod: url`, downloaded once) -> <run_dir>/fire_study/fod/
   fod_fires.parquet, one row per fire in the study years on a grid land cell (AK/HI/PR out):

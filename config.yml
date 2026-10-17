@@ -639,6 +639,7 @@ default:
   sync:
     remote_repo: "~/RProjects/gsi-pheno-regions"
     remote_data_root: "~/data/gsi-pheno-regions"
+    fire_tables: [fod]        # 91 fire: also copy these steps' per-record tables (not FIRMS: too big)
 
 # Laptop development: small Arizona box, recent complete years, 2 workers.
 dev:

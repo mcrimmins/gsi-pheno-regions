@@ -6,6 +6,9 @@
 #   summaries  full-run across-year summaries and static layers, into the local data
 #              root (<data_root>/full/summaries, <data_root>/full/static) for plotting
 #   logs       the P720 logs/ folder, into logs/p720/
+#   fire       fire study results: every <remote run dir>/fire_study/<step>/*.csv, plus the
+#              per-record tables (*.parquet / *.rds) of the steps in config `sync: fire_tables`
+#              (default fod), into <data_root>/full/fire_study/<step>/ on the laptop
 #   render     quarto render every page: report/index.qmd, report/npn_study.qmd (NPN curing
 #              study) and report/fire_study.qmd (fire activity study) -> report/<page>.html
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
@@ -27,17 +30,17 @@
 #   GSI_AWS_PROFILE=name                  optional AWS CLI profile
 #   GSI_CF_DIST=E123ABC                   optional CloudFront distribution to invalidate
 #
-# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [render] [publish] [all]
+# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [fire] [render] [publish] [all]
 #   RStudio: gsi_sync <- "all"; source("scripts/91_sync_from_p720.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 what <- if (length(args)) args else if (exists("gsi_sync", envir = globalenv())) {
   base::get("gsi_sync", envir = globalenv())
 } else c("figs", "render")
-what <- match.arg(what, c("figs", "summaries", "logs", "render", "publish", "all"),
+what <- match.arg(what, c("figs", "summaries", "logs", "fire", "render", "publish", "all"),
                   several.ok = TRUE)
 if ("all" %in% what) what <- unique(c(setdiff(what, "all"), "figs", "render", "publish"))
-need_ssh <- any(c("figs", "summaries", "logs") %in% what)
+need_ssh <- any(c("figs", "summaries", "logs", "fire") %in% what)
 
 source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
@@ -116,6 +119,25 @@ if ("summaries" %in% what) {
 if ("logs" %in% what) {
   if (scp_get(file.path(remote_repo, "logs/*.log"), here::here("logs", "p720")))
     log_msg("logs -> logs/p720")
+}
+
+# ---- fire study results ----------------------------------------------------------------------
+if ("fire" %in% what) {
+  rfire <- file.path(remote_run, "fire_study")
+  ls <- run("ssh", c("-o", "BatchMode=yes", host, q(paste0("ls -1d ", rfire, "/*/"))))
+  steps <- if (ls$ok) basename(sub("/+$", "", ls$out[nzchar(ls$out)])) else character()
+  if (!length(steps)) log_warn("no fire_study results on the P720 (", rfire, ")")
+  tables <- unlist(sync$fire_tables %||% list("fod"))
+  for (st in steps) {
+    ldir <- file.path(cfg$run_dir, "fire_study", st)
+    if (scp_get(file.path(rfire, st, "*.csv"), ldir)) log_msg("fire_study/", st, ": ", paste(basename(list.files(ldir, "\\.csv$")), collapse = ", "))
+    if (st %in% tables) {
+      tb <- run("ssh", c("-o", "BatchMode=yes", host, q(paste0("ls -1 ", rfire, "/", st, "/*.parquet ", rfire, "/", st, "/*.rds 2>/dev/null"))))
+      for (f in tb$out[grepl("\\.(parquet|rds)$", tb$out)]) {
+        if (scp_get(f, ldir)) log_msg(sprintf("fire_study/%s/%s (%.0f MB)", st, basename(f), file.size(file.path(ldir, basename(f))) / 2^20))
+      }
+    }
+  }
 }
 
 # ---- render -------------------------------------------------------------------------------
