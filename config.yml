@@ -362,6 +362,7 @@ default:
       window_days: 5                  # days per request: FIRMS rejects more than 5 (checked on the P720, Oct 17 2026)
       sleep_sec: 1
       timeout_sec: 300
+      progress_every: 1               # progress line every N downloaded pieces (count, rows, MB, time, ETA)
       fallback_dates:                 # used only if the data_availability call fails
         VIIRS_SNPP_SP: {min: "2012-01-20", max: "2026-04-30"}
         VIIRS_SNPP_NRT: {min: "2026-05-01", max: "2026-10-16"}

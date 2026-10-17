@@ -173,6 +173,28 @@ av <- availability()
 for (i in seq_len(nrow(av))) if (grepl("VIIRS_(SNPP|NOAA20)", av$data_id[i]))
   log_msg(sprintf("  %-18s %s to %s", av$data_id[i], format(av$min_date[i]), format(av$max_date[i])))
 
+# request plan for one sensor-year (NULL if nothing to do)
+plan_year <- function(sen, y) {
+  sp <- av[av$data_id == paste0(sen, "_SP"), ]; nrt <- av[av$data_id == paste0(sen, "_NRT"), ]
+  if (!nrow(sp)) return(NULL)
+  y0 <- max(as.Date(sprintf("%d-01-01", y)), sp$min_date); y1 <- min(as.Date(sprintf("%d-12-31", y)), Sys.Date() - 1)
+  if (y0 > y1) return(NULL)
+  rbind(cbind(windows(y0, min(y1, sp$max_date)), src = paste0(sen, "_SP")),
+        if (nrow(nrt) && y1 > sp$max_date) cbind(windows(max(y0, sp$max_date + 1), y1), src = paste0(sen, "_NRT")))
+}
+# whole-run plan: pieces still to download, so progress lines can show an overall count and ETA
+todo_total <- 0L; pieces_total <- 0L
+for (sen in sensors) for (y in yrs) {
+  if (!force && !is.na(fire_table_file(file.path(out_dir, sen, sprintf("firms_%s_%d", sen, y))))) next
+  W0 <- plan_year(sen, y); if (is.null(W0)) next
+  pieces_total <- pieces_total + nrow(W0)
+  todo_total <- todo_total + sum(!file.exists(mapply(piece_file, W0$src, W0$start, W0$days)))
+}
+log_msg(sprintf("plan: %s pieces, %s already on disk, %s to download (%d-day windows)", format(pieces_total, big.mark = ","),
+                format(pieces_total - todo_total, big.mark = ","), format(todo_total, big.mark = ","), wdays))
+done_total <- 0L; sec_total <- 0; every <- as.integer(fc$progress_every %||% 1)
+eta <- function(left, per) if (!is.finite(per) || left <= 0) "-" else fmt_dur(left * per)
+
 SUM <- list(); GAP <- list()
 for (sen in sensors) {
   sp <- av[av$data_id == paste0(sen, "_SP"), ]; nrt <- av[av$data_id == paste0(sen, "_NRT"), ]
@@ -182,17 +204,28 @@ for (sen in sensors) {
     if (!force && !is.na(fire_table_file(of))) { log_msg(sprintf("%s %d: table exists", sen, y)); next }
     y0 <- max(as.Date(sprintf("%d-01-01", y)), sp$min_date); y1 <- min(as.Date(sprintf("%d-12-31", y)), Sys.Date() - 1)
     if (y0 > y1) { log_msg(sprintf("%s %d: before the sensor record", sen, y)); next }
-    W <- rbind(cbind(windows(y0, min(y1, sp$max_date)), src = paste0(sen, "_SP")),
-               if (nrow(nrt) && y1 > sp$max_date) cbind(windows(max(y0, sp$max_date + 1), y1), src = paste0(sen, "_NRT")))
+    W <- plan_year(sen, y)
     t1 <- Sys.time(); n_new <- 0
     files <- character(nrow(W))
+    have <- file.exists(mapply(piece_file, W$src, W$start, W$days))
+    log_msg(sprintf("%s %d: %d pieces, %d on disk, %d to download", sen, y, nrow(W), sum(have), sum(!have)))
     for (j in seq_len(nrow(W))) {
-      had <- file.exists(piece_file(W$src[j], W$start[j], W$days[j]))
+      had <- have[j]; tp <- Sys.time()
       files[j] <- tryCatch(fetch_piece(W$src[j], W$start[j], W$days[j]), error = function(e) {
         m <- conditionMessage(e)
         if (grepl("MAP_KEY|HTTP 400", m, ignore.case = TRUE)) stop(m, call. = FALSE)   # bad key or rejected request: stop the run
         log_err(m); NA })
-      if (!had && !is.na(files[j])) n_new <- n_new + 1
+      if (!had && !is.na(files[j])) {
+        n_new <- n_new + 1; done_total <- done_total + 1L
+        dt <- as.numeric(difftime(Sys.time(), tp, units = "secs")); sec_total <- sec_total + dt
+        if (n_new %% every == 0 || n_new == sum(!have)) {
+          rq <- REQ[[length(REQ)]]
+          log_msg(sprintf("  %s %d [%d/%d] %s +%dd: %s rows, %.1f MB, %.0f s | year left %s | run %s/%s, left %s",
+                          sub("VIIRS_", "", sen), y, n_new, sum(!have), format(W$start[j], "%m-%d"), W$days[j],
+                          format(rq$rows, big.mark = ","), rq$bytes / 2^20, dt, eta(sum(!have) - n_new, sec_total / done_total),
+                          format(done_total, big.mark = ","), format(todo_total, big.mark = ","), eta(todo_total - done_total, sec_total / done_total)))
+        }
+      }
     }
     if (any(is.na(files))) { log_err(sprintf("%s %d: %d pieces failed; year left incomplete (rerun to resume)", sen, y, sum(is.na(files)))); next }
     log_msg(sprintf("%s %d: %d pieces (%d downloaded now, %s)", sen, y, nrow(W), n_new, fmt_dur(as.numeric(difftime(Sys.time(), t1, units = "secs")))))
