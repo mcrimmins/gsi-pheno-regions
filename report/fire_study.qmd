@@ -80,8 +80,8 @@ activity dip in the gap between the cool-season and warm-season growth pulses?
 | Element | Choice |
 |---|---|
 | Fire starts | FPA-FOD 7th edition (1992–2024): wildfires reaching 10 acres or more, by discovery week, all causes; lightning and human separately for 2001–2019 |
-| Fire growth | VIIRS active fire (S-NPP, 2012 onward): unique 375 m pixel-days |
-| Burned area | MTBS, by start date (large fires) |
+| Fire growth | VIIRS active fire (S-NPP, 2012 onward; NOAA-20 fills S-NPP outage days): unique 375 m pixel-days |
+| Burned area | FPA-FOD final fire size, by discovery date (all fires of 10 acres or more); MTBS perimeters (large fires, 2001–2023) show what fuel burned |
 | Phenology | Yearly satellite green-up (NDVI 20 %) and curing (NDVI end of season, 50 %) dates for every 4 km cell, 2001–2025, and the typical-date maps |
 | Dead-fuel baseline | 1000-hour dead fuel moisture computed from PRISM (NFDRS equations); checks: Keetch–Byram drought index and 30-day mean vapour pressure deficit |
 | Weather | PRISM daily 4 km only |
@@ -109,7 +109,7 @@ snowmelt as well as green-up.
 | Design and decisions | Done (October 17) |
 | Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
 | Fire records: MTBS burned area | Done (October 17): 10,428 wildfires; 2024 not yet fully mapped |
-| Fire records: VIIRS active fire | Script built (October 17); download next |
+| Fire records: VIIRS active fire | Done (October 17): 2012–2025 S-NPP, 2018–2025 NOAA-20 |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
@@ -181,6 +181,21 @@ burned about 260,000 km² over the period, 62 % (monsoon Southwest) to 83 % (int
 herbaceous fuel; the upper Midwest has few MTBS fires (about 190, 3,000 km²), so burned area
 is a weak outcome there.
 
+**Active fire (VIIRS).** NASA FIRMS 375 m detections for the lower 48, 2012–2025 (S-NPP) and
+2018–2025 (NOAA-20). After removing static and industrial heat sources, volcanoes and offshore
+detections (13–26 % of the raw record), each year holds 260,000–590,000 vegetation-fire
+detections, 57,000–246,000 of them in the pilot regions (most in 2020 and 2021); 4–5 % are
+low confidence. The two satellites agree within 5 % in the pilot regions in 2019–2023. S-NPP
+has outage days in fire season (late July to August 2022, June–July 2024, a few in November
+2024), which cost about a fifth of its 2024 detections relative to NOAA-20; NOAA-20 fills
+those days.
+
+**Burned area: FPA-FOD rather than MTBS.** MTBS maps only fires of 1,000 acres or more in the
+West (500 in the East). In the western pilot regions those are 7–19 % of fires of 10 acres or
+more but 87–95 % of burned area; in the upper Midwest they are 2.5 % of fires and 57 % of
+burned area, and MTBS has not finished mapping 2024. FPA-FOD final sizes cover every fire of
+10 acres or more through 2024.
+
 **How the study handles them (decided October 17).** The main outcome counts fires of all
 causes, which run continuously through the reporting change; lightning and human starts are
 compared for 2001–2019 only (California: totals only), with a check that counts
@@ -188,7 +203,12 @@ unknown-cause fires as human, since their seasonal pattern matches human fires (
 Lightning fire counts are no longer used as an ignition term. In the upper Midwest every fire
 is kept, herbaceous wetland counts as herbaceous fuel, and the green-up and curing timing comes
 from cells that are at least 35 % herbaceous (also in the Great Plains), applied to the whole
-region; fires in the most herbaceous third of cells are a check.
+region; fires in the most herbaceous third of cells are a check. Burned area comes from
+FPA-FOD final fire sizes (credited to the discovery week, so it is read by season and year, on
+a log scale); MTBS perimeters are kept to link satellite detections to large fires and to
+check what fuel those fires burned (2001–2023). S-NPP stays the single satellite series;
+whole days with no S-NPP data are filled from NOAA-20 where it has data, the filled weeks are
+flagged, and a check run leaves them out.
 
 ## Decisions so far
 
@@ -203,6 +223,8 @@ region; fires in the most herbaceous third of cells are a check.
 | Oct 17 2026 | Main outcome counts all causes; lightning vs human for 2001–2019 only; California totals only | Cause reporting changed in 2020–21 (unknown causes up to 50–86 % in California); total counts are unaffected |
 | Oct 17 2026 | No lightning-count ignition term; a 2020-onward indicator as a check | Lightning counts were relabelled after 2019 and are partly the outcome |
 | Oct 17 2026 | Upper Midwest: all fires kept; herbaceous wetland counted as fuel; phenology from cells at least 35 % herbaceous (also Great Plains) | Fires sit in small herbaceous patches inside cropland cells, whose satellite dates track crops |
+| Oct 17 2026 | Burned area from FPA-FOD final sizes; MTBS for linking detections and the fuel-burned check (2001–2023) | MTBS covers only large fires and has not finished 2024; FPA-FOD covers all fires of 10 acres or more |
+| Oct 17 2026 | S-NPP outage days filled from NOAA-20 (flagged; check run without them) | Outages fall in fire season; the satellites agree within 5 % otherwise |
 
 : Study decisions {.striped}
 
@@ -215,7 +237,8 @@ region; fires in the most herbaceous third of cells are a check.
 | 2026-10-17 | First look at the fire records: counts, seasonal shape, reporting change from 2020, upper Midwest cover |
 | 2026-10-17 | Decisions on cause reporting and upper Midwest cover |
 | 2026-10-17 | MTBS burned-area step built and run; 2024 incomplete in MTBS |
-| 2026-10-17 | VIIRS active-fire download step built |
+| 2026-10-17 | VIIRS active-fire download step built and run (2012–2025) |
+| 2026-10-17 | Decisions: burned area from FPA-FOD; NOAA-20 fills S-NPP outage days |
 
 ## Data sources and references
 

@@ -368,6 +368,8 @@ default:
         VIIRS_SNPP_NRT: {min: "2026-05-01", max: "2026-10-16"}
         VIIRS_NOAA20_SP: {min: "2018-04-01", max: "2026-04-30"}
         VIIRS_NOAA20_NRT: {min: "2026-05-01", max: "2026-10-16"}
+    burned_area: {source: fod, mtbs_check_years: {start: 2001, end: 2023}}   # decided Oct 17: FPA-FOD final size by discovery date; MTBS = linking + fuel-burned check
+    viirs_fill: {fill_from: VIIRS_NOAA20, rule: whole_conus_days_without_primary, flag: true, sensitivity_drop_filled: true}   # decided Oct 17
     mtbs:
       # MTBS burned area boundaries (v12.0, April 2025: 1984-2024; 2023-2024 still being mapped per
       # the MTBS release schedule, checked Oct 17 2026; 61 measures completeness against FPA-FOD).

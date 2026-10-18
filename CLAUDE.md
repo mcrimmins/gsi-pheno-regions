@@ -654,3 +654,12 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   fuel_share, crop_share, herb_mask, pilot. firms_summary.csv, firms_gaps.csv (months with days
   of no CONUS detections = outages), firms_requests.csv. Tables are not synced (size); CSVs are.
   Tested on synthetic pieces (cells, regions, type / confidence handling, gap detection).
+  Full run Oct 17-18 (~1,520 pieces; after a gap-check crash on NOAA-20's mid-year 2018 start,
+  fixed; summaries now written per year): kept 259k-593k CONUS detections / yr, pilot 57k-246k;
+  static etc. 13-26 % of raw; low confidence 4-5 %; NOAA-20 / S-NPP pilot ratio 0.95-1.04 in
+  2019-23, 1.22 in 2024. Outages (>= 3 days without CONUS data): S-NPP 2022-07 (5), 2022-08
+  (10), 2024-06 (3), 2024-07 (11), 2024-11 (3); NOAA-20 2023-07 (4).
+  DECIDED Oct 17 (Mike; config fire_study: burned_area / viirs_fill): burned area = FPA-FOD final
+  size by discovery date (log / seasonal-yearly reading); MTBS = linking detections (63) and
+  fuel-burned check 2001-2023 (2024 unfinished); S-NPP primary, whole CONUS days without S-NPP
+  data filled from NOAA-20 (flagged; sensitivity drops filled weeks). Implemented in 65.
