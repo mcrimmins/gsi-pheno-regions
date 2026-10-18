@@ -148,7 +148,8 @@ fetch_piece <- function(src, start, days) {
   f
 }
 read_piece <- function(f) {
-  d <- tryCatch(utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(acq_time = "character")), error = function(e) NULL)
+  # a piece with no detections is a header line only (e.g. S-NPP outages); read quietly
+  d <- tryCatch(suppressWarnings(utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(acq_time = "character"))), error = function(e) NULL)
   if (is.null(d) || !nrow(d)) return(NULL)
   d
 }
@@ -195,6 +196,13 @@ log_msg(sprintf("plan: %s pieces, %s already on disk, %s to download (%d-day win
 done_total <- 0L; sec_total <- 0; every <- as.integer(fc$progress_every %||% 1)
 eta <- function(left, per) if (!is.finite(per) || left <= 0) "-" else fmt_dur(left * per)
 
+# summary CSVs are updated after every sensor-year (one row per key; reruns replace their rows)
+app <- function(df, f) { if (is.null(df) || !nrow(df)) return(invisible())
+  old <- if (file.exists(f)) utils::read.csv(f, stringsAsFactors = FALSE) else NULL
+  if (!is.null(old)) { key_cols <- intersect(c("sensor", "year", "month", "source", "start"), names(df))
+    old <- old[!do.call(paste, old[key_cols]) %in% do.call(paste, lapply(df[key_cols], as.character)), , drop = FALSE]
+    df <- rbind(old[, names(df)], df) }
+  utils::write.csv(df, f, row.names = FALSE) }
 SUM <- list(); GAP <- list()
 for (sen in sensors) {
   sp <- av[av$data_id == paste0(sen, "_SP"), ]; nrt <- av[av$data_id == paste0(sen, "_NRT"), ]
@@ -256,9 +264,11 @@ for (sen in sensors) {
     X$pilot <- X$region %in% pilot_regions
     fo <- fire_write_table(X, of)
     days_seen <- unique(as.Date(substr(paste(D$acq_date), 1, 10)))
-    months <- seq(as.Date(sprintf("%d-01-01", y)), y1, by = "month")
+    months <- seq(as.Date(format(y0, "%Y-%m-01")), y1, by = "month")   # from the record start (NOAA-20: 2018-04-01)
     for (m in seq_along(months)) {
-      dm <- seq(max(months[m], y0), min(seq(months[m], by = "month", length.out = 2)[2] - 1, y1), by = 1)
+      m0 <- max(months[m], y0); m1 <- min(seq(months[m], by = "month", length.out = 2)[2] - 1, y1)
+      if (m0 > m1) next
+      dm <- seq(m0, m1, by = 1)
       miss <- sum(!dm %in% days_seen)
       if (miss) GAP[[length(GAP) + 1]] <- data.frame(sensor = sen, year = y, month = as.integer(format(months[m], "%m")), days_missing = miss,
                                                    first_missing = format(min(dm[!dm %in% days_seen])))
@@ -274,19 +284,14 @@ for (sen in sensors) {
                     100 * s$low / max(1, s$kept), format(s$pilot, big.mark = ","), s$days_with_data,
                     if (s$nrt_rows) sprintf(" | NRT rows %s", format(s$nrt_rows, big.mark = ",")) else ""))
     notify(sprintf("62 FIRMS %s %d", sen, y), sprintf("%s detections kept (%s pilot)", format(s$kept, big.mark = ","), format(s$pilot, big.mark = ",")), priority = 2)
+    app(s, file.path(out_dir, "firms_summary.csv"))
+    gy <- Filter(function(g) g$sensor == sen && g$year == y, GAP)
+    app(if (length(gy)) do.call(rbind, gy), file.path(out_dir, "firms_gaps.csv"))
+    app(if (length(REQ)) do.call(rbind, REQ), file.path(out_dir, "firms_requests.csv")); REQ <- list()
   }
 }
 
 # ---- logs ------------------------------------------------------------------------------------------
-app <- function(df, f) { if (is.null(df) || !nrow(df)) return(invisible())
-  old <- if (file.exists(f)) utils::read.csv(f, stringsAsFactors = FALSE) else NULL
-  if (!is.null(old)) { key_cols <- intersect(c("sensor", "year", "month", "source", "start"), names(df))
-    old <- old[!do.call(paste, old[key_cols]) %in% do.call(paste, lapply(df[key_cols], as.character)), , drop = FALSE]
-    df <- rbind(old[, names(df)], df) }
-  utils::write.csv(df, f, row.names = FALSE) }
-app(if (length(SUM)) do.call(rbind, SUM), file.path(out_dir, "firms_summary.csv"))
-app(if (length(GAP)) do.call(rbind, GAP), file.path(out_dir, "firms_gaps.csv"))
-app(if (length(REQ)) do.call(rbind, REQ), file.path(out_dir, "firms_requests.csv"))
 if (length(GAP)) {
   G <- do.call(rbind, GAP); G <- G[G$days_missing >= 3, ]
   if (nrow(G)) log_msg("months with >= 3 days without any CONUS detection: ",
