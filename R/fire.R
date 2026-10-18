@@ -97,3 +97,10 @@ fire_fuel_share <- function(cfg) {
   out[!is.finite(out)] <- NA
   pmin(pmax(out, 0), 1)
 }
+
+# Discovery / analysis week (decided Oct 18 2026; config fire_study: week): fixed 7-day blocks
+# from Jan 1, days 365-366 folded into week 52, so every year has the same 52 weeks.
+fire_week <- function(date) {
+  doy <- as.integer(format(as.Date(date), "%j"))
+  pmin(52L, (doy - 1L) %/% 7L + 1L)
+}

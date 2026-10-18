@@ -684,3 +684,27 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   (pilot region x month x class kept / unlinked_noncrop / crop / other) and logs monthly shares.
   DECIDED Oct 18 (Mike; config fire_study: viirs_outcome): VIIRS growth outcome 2012-2024 only;
   none in region 13 (FPA-FOD counts / acres only there); region 10 kept as a secondary check.
+  Month check (link_months.csv, S-NPP <= 2024): in 3, 6, 11, 12 unlinked non-crop detections are
+  spread over the year (Jun-Sep 27-35 % vs kept 64-94 %; profile r with kept -0.47..0.33): screen
+  OK. Region 10: unlinked share the summer peak (profile r 0.86, 53 % Jun-Sep) but yearly totals
+  barely track kept (r 0.18). DECIDED Oct 18 (Mike): screen unchanged; 66 adds a region 10 run
+  counting all non-crop detections (config viirs_unlinked_sensitivity_regions); discovery week =
+  fixed 7-day blocks from Jan 1, days 365-366 in week 52 (config fire_study: week; R/fire.R
+  fire_week()).
+- `scripts/64_fire_dfm.R [profile] [force]` (P720, forked by row chunk, workers_by_step fire_dfm
+  16; built Oct 18; equations in R/fire_dfm.R, config `fire_study: dfm`): per cell and day for
+  all PRISM years, then region x day means (weights all / fuel share): dfm1000 (NFDRS 1978
+  1000-h: Simard EMC, day/night EMC weighted by daylength, boundary with rain duration, 7-day
+  mean boundary, 7-day lagged update fr = 1 - 0.82 exp(-0.168); equations checked Oct 18 against
+  Bradshaw et al. 1984 INT-GTR-169 eqs 38-42 (eq 42's bracket sign is a typo), Fosberg et al.
+  1981 and PNW-RP-336), ppet60 (60-d P - Hargreaves PET, mm), vpd30 (kPa), kbdi (m_kbdi, MAP from
+  the PRISM years), degree-day swe / snow_share and yearly snow-off DOY per cell. RH from PRISM:
+  ea = es(Tmax) - VPDmax; rain hours = round((P_in + 0.02) / rate) <= 8, rate 0.25 in/h where
+  annual P/PET < 0.8 or Apr-Sep P/PET < 0.5 (NFDRS classes 1-2), else 0.05. Spin-up: first year
+  run once first. Outputs fire_study/dfm/: region_daily (csv + parquet), region_snowoff.csv,
+  rain_class.csv, dfm_climatology.csv (week quantiles), dfm_drivers.csv (weekly anomaly r of
+  dfm1000 with ppet60 / vpd30 / kbdi, R2 ppet60 + vpd30, by region and season),
+  snowoff_cells.tif, rain_rate.tif; chunks_<profile>/ for resume. Synthetic test: region means
+  equal an independent per-cell day loop to 5e-5 % moisture.
+  DECIDED Oct 18 (Mike): ppet60 is the simple baseline fitted first; dfm1000 swapped in after;
+  report the simple one if dfm1000 doesn't improve held-out years (config baseline: simple).

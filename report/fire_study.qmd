@@ -83,10 +83,10 @@ activity dip in the gap between the cool-season and warm-season growth pulses?
 | Fire growth | VIIRS active fire (S-NPP, 2012 onward; NOAA-20 fills S-NPP outage days): unique 375 m pixel-days |
 | Burned area | FPA-FOD final fire size, by discovery date (all fires of 10 acres or more); MTBS perimeters (large fires, 2001–2023) show what fuel burned |
 | Phenology | Yearly satellite green-up (NDVI 20 %) and curing (NDVI end of season, 50 %) dates for every 4 km cell, 2001–2025, and the typical-date maps |
-| Dead-fuel baseline | 1000-hour dead fuel moisture computed from PRISM (NFDRS equations); checks: Keetch–Byram drought index and 30-day mean vapour pressure deficit |
+| Dead-fuel baseline | Rainfall minus potential evaporation over the last 60 days (simple and readable), then the 1000-hour dead fuel moisture computed from PRISM (NFDRS 1978 equations) in its place; checks: Keetch–Byram drought index and 30-day mean vapour pressure deficit |
 | Weather | PRISM daily 4 km only |
 | Herbaceous cover | NLCD grassland, shrub/scrub, pasture/hay and herbaceous wetland share; in the upper Midwest and Great Plains, phenology from cells at least 35 % herbaceous |
-| Unit | Region × week × year, herbaceous cells |
+| Unit | Region × week × year (weeks are fixed 7-day blocks from January 1), herbaceous cells |
 | Model | One pooled count model with region effects; skill judged leaving one year out |
 | Years | 2001–2024 for fire starts; 2012–2024 where starts and growth overlap |
 | Pilot regions | Monsoon Southwest (3), interior West (6, 12), California annual grasslands (11), northern and central Great Plains (10), upper Midwest (13) |
@@ -111,7 +111,7 @@ snowmelt as well as green-up.
 | Fire records: MTBS burned area | Done (October 17): 10,428 wildfires; 2024 not yet fully mapped |
 | Fire records: VIIRS active fire | Done (October 17): 2012–2025 S-NPP, 2018–2025 NOAA-20 |
 | Linking satellite detections to reported fires | Done (October 18) |
-| Dead-fuel baseline from PRISM | Next |
+| Dead-fuel baseline from PRISM | Built (October 18); first CONUS run next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
 
@@ -223,6 +223,34 @@ check what fuel those fires burned (2001–2023). S-NPP stays the single satelli
 whole days with no S-NPP data are filled from NOAA-20 where it has data, the filled weeks are
 flagged, and a check run leaves them out.
 
+## Dryness baselines (built October 18)
+
+Four dryness measures are computed from daily PRISM for every 4 km cell, 2001–2025, and
+averaged by region and day (equally and weighted by herbaceous fuel share):
+
+- **Rainfall minus potential evaporation over the last 60 days** (mm; Hargreaves potential
+  evaporation from daily minimum and maximum temperature). This is the simple baseline: it
+  reads directly as "how far rainfall has fallen behind evaporative demand", and the fire
+  model is fitted with it first.
+- **1000-hour dead fuel moisture** (%), the NFDRS 1978 model (Fosberg et al. 1981; Bradshaw et
+  al. 1984; Cohen and Deeming 1985): a daily equilibrium moisture from day and night
+  temperature and humidity, raised on rain days by rain duration, averaged over 7 days and
+  moved part of the way toward that average each week. Most of its weight falls on the last
+  two months of weather. PRISM has no humidity or rain duration, so humidity comes from the
+  vapour pressure deficit and temperature (constant vapour pressure through the day), and rain
+  duration from the daily amount with the NFDRS rule (0.25 inch per hour in dry climates, 0.05
+  in humid ones, at most 8 hours). It replaces the simple baseline in a second fit; if it does
+  not improve the held-out years, the simple one is reported.
+- **Checks:** the Keetch–Byram drought index and the 30-day mean vapour pressure deficit.
+- **Snow:** a degree-day snowpack (snow when the daily mean temperature is at or below 1 °C,
+  melt of 3 mm per °C per day above 0 °C) gives the share of each region under snow and a
+  yearly snow-off date, used in the Great Plains and upper Midwest.
+
+To show what the 1000-hour value follows, its weekly departures from normal are compared
+region by region with those of the 60-day water balance and the 30-day vapour pressure deficit.
+The calculation was checked against an independent day-by-day implementation written from the
+published equations (agreement within 0.0001 % moisture).
+
 ## Decisions so far
 
 | Date | Decision | Why |
@@ -239,6 +267,9 @@ flagged, and a check run leaves them out.
 | Oct 17 2026 | Burned area from FPA-FOD final sizes; MTBS for linking detections and the fuel-burned check (2001–2023) | MTBS covers only large fires and has not finished 2024; FPA-FOD covers all fires of 10 acres or more |
 | Oct 17 2026 | S-NPP outage days filled from NOAA-20 (flagged; check run without them) | Outages fall in fire season; the satellites agree within 5 % otherwise |
 | Oct 18 2026 | Satellite fire growth 2012–2024 only, and not in the upper Midwest | Detections after 2024 cannot be matched to reported fires; in the upper Midwest 97 % are agricultural or prescribed burning |
+| Oct 18 2026 | Linking screen kept as is; Great Plains check run counting all non-cropland detections | In the western regions unmatched detections spread across the year (burning outside the fire season); in the Great Plains they share the summer peak |
+| Oct 18 2026 | Weeks are fixed 7-day blocks from January 1 (last one or two days of the year in week 52) | Every year has the same 52 weeks on the same dates |
+| Oct 18 2026 | A 60-day rainfall-minus-evaporation baseline alongside the 1000-hour fuel moisture | The 1000-hour equations are nonlinear and need humidity and rain duration that PRISM lacks; the simple measure is readable and shows whether the operational index adds anything |
 
 : Study decisions {.striped}
 
@@ -255,6 +286,8 @@ flagged, and a check run leaves them out.
 | 2026-10-17 | Decisions: burned area from FPA-FOD; NOAA-20 fills S-NPP outage days |
 | 2026-10-18 | Step linking satellite detections to MTBS and FPA-FOD fires built and run |
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
+| 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
+| 2026-10-18 | Dryness-baseline step built (60-day water balance, 1000-hour fuel moisture, drought index, vapour pressure deficit, snow) |
 
 ## Data sources and references
 
@@ -269,5 +302,14 @@ flagged, and a check run leaves them out.
 - NASA Fire Information for Resource Management System (FIRMS), VIIRS 375 m active fire,
   <https://firms.modaps.eosdis.nasa.gov>.
 - PRISM Group, Oregon State University, <https://prism.oregonstate.edu>.
+- Bradshaw, L. S., Deeming, J. E., Burgan, R. E. and Cohen, J. D. (1984). The 1978 National
+  Fire-Danger Rating System: technical documentation. USDA Forest Service General Technical
+  Report INT-169.
+- Fosberg, M. A., Rothermel, R. C. and Andrews, P. L. (1981). Moisture content calculations for
+  1000-hour timelag fuels. Forest Science 27, 19–26.
+- Hargreaves, G. H. and Samani, Z. A. (1985). Reference crop evapotranspiration from
+  temperature. Applied Engineering in Agriculture 1, 96–99.
+- Keetch, J. J. and Byram, G. M. (1968). A drought index for forest fire control. USDA Forest
+  Service Research Paper SE-38.
 - Cohen, J. D. and Deeming, J. E. (1985). The National Fire-Danger Rating System: basic
   equations. USDA Forest Service General Technical Report PSW-82.
