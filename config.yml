@@ -368,6 +368,12 @@ default:
         VIIRS_SNPP_NRT: {min: "2026-05-01", max: "2026-10-16"}
         VIIRS_NOAA20_SP: {min: "2018-04-01", max: "2026-04-30"}
         VIIRS_NOAA20_NRT: {min: "2026-05-01", max: "2026-10-16"}
+    link:                             # 63: VIIRS detections -> reported fires (decision 12 screens)
+      mtbs_buffer_m: 750              # perimeter buffer (375 m pixel + geolocation)
+      mtbs_max_days: 180              # detection within ig_date - 1 .. ig_date + this
+      fod_base_km: 1.5                # search radius = this + equivalent-circle radius of the final size
+      fod_default_days: {A: 1, B: 1, C: 2, D: 6, E: 15, F: 47, G: 84}   # no containment date: 90th pct duration by size class (7th ed.)
+      crop_max: 0.5                   # cell crop share at or above this = cropland detection
     burned_area: {source: fod, mtbs_check_years: {start: 2001, end: 2023}}   # decided Oct 17: FPA-FOD final size by discovery date; MTBS = linking + fuel-burned check
     viirs_fill: {fill_from: VIIRS_NOAA20, rule: whole_conus_days_without_primary, flag: true, sensitivity_drop_filled: true}   # decided Oct 17
     mtbs:
@@ -751,6 +757,7 @@ full:
     block1: 16
     block2: 16
     cutb_curves: 16
+    fire_link: 11             # 22 sensor-years -> two rounds
   memfrac: 0.08
   report:
     # CONUS figures are written next to the data (<run_dir>/report_figs), not into the

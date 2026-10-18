@@ -663,3 +663,17 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   size by discovery date (log / seasonal-yearly reading); MTBS = linking detections (63) and
   fuel-burned check 2001-2023 (2024 unfinished); S-NPP primary, whole CONUS days without S-NPP
   data filled from NOAA-20 (flagged; sensitivity drops filled weeks). Implemented in 65.
+- `scripts/63_fire_link.R [profile] [sensors] [years] [force]` (P720, forked by sensor-year,
+  workers_by_step fire_link 11; built Oct 18): flags every 62 detection (config `fire_study:
+  link:`). (1) MTBS: point in perimeter buffered 750 m (EPSG:5070, terra::relate) with solar date
+  in ig - 1 .. ig + 180 d, nearest ignition; all MTBS types (mtbs_type kept). (2) else FPA-FOD
+  (all sizes, debris included): within 1.5 km + equivalent-circle radius of the final size, date
+  in discovery - 1 .. end + 1 (end = containment date if within a year, else 90th-pct duration by
+  size class: A-B 1, C 2, D 6, E 15, F 47, G 84 d); candidates from 0.1-degree buckets, nearest
+  wins. wildfire = MTBS Wildfire / WFU or FPA-FOD non-debris; crop = cell crop share >= 0.5;
+  keep = wildfire & !crop. -> fire_study/link/<SENSOR>/link_<SENSOR>_<Y>.parquet (62 columns +
+  link, mtbs_id, mtbs_type, fod_id, dist_km, wildfire, crop, keep), link_summary.csv (sensor x
+  year x region incl. all / pilot: counts per link class and screen). County-week burn-season
+  screen (sensitivity) not built (needs counties). Tested with planted detections (FPA-FOD 39/40
+  linked, the 40th inside an MTBS perimeter; MTBS 5/5; far / late plants unlinked). Bug caught by
+  the test: bucket keys must repeat each fire's position `each` = offsets.
