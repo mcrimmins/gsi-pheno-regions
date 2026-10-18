@@ -677,3 +677,10 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   screen (sensitivity) not built (needs counties). Tested with planted detections (FPA-FOD 39/40
   linked, the 40th inside an MTBS perimeter; MTBS 5/5; far / late plants unlinked). Bug caught by
   the test: bucket keys must repeat each fire's position `each` = offsets.
+  Full run Oct 18 (S-NPP 2012-2025, pilot): MTBS wildfire 56 %, FPA-FOD wildfire 3 %, unlinked
+  40 %, crop 13 %, kept 59 %. By region kept / unlinked / crop: 12 79/20/6, 6 78/21/2, 11 60/39/22,
+  3 57/40/1, 10 32/67/16, 13 3/95/66. 2025 kept 0 % (FPA-FOD and MTBS end 2024). Low-fire years
+  (2019, 2023) ~30 % kept. Without arguments on existing tables 63 only writes link_months.csv
+  (pilot region x month x class kept / unlinked_noncrop / crop / other) and logs monthly shares.
+  DECIDED Oct 18 (Mike; config fire_study: viirs_outcome): VIIRS growth outcome 2012-2024 only;
+  none in region 13 (FPA-FOD counts / acres only there); region 10 kept as a secondary check.

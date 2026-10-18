@@ -19,6 +19,8 @@
 #   The burn-season county-week screen (sensitivity) needs county polygons and is not built yet.
 # Outputs <run_dir>/fire_study/link/:
 #   <SENSOR>/link_<SENSOR>_<year>.parquet   the 62 detections plus the flags above
+#   link_months.csv    sensor x year x pilot region x month x class (kept / unlinked_noncrop / crop /
+#                      other): where unlinked detections fall in the year (prescribed vs missed wildfire)
 #   link_summary.csv   sensor x year x region: detections, linked to MTBS (wildfire / other), to
 #                      FPA-FOD (wildfire / debris), unlinked, crop, kept; share removed by each
 #                      screen (pilot regions and all CONUS)
@@ -87,12 +89,29 @@ pf <- file.path(out_dir, sprintf("mtbs_buffered_%s.rds", profile))      # wrappe
 saveRDS(terra::wrap(P), pf); rm(P)
 log_msg(sprintf("MTBS: %s perimeters buffered by %g m", format(nrow(MF), big.mark = ","), buf_m))
 
+# month check: where do unlinked, non-cropland detections fall in the year, next to kept ones?
+# Spring / fall peaks = prescribed burning (screen right); a summer peak with the wildfires =
+# real wildfire missed by the links (screen too strict).
+month_tab <- function(X, sen, y) {
+  X$month <- as.integer(format(as.Date(X$date_solar), "%m"))
+  X$class <- ifelse(X$keep, "kept", ifelse(X$link == "none" & !X$crop, "unlinked_noncrop",
+                    ifelse(X$crop & !X$wildfire, "crop", "other")))
+  X <- X[X$pilot, ]
+  if (!nrow(X)) return(NULL)
+  t <- as.data.frame(table(region = X$region, month = X$month, class = X$class), stringsAsFactors = FALSE)
+  t <- t[t$Freq > 0, ]; names(t)[names(t) == "Freq"] <- "detections"
+  cbind(sensor = sen, year = y, t)
+}
+
 # ---- one sensor-year ----------------------------------------------------------------------------------
 link_year <- function(sen, y) {
   inp <- fire_dir(cfg, "firms", sen, sprintf("firms_%s_%d", sen, y))
   of <- file.path(out_dir, sen, sprintf("link_%s_%d", sen, y))
   if (is.na(fire_table_file(inp))) return(list(msg = sprintf("%s %d: no 62 table", sen, y)))
-  if (!force && !is.na(fire_table_file(of))) return(list(msg = sprintf("%s %d: exists", sen, y), sum = NULL))
+  if (!force && !is.na(fire_table_file(of))) {                      # already linked: only the month check
+    X <- fire_read_table(of)
+    return(list(msg = sprintf("%s %d: exists (month check only)", sen, y), sum = NULL, mon = month_tab(X, sen, y)))
+  }
   t1 <- Sys.time()
   X <- fire_read_table(inp); n <- nrow(X)
   X$date_solar <- as.Date(X$date_solar)
@@ -149,6 +168,7 @@ link_year <- function(sen, y) {
   X$crop <- !is.na(X$crop_share) & X$crop_share >= crop_max
   X$keep <- X$wildfire & !X$crop
   fire_write_table(X, of)
+  mon <- month_tab(X, sen, y)
   grp <- function(sub, region) data.frame(sensor = sen, year = y, region = region, detections = nrow(sub),
     mtbs_wildfire = sum(sub$link == "mtbs" & sub$wildfire), mtbs_other = sum(sub$link == "mtbs" & !sub$wildfire),
     fod_wildfire = sum(sub$link == "fod" & sub$wildfire), fod_debris = sum(sub$link == "fod" & !sub$wildfire),
@@ -158,7 +178,7 @@ link_year <- function(sen, y) {
   list(msg = sprintf("%s %d: %s detections | MTBS %.0f %% | FPA-FOD %.0f %% | unlinked %.0f %% | crop %.0f %% | kept %.0f %% (%s)",
                      sen, y, format(n, big.mark = ","), 100 * mean(X$link == "mtbs"), 100 * mean(X$link == "fod"),
                      100 * mean(X$link == "none"), 100 * mean(X$crop), 100 * mean(X$keep),
-                     fmt_dur(as.numeric(difftime(Sys.time(), t1, units = "secs")))), sum = S)
+                     fmt_dur(as.numeric(difftime(Sys.time(), t1, units = "secs")))), sum = S, mon = mon)
 }
 
 jobs <- expand.grid(y = yrs, sen = sensors, stringsAsFactors = FALSE)
@@ -167,6 +187,18 @@ log_msg(sprintf("%d sensor-years, %d workers", nrow(jobs), w))
 run1 <- function(i) tryCatch(link_year(jobs$sen[i], jobs$y[i]), error = function(e) list(msg = sprintf("%s %d: ERROR %s", jobs$sen[i], jobs$y[i], conditionMessage(e))))
 res <- if (.Platform$OS.type != "windows" && w > 1) parallel::mclapply(seq_len(nrow(jobs)), run1, mc.cores = w, mc.preschedule = FALSE) else lapply(seq_len(nrow(jobs)), run1)
 for (r in res) if (grepl("ERROR", r$msg)) log_err(r$msg) else log_msg("  ", r$msg)
+M <- do.call(rbind, lapply(res, `[[`, "mon"))
+if (!is.null(M) && nrow(M)) {
+  utils::write.csv(M, file.path(out_dir, "link_months.csv"), row.names = FALSE)
+  A <- stats::aggregate(detections ~ region + month + class, M[M$sensor == fc$primary, ], sum)
+  W <- stats::reshape(A, idvar = c("region", "class"), timevar = "month", direction = "wide")
+  log_msg("pilot regions, ", fc$primary, ": share of each class's detections by month (%)")
+  for (r in sort(unique(W$region))) for (cl in c("kept", "unlinked_noncrop", "crop")) {
+    w <- W[W$region == r & W$class == cl, , drop = FALSE]; if (!nrow(w)) next
+    v <- unlist(w[1, paste0("detections.", 1:12)]); v[is.na(v)] <- 0
+    log_msg(sprintf("  region %2s %-17s %s  (n %s)", r, cl, paste(sprintf("%3.0f", 100 * v / sum(v)), collapse = ""), format(sum(v), big.mark = ",")))
+  }
+}
 S <- do.call(rbind, lapply(res, `[[`, "sum"))
 if (!is.null(S) && nrow(S)) {
   f <- file.path(out_dir, "link_summary.csv")

@@ -110,7 +110,7 @@ snowmelt as well as green-up.
 | Fire records: FPA-FOD | Done (October 17): 52,900 fires of 10 acres or more in the pilot regions |
 | Fire records: MTBS burned area | Done (October 17): 10,428 wildfires; 2024 not yet fully mapped |
 | Fire records: VIIRS active fire | Done (October 17): 2012–2025 S-NPP, 2018–2025 NOAA-20 |
-| Linking satellite detections to reported fires | Script built (October 18); run next |
+| Linking satellite detections to reported fires | Done (October 18) |
 | Dead-fuel baseline from PRISM | Next |
 | Seasonal fire curves by region | Planned |
 | Seasonal and year-to-year tests | Planned |
@@ -191,6 +191,18 @@ has outage days in fire season (late July to August 2022, June–July 2024, a fe
 2024), which cost about a fifth of its 2024 detections relative to NOAA-20; NOAA-20 fills
 those days.
 
+**Linking satellite detections to reported fires.** Each detection is matched to an MTBS
+perimeter (widened by 750 m) active at the time, or else to the nearest FPA-FOD fire within its
+size-based search radius and burning dates; detections on cells that are half or more cropland
+are flagged. In the western pilot regions 57–79 % of detections belong to reported wildfires,
+almost all of them large MTBS fires; the rest are mostly prescribed burns, agricultural burning
+(the Central Valley in California) and small fires. In the Great Plains only 32 % belong to
+reported wildfires, and in the upper Midwest 3 %: two-thirds of its detections are on cropland
+and nearly all the rest match no reported fire, which points to crop-residue and prescribed
+prairie burning. Satellite fire growth is therefore not used as an outcome in the upper
+Midwest, where fire counts and acres from FPA-FOD carry the analysis, and the satellite record
+stops at 2024 because detections after that cannot yet be matched to reported fires.
+
 **Burned area: FPA-FOD rather than MTBS.** MTBS maps only fires of 1,000 acres or more in the
 West (500 in the East). In the western pilot regions those are 7–19 % of fires of 10 acres or
 more but 87–95 % of burned area; in the upper Midwest they are 2.5 % of fires and 57 % of
@@ -226,6 +238,7 @@ flagged, and a check run leaves them out.
 | Oct 17 2026 | Upper Midwest: all fires kept; herbaceous wetland counted as fuel; phenology from cells at least 35 % herbaceous (also Great Plains) | Fires sit in small herbaceous patches inside cropland cells, whose satellite dates track crops |
 | Oct 17 2026 | Burned area from FPA-FOD final sizes; MTBS for linking detections and the fuel-burned check (2001–2023) | MTBS covers only large fires and has not finished 2024; FPA-FOD covers all fires of 10 acres or more |
 | Oct 17 2026 | S-NPP outage days filled from NOAA-20 (flagged; check run without them) | Outages fall in fire season; the satellites agree within 5 % otherwise |
+| Oct 18 2026 | Satellite fire growth 2012–2024 only, and not in the upper Midwest | Detections after 2024 cannot be matched to reported fires; in the upper Midwest 97 % are agricultural or prescribed burning |
 
 : Study decisions {.striped}
 
@@ -240,7 +253,8 @@ flagged, and a check run leaves them out.
 | 2026-10-17 | MTBS burned-area step built and run; 2024 incomplete in MTBS |
 | 2026-10-17 | VIIRS active-fire download step built and run (2012–2025) |
 | 2026-10-17 | Decisions: burned area from FPA-FOD; NOAA-20 fills S-NPP outage days |
-| 2026-10-18 | Step linking satellite detections to MTBS and FPA-FOD fires built |
+| 2026-10-18 | Step linking satellite detections to MTBS and FPA-FOD fires built and run |
+| 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 
 ## Data sources and references
 
