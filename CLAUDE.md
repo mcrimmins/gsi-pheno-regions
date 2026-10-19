@@ -756,9 +756,25 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   GSI_FIRE_SHUFFLES (20) -> shuffle.csv (noise term costs ~ -15 log score, so compare with the shuffled
   distribution, not 0); dates version = greenup_dep in weeks -4..+3 of the typical green-up week,
   curing_dep in weeks 0..+7 of the typical curing week (per 10 d; 65 gu_week_typ / cu_week_typ) ->
-  specs all_dates / human_unk_dates / px_dates. Still to build: forecast test (lead-14 weather
-  adjustment refit for every pilot region, out-of-fold) and the C3/C4 gap test (two-pulse greenness
-  cells in the Plains).
+  specs all_dates / human_unk_dates / px_dates.
+  Results Oct 19 (pooled phenology gain over ppet60): burn check unchanged (starts 17.8 -> 17.4, human +
+  unknown 46.2 -> 46.0, growth 45.7 -> 43.6; burned cells 3-11 % of pheno cells per year); shuffles
+  (20): starts observed +17.8 vs shuffled median -12.7, max +12.5; growth +45.7 vs -16.7 / max -1.2;
+  dates version worse than cured share (starts -11.7, growth -18.0).
+- `scripts/67_fire_forecast.R [profile]` (P720, forked by year, workers_by_step fire_forecast 8; built
+  Oct 19): lead-14 adjustment (R/cues.R adj_cues / adj_fit, as 38/40) refit per pilot region leaving
+  each year out (cue climatology also without the year); predicted curing = typical + adjustment,
+  green-up typical -> fire_study/forecast/forecast_weekly.csv (cured_share_fc, cured_share_typ_fc,
+  curing_adj_med), forecast_skill.csv (held-out MAE typical vs adjusted vs satellite eos50, r),
+  forecast_cues.csv, cues_<Y>_<profile>.rds cache. 66 specs all_fc / human_unk_fc / px_fc when present.
+- `scripts/68_fire_c3c4.R [profile]` (P720, minutes; built Oct 19; config fire_study: c3c4): two-pulse
+  cells = Plains herb cells (regions 10, 2) whose typical NDVI curve (summaries/cutb_ndvi_curve_median.tif,
+  else median of cutb/curves/ndvi_<Y>.tif) has two Mar-Oct peaks >= 48 d apart, trough >= 15 % of
+  amplitude below the lower peak, lower peak >= 40 % above the minimum. Fire rate in each two-pulse
+  cell's own +/- 14 d windows (peak 1, trough, peak 2) / one-pulse cells' rate on the same calendar
+  days (15-d smoothed); dip = gap index / mean peak index, year bootstrap -> fire_study/c3c4/
+  two_pulse.tif, cells_summary.csv, windows.csv, weekly.csv. Planted test: peaks found at 124 / 220
+  (planted 120 / 220), planted gap gives dip 0.06.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

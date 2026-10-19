@@ -326,6 +326,7 @@ analysis is reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-19 | Forecast test (curing predicted two weeks ahead) and C3/C4 gap test built |
 | 2026-10-19 | Burn check, year-shuffle check and dates version added to the weekly table and the tests |
 | 2026-10-18 | Figures: seasonal fire curves against curing; held-out gains from phenology |
 | 2026-10-18 | Test step built and first run: dryness and phenology scored on held-out years |

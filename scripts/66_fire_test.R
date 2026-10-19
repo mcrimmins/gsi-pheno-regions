@@ -23,6 +23,8 @@
 #   px / px_nofill   VIIRS pixel-days 2012-2024 (no region 13); px_nofill drops weeks with filled days
 #   px10_all     region 10, all non-cropland detections (linked or not)
 #   all_nb, human_unk_nb, px_nb   burn check: phenology from cells not burned that year or the year before
+#   all_fc, human_unk_fc, px_fc   forecast test: cured share from curing dates predicted 14 days ahead
+#                (67; skipped when forecast_weekly.csv is missing)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
 #                seasonal windows around the typical green-up (-4..+3 weeks) and curing (0..+7 weeks)
 # Year-shuffle check (all, px): each region's cured-share departures assigned to random other years,
@@ -93,10 +95,21 @@ specs <- list(
   all_dates = list(y = "n_fires", rows = TRUE, pheno = c("gdep_win", "cdep_win")),
   human_unk_dates = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = c("gdep_win", "cdep_win")),
   px_dates = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = c("gdep_win", "cdep_win")),
+  all_fc = list(y = "n_fires", rows = TRUE, pheno = "cured_dep_fc"),
+  human_unk_fc = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_fc"),
+  px_fc = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_fc"),
   px10_all = list(y = "px_noncrop_all", log = TRUE, rows = quote(region %in% as.integer(unlist(fs$viirs_unlinked_sensitivity_regions)) &
                                                       year >= fs$viirs_outcome$years$start & year <= fs$viirs_outcome$years$end))
 )
 W$n_human_unk <- W$n_human + W$n_unknown
+# forecast test (67, Oct 19): cured share from predicted curing dates (lead-time weather adjustment refit
+# leaving each year out), when 67 has run
+ff <- fire_dir(cfg, "forecast", "forecast_weekly.csv")
+if (file.exists(ff)) {
+  FC <- utils::read.csv(ff)
+  i <- match(paste(W$region, W$year, W$week), paste(FC$region, FC$year, FC$week))
+  W$cured_dep_fc <- (FC$cured_share_fc[i] - FC$cured_share_typ_fc[i]) * 10
+} else specs <- specs[!grepl("_fc$", names(specs))]
 for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
 pick <- args[-1]
 if (length(pick)) specs <- specs[intersect(names(specs), unlist(strsplit(pick, ",")))]

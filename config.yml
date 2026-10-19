@@ -411,6 +411,8 @@ default:
     # Region 10 VIIRS check (decided Oct 18): unlinked non-crop detections share the summer peak
     # there, so 66 adds a run counting all non-crop detections in 10 (linked or not)
     viirs_unlinked_sensitivity_regions: [10]
+    # 68: C3/C4 gap test (decided Oct 19: two-pulse greenness cells in the Plains)
+    c3c4: {regions: [10, 2], min_sep_days: 48, dip_frac: 0.15, peak_frac: 0.4, half_window_days: 14, n_boot: 2000}
     snow_regions: [10, 13]            # snow-off date in the baseline
     # Dryness baselines, all from PRISM (decided Oct 18: ppet60 added as the simple, readable
     # companion of the NFDRS 1000-h moisture; fit the model with ppet60 first, then swap in dfm1000)
@@ -780,6 +782,7 @@ full:
     block2: 16
     cutb_curves: 16
     fire_link: 11             # 22 sensor-years -> two rounds
+    fire_forecast: 8          # 67: one year of cues per worker (~5 GB each)
     fire_dfm: 16              # row chunks, all PRISM years per chunk (~4 GB peak per worker at 2 rows)
   memfrac: 0.08
   report:
