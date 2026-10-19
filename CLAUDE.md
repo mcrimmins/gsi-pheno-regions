@@ -731,3 +731,22 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   project to EPSG:5070 tried to fetch PROJ grids over the network and returned NaN in the cloud
   workspace). Tested on a planted fixture (counts, weeks incl. Dec 31 of a leap year -> 52, debris,
   pixel de-duplication, outage fill, cured shares at the season edges, departures).
+  Full run Oct 18: S-NPP outage days filled 2022 15, 2023 1, 2024 20 (2012: 1 unfilled); phenology
+  cells 3 27k, 6 25k, 12 18k (valid seasons 53 %, mismatch ~20-25 %), 11 7k, 10 48k, 13 10k.
+- `scripts/66_fire_test.R [profile] [spec,...]` (laptop or P720, ~6 min; built Oct 18; MASS): pooled
+  NB of weekly counts, every term region-specific: M0 = region x 3 week harmonics (+ snow share in
+  snow regions); M1 = + ppet60 (per 100 mm); M2 = + cured_dep ((cured_share - typ) x 10); M1d / M2d
+  with dfm1000. Leave-one-year-out held-out NB log score; skill = gain M2 - M1 etc., bootstrap over
+  years (2000, 90 %), share of years improved; yearly_r (held-out yearly totals vs observed; M0's is
+  a LOYO artifact ~ -1); full-data coefs; seasonal.csv / seasonal_windows.csv. Specs: all (primary),
+  era, lightning, human (2001-19, no 11), human_unk, debris, top3 (13), px / px_nofill (VIIRS
+  2012-24, no 13) and px10_all - pixel-day specs as Gaussian on log1p (NB fits failed in some folds).
+  First results Oct 18 (pooled gains, nats over held-out years): dryness large (starts +521 simple,
+  +663 dfm; growth +195 / +260); dfm1000 beats ppet60 for starts (+141; better in 3, 6, 13, worse in
+  CA -30) and growth (+65). Phenology over the simple baseline: starts all causes +18 [-18, +51]
+  (62 % of years), human 2001-19 +25 [-7, +53], human + unknown +46 [+8, +83], lightning -16
+  [-32, -4], 13 top third +1; growth (pixel-days) +46 [+5, +81], 77 % of years, positive in every
+  region (intervals > 0 in 6, 10, 11), and +33 [+2, +62] over the dfm1000 baseline. Full-data
+  cured_dep coefficients positive everywhere (more cured than usual -> more fire). Seasonal: CA fire
+  curve rises the week typical cured share passes half (week 21); 13's spring window closes ~4 weeks
+  after half the fuel greens (weeks 16 -> 20). Region 10 all non-crop detections: no phenology gain.

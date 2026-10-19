@@ -112,9 +112,9 @@ snowmelt as well as green-up.
 | Fire records: VIIRS active fire | Done (October 17): 2012–2025 S-NPP, 2018–2025 NOAA-20 |
 | Linking satellite detections to reported fires | Done (October 18) |
 | Dead-fuel baseline from PRISM | Done (October 18) |
-| Weekly table: fires, satellite growth, dryness and phenology by region and week | Built (October 18); first run next |
-| Seasonal fire curves by region | Planned |
-| Seasonal and year-to-year tests | Planned |
+| Weekly table: fires, satellite growth, dryness and phenology by region and week | Done (October 18) |
+| Seasonal fire curves by region | First look (October 18) |
+| Seasonal and year-to-year tests | First run (October 18); figures next |
 
 : Study status {.striped}
 
@@ -252,6 +252,32 @@ region by region with those of the 60-day water balance and the 30-day vapour pr
 The calculation was checked against an independent day-by-day implementation written from the
 published equations (agreement within 0.0001 % moisture).
 
+## First results (October 18, preliminary)
+
+The test fits one model of weekly fire counts across the six pilot regions, with each region's
+typical fire season, then adds a dryness measure, then the phenology measure: how much more (or
+less) of the herbaceous fuel is cured that week than in a typical year. Each version predicts
+every year after being fitted to the other years, and the gain in held-out prediction is the
+answer.
+
+- **Dryness matters everywhere**, for fire starts and for fire growth. The 1000-hour fuel moisture
+  predicts better than the 60-day water balance overall (not in California), so its extra
+  nonlinear detail carries information.
+- **Phenology adds to fire growth.** Satellite fire growth (pixel-days, 2012–2024) is predicted
+  better with phenology in about three years of four, in every region, and the gain holds over
+  the 1000-hour baseline too.
+- **Phenology adds little to the number of fire starts overall.** The gain is small and uncertain
+  for all causes. It is clearer for human-caused fires (counting unknown causes as human) and
+  absent for lightning fires, which fits the idea that people start fires in the cured-grass
+  windows of spring and fall while lightning comes with the summer storms whatever the fuel.
+- **Direction:** in every region, weeks with more cured fuel than usual have more fire.
+- **Season:** in California the fire season opens the same week half the grass is typically
+  cured; in the upper Midwest the spring fire window closes about four weeks after half the
+  fuel has greened.
+
+These are first numbers from 13–24 seasons per region, before figures and checks; they will
+change as the analysis is reviewed.
+
 ## Decisions so far
 
 | Date | Decision | Why |
@@ -289,6 +315,7 @@ published equations (agreement within 0.0001 % moisture).
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-18 | Test step built and first run: dryness and phenology scored on held-out years |
 | 2026-10-18 | Weekly table step built (fires, satellite growth, dryness, green-up and curing by region and week) |
 | 2026-10-18 | Dryness-baseline step built (60-day water balance, 1000-hour fuel moisture, drought index, vapour pressure deficit, snow) |
 
