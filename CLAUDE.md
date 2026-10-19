@@ -792,6 +792,11 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   64 vpd7 (7-day VPDmax, config dfm: vpd_short_days; needs 64 rerun with force), 65 carries it, 66
   specs all_hs / human_unk_hs / px_hs add vpd7 to every model. Then: NPN ground check of the weekly
   cured share at NPN grass sites; real-time (composites-to-date) cured share; NPN C3/C4 timing.
+- `scripts/66b_fire_ground_check.R [profile]` (laptop, seconds; Oct 19): from eval/target_check/
+  site_years.csv (36), satellite vs NPN ground departures at site-year and region-year scale (sites
+  averaged, >= 2 / >= 3 sites) -> fire_study/test/ground_check.csv. Result: curing (eos50) site-year r
+  0.35 (421) -> region-year 0.66 (72); regions 10 0.74, 3 0.84, 2 0.78, 12 1.00 (n 5), 13 0.20; cured
+  0.31 -> 0.36 (0.65 with >= 3 sites); green-up 0.48 -> 0.57.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

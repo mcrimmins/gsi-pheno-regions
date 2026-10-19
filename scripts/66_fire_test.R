@@ -26,6 +26,8 @@
 #   all_fc, human_unk_fc, px_fc   forecast test: cured share from curing dates predicted 14 days ahead
 #                (67; skipped when forecast_weekly.csv is missing)
 #   all_lag2, human_unk_lag2, px_lag2   nowcast: cured-share departure lagged 2 weeks (satellite latency)
+#   all_hs, human_unk_hs, px_hs   hot-spell check: 7-day VPD (64 vpd7) in every model
+#   all_gsi_<v>, human_unk_gsi_<v>, px_gsi_<v>   cured share from GSI dates (config gsi_compare)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
 #                seasonal windows around the typical green-up (-4..+3 weeks) and curing (0..+7 weeks)
 # Year-shuffle check (all, px): each region's cured-share departures assigned to random other years,
@@ -120,10 +122,25 @@ if (file.exists(ff)) {
   W$cured_dep_fc <- (FC$cured_share_fc[i] - FC$cured_share_typ_fc[i]) * 10
 } else specs <- specs[!grepl("_fc$", names(specs))]
 for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
+# hot-spell check (Oct 19): 7-day VPD added to every model, so phenology must add beyond this week's dryness
+if ("vpd7" %in% names(W)) {
+  specs$all_hs <- list(y = "n_fires", rows = TRUE, extra = "vpd7")
+  specs$human_unk_hs <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), extra = "vpd7")
+  specs$px_hs <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, extra = "vpd7")
+}
+# GSI comparison (Oct 19): cured share from GSI season dates (65 columns cured_share_gsi_<variant>)
+for (v in unlist(fs$gsi_compare)) {
+  cs <- paste0("cured_share_gsi_", v); ct <- paste0("cured_share_typ_gsi_", v)
+  if (!all(c(cs, ct) %in% names(W))) next
+  pv <- paste0("cured_dep_gsi_", v); W[[pv]] <- (W[[cs]] - W[[ct]]) * 10
+  specs[[paste0("all_gsi_", v)]] <- list(y = "n_fires", rows = TRUE, pheno = pv)
+  specs[[paste0("human_unk_gsi_", v)]] <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = pv)
+  specs[[paste0("px_gsi_", v)]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = pv)
+}
 pick <- args[-1]
 if (length(pick)) specs <- specs[intersect(names(specs), unlist(strsplit(pick, ",")))]
 
-terms_for <- function(d, model, era, pheno = "cured_dep") {
+terms_for <- function(d, model, era, pheno = "cured_dep", extra = NULL) {
   multi <- length(unique(d$region)) > 1
   rz <- function(x) if (multi) paste0("region_f:(", x, ")") else x
   h <- "s1 + c1 + s2 + c2 + s3 + c3"
@@ -132,6 +149,7 @@ terms_for <- function(d, model, era, pheno = "cured_dep") {
   sn <- sn[vapply(sn, function(v) stats::sd(d[[v]], na.rm = TRUE) > 0, TRUE)]
   f <- c(f, sn)
   if (era) f <- c(f, rz("era2020"))
+  if (length(extra)) f <- c(f, rz(paste(extra, collapse = " + ")))
   dry <- switch(model, M1 = , M2 = "ppet", M1d = , M2d = "dfm1000", NULL)
   if (!is.null(dry)) f <- c(f, rz(dry))
   if (model %in% c("M2", "M2d")) f <- c(f, rz(paste(pheno, collapse = " + ")))
@@ -177,14 +195,14 @@ for (sn in names(specs)) {
   d <- W[eval(if (is.logical(sp$rows)) quote(rep(TRUE, nrow(W))) else sp$rows, W, environment()), ]
   d$y <- if (isTRUE(sp$log)) log1p(d[[sp$y]]) else d[[sp$y]]
   ph <- sp$pheno %||% "cured_dep"
-  need <- c("y", "ppet", "dfm1000", ph)
+  need <- c("y", "ppet", "dfm1000", ph, sp$extra)
   d <- d[stats::complete.cases(d[, need]), ]
   d$region_f <- factor(d$region)
   yrs <- sort(unique(d$year))
   log_msg(sprintf("spec %-10s %s: %d rows, regions %s, years %d-%d, total %s", sn, sp$y, nrow(d), paste(sort(unique(d$region)), collapse = ","),
                   min(yrs), max(yrs), format(sum(d[[sp$y]]), big.mark = ",")))
   for (mo in models) {
-    fm <- terms_for(d, mo, isTRUE(sp$era), ph)
+    fm <- terms_for(d, mo, isTRUE(sp$era), ph, sp$extra)
     fitf <- if (isTRUE(sp$log)) fit_lm else fit_nb
     full <- fitf(fm, d)
     if (!is.null(full$note)) NOTE[[length(NOTE) + 1]] <- data.frame(spec = sn, model = mo, fold = "full", note = full$note)
