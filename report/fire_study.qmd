@@ -285,8 +285,32 @@ show_fig("fire_seasonal", "Typical fire season and typical curing by region. Blu
 show_fig("fire_skill", "What phenology adds to predictions of years it was not fitted to. Each dot is the gain in held-out prediction (log score per year) from adding that week's departure in cured fuel to a model with the region's fire season and a dryness measure (blue: 60-day water balance; orange: 1000-hour fuel moisture), with a 90 % bootstrap interval over years. Right of zero = phenology improves the forecast. Fire growth is modelled on a log scale, so its gains are not on the same scale as the fire-start panels.", "Dot-and-interval chart: rows are the six pilot regions and all regions together; columns are four outcomes; blue and orange dots for the two dryness baselines.")
 ```
 
-These are first numbers from 13–24 seasons per region, before checks; they will change as the
-analysis is reviewed.
+**Checks (October 19).**
+
+- *Fires changing the satellite dates.* Leaving out every cell that burned that year or the year
+  before (3–11 % of cells) leaves the gains unchanged, so the phenology signal is not made by the
+  fires themselves.
+- *Chance.* Giving each year's phenology to other years at random (20 times) makes predictions worse
+  every time; the real phenology beats all 20 shuffles for both fire starts and fire growth.
+- *Dates instead of shares.* A model using the year's green-up and curing dates (one number per
+  region and year) does worse than the weekly share of fuel cured: what matters is how much of the
+  fuel has cured, not a single regional date.
+- *Forecast dates.* Curing dates predicted two weeks ahead from weather (the curing rules' method,
+  refitted for every region and checked on years left out) are a little closer to the satellite
+  dates than the typical date (1–3 days better, r 0.30–0.50), but they add nothing to fire
+  prediction. The fire signal is in the observed fuel state, which the weather forecast does not
+  capture: monitoring curing as it happens looks more useful than forecasting it.
+- *Satellite delay.* Using the cured share as the satellite showed it two weeks earlier keeps about
+  half of the gain for fire growth and loses most of it for fire starts: the signal is in the
+  current week's fuel state, so monitoring needs to be timely.
+- *C3/C4 gap.* Two-peaked greenness curves are rare in the northern and central Great Plains (314
+  of 47,900 cells) and common in the southern Plains (43 %), where the two peaks are spring and fall
+  growth around a summer drought trough. Fires there are most frequent in that summer trough, so
+  there is no fire dip between growth pulses; the 4 km satellite curves cannot separate the C3 and
+  C4 pulses of northern mixed prairie.
+
+These are first numbers from 13–24 seasons per region; they will change as the analysis is
+reviewed.
 
 ## Decisions so far
 
@@ -326,6 +350,7 @@ analysis is reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-19 | Checks run: burn check, year shuffle, dates version, forecast curing dates, C3/C4 gap |
 | 2026-10-19 | Forecast test (curing predicted two weeks ahead) and C3/C4 gap test built |
 | 2026-10-19 | Burn check, year-shuffle check and dates version added to the weekly table and the tests |
 | 2026-10-18 | Figures: seasonal fire curves against curing; held-out gains from phenology |

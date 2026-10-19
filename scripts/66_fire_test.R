@@ -25,6 +25,7 @@
 #   all_nb, human_unk_nb, px_nb   burn check: phenology from cells not burned that year or the year before
 #   all_fc, human_unk_fc, px_fc   forecast test: cured share from curing dates predicted 14 days ahead
 #                (67; skipped when forecast_weekly.csv is missing)
+#   all_lag2, human_unk_lag2, px_lag2   nowcast: cured-share departure lagged 2 weeks (satellite latency)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
 #                seasonal windows around the typical green-up (-4..+3 weeks) and curing (0..+7 weeks)
 # Year-shuffle check (all, px): each region's cured-share departures assigned to random other years,
@@ -78,6 +79,11 @@ in_win <- function(w, w0, lo, hi) { d <- (w - w0) %% 52; d[d > 26] <- d[d > 26] 
 gd <- W$greenup_dep; gd[is.na(gd)] <- 0; cd <- W$curing_dep; cd[is.na(cd)] <- 0
 W$gdep_win <- ifelse(in_win(W$week, W$gu_week_typ, -4, 3), gd / 10, 0)
 W$cdep_win <- ifelse(in_win(W$week, W$cu_week_typ, 0, 7), cd / 10, 0)
+# nowcast (Oct 19): the cured-share departure as the satellite showed it 2 weeks earlier (weeks 1-2 take
+# the previous year's weeks 51-52)
+W <- W[order(W$region, W$year, W$week), ]
+lag_key <- paste(W$region, ifelse(W$week <= 2, W$year - 1, W$year), ifelse(W$week <= 2, W$week + 50, W$week - 2))
+W$cured_dep_lag2 <- W$cured_dep[match(lag_key, paste(W$region, W$year, W$week))]
 
 specs <- list(
   all = list(y = "n_fires", rows = TRUE),
@@ -92,6 +98,9 @@ specs <- list(
   all_nb = list(y = "n_fires", rows = TRUE, pheno = "cured_dep_nb"),
   human_unk_nb = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_nb"),
   px_nb = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_nb"),
+  all_lag2 = list(y = "n_fires", rows = TRUE, pheno = "cured_dep_lag2"),
+  human_unk_lag2 = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_lag2"),
+  px_lag2 = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_lag2"),
   all_dates = list(y = "n_fires", rows = TRUE, pheno = c("gdep_win", "cdep_win")),
   human_unk_dates = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = c("gdep_win", "cdep_win")),
   px_dates = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = c("gdep_win", "cdep_win")),

@@ -775,6 +775,16 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   days (15-d smoothed); dip = gap index / mean peak index, year bootstrap -> fire_study/c3c4/
   two_pulse.tif, cells_summary.csv, windows.csv, weekly.csv. Planted test: peaks found at 124 / 220
   (planted 120 / 220), planted gap gives dip 0.06.
+  Results Oct 19. 67: held-out adjustment vs satellite eos50 MAE typical -> adjusted 3 26.6 -> 25.7,
+  6 23.6 -> 22.8, 12 31.4 -> 30.7, 11 16.7 -> 14.4, 10 23.7 -> 20.4, 13 13.3 -> 12.1 (r 0.30-0.50);
+  but forecast cured share adds nothing to fire (pooled all -1.3 [-15, +12], human + unknown +2.7,
+  growth -0.8; only region 6 growth +9 [+1, +18]). 68: two-pulse cells 10: 314 of 47,900; 2: 7,421
+  of 17,363 (peaks DOY ~140 / ~285, trough ~228 = summer drought, not C3/C4); two-pulse cells burn
+  1.6-1.9x one-pulse cells on the same days; dip 0.85 [0.72, 1.04]; absolute fire rate highest in
+  the trough weeks (30-33). Reading: no fire dip; 4 km curves can't resolve northern C3/C4 pulses.
+  DECIDED Oct 19 (Mike): C3/C4 reported as a limitation; nowcast check = 66 specs *_lag2 (cured_dep
+  two weeks earlier): pooled growth +20.5 [-0.5, +43] (vs +45.7), starts -2.4, human + unknown +11.0
+  [-15, +36]; write-up as a Docs artifact.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,
