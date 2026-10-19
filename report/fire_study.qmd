@@ -275,8 +275,18 @@ answer.
   cured; in the upper Midwest the spring fire window closes about four weeks after half the
   fuel has greened.
 
-These are first numbers from 13–24 seasons per region, before figures and checks; they will
-change as the analysis is reviewed.
+```{r fig-fire-seasonal}
+#| results: asis
+show_fig("fire_seasonal", "Typical fire season and typical curing by region. Blue: mean weekly count of fires of 10 acres or more, 2001–2024, as a share of the region's busiest week. Orange: share of the region's herbaceous cells cured in a typical year (outside the satellite green-up to curing window). In California and the upper Midwest the fire curve follows the cured share closely; in the Southwest the fire season peaks in June as spring-active cells green and ends with the monsoon green-up; in the Great Plains the spring fires stop at green-up and the summer fires (mostly lightning) burn while the grass is green.", "Six small panels, one per pilot region, each with a blue fire-season curve and an orange typical-cured-share curve by week of the year.")
+```
+
+```{r fig-fire-skill}
+#| results: asis
+show_fig("fire_skill", "What phenology adds to predictions of years it was not fitted to. Each dot is the gain in held-out prediction (log score per year) from adding that week's departure in cured fuel to a model with the region's fire season and a dryness measure (blue: 60-day water balance; orange: 1000-hour fuel moisture), with a 90 % bootstrap interval over years. Right of zero = phenology improves the forecast. Fire growth is modelled on a log scale, so its gains are not on the same scale as the fire-start panels.", "Dot-and-interval chart: rows are the six pilot regions and all regions together; columns are four outcomes; blue and orange dots for the two dryness baselines.")
+```
+
+These are first numbers from 13–24 seasons per region, before checks; they will change as the
+analysis is reviewed.
 
 ## Decisions so far
 
@@ -315,6 +325,7 @@ change as the analysis is reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-18 | Figures: seasonal fire curves against curing; held-out gains from phenology |
 | 2026-10-18 | Test step built and first run: dryness and phenology scored on held-out years |
 | 2026-10-18 | Weekly table step built (fires, satellite growth, dryness, green-up and curing by region and week) |
 | 2026-10-18 | Dryness-baseline step built (60-day water balance, 1000-hour fuel moisture, drought index, vapour pressure deficit, snow) |

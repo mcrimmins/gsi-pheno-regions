@@ -750,3 +750,8 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   cured_dep coefficients positive everywhere (more cured than usual -> more fire). Seasonal: CA fire
   curve rises the week typical cured share passes half (week 21); 13's spring window closes ~4 weeks
   after half the fuel greens (weeks 16 -> 20). Region 10 all non-crop detections: no phenology gain.
+- `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
+  synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
+  are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,
+  one 0-1 axis) and fire_skill (phenology gain per year with 90 % intervals, per region and outcome,
+  over ppet60 and dfm1000 baselines). Run after `91 ... fire`, then render.
