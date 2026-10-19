@@ -422,7 +422,7 @@ default:
       spinup: repeat_first_year       # run the first year once before the series (sets 1000-h, KBDI, snow states)
       fr1000: 0.3068                  # 1 - 0.82 exp(-168/1000), NFDRS 1978
       rain_rate_in_h: {dry: 0.25, wet: 0.05}   # NFDRS rain-duration rate: classes 1-2 / 3-4
-      dry_class: {ai_ann_lt: 0.8, ai_warm_lt: 0.5}  # classes 1-2 where annual or Apr-Sep P/PET (Hargreaves) is below
+      dry_class: {ai_warm_lt: 0.5}  # classes 1-2 where Apr-Sep P/PET (Hargreaves) < 0.5 (decided Oct 18; optional ai_ann_lt, unused)
       max_rain_hours: 8
       photo_method: geometric
       ppet_days: 60                   # rain minus Hargreaves PET, trailing sum (mm)

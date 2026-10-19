@@ -238,8 +238,8 @@ averaged by region and day (equally and weighted by herbaceous fuel share):
   moved part of the way toward that average each week. Most of its weight falls on the last
   two months of weather. PRISM has no humidity or rain duration, so humidity comes from the
   vapour pressure deficit and temperature (constant vapour pressure through the day), and rain
-  duration from the daily amount with the NFDRS rule (0.25 inch per hour in dry climates, 0.05
-  in humid ones, at most 8 hours). It replaces the simple baseline in a second fit; if it does
+  duration from the daily amount with the NFDRS rule (0.25 inch per hour where April–September
+  rainfall is below half the potential evaporation, 0.05 elsewhere, at most 8 hours). It replaces the simple baseline in a second fit; if it does
   not improve the held-out years, the simple one is reported.
 - **Checks:** the Keetch–Byram drought index and the 30-day mean vapour pressure deficit.
 - **Snow:** a degree-day snowpack (snow when the daily mean temperature is at or below 1 °C,

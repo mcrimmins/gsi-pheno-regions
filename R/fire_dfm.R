@@ -96,9 +96,11 @@ fdm_snowoff <- function(S, dates, year, swe_min = 5, by = "07-31") {
   as.integer(out)
 }
 
-# NFDRS climate-class rain rate per cell from aridity: 0.25 in/h (classes 1-2) where annual
-# P/PET < ai_ann_lt or Apr-Sep P/PET < ai_warm_lt, else 0.05 in/h (classes 3-4).
-fdm_rain_rate <- function(P, PET, dates, ai_ann_lt = 0.8, ai_warm_lt = 0.5, dry = 0.25, wet = 0.05) {
+# NFDRS climate-class rain rate per cell from aridity: 0.25 in/h (classes 1-2: arid, semiarid,
+# dry summers) where Apr-Sep P/PET < ai_warm_lt (or annual P/PET < ai_ann_lt, off by default),
+# else 0.05 in/h (classes 3-4). Decided Oct 18: warm season only (an annual cutoff of 0.8 split
+# the upper Midwest cell by cell, its median being 0.81).
+fdm_rain_rate <- function(P, PET, dates, ai_ann_lt = -Inf, ai_warm_lt = 0.5, dry = 0.25, wet = 0.05) {
   m <- as.integer(format(dates, "%m")); warm <- m >= 4 & m <= 9
   ai <- rowSums(P, na.rm = TRUE) / pmax(rowSums(PET, na.rm = TRUE), 1e-6)
   aw <- rowSums(P[, warm, drop = FALSE], na.rm = TRUE) / pmax(rowSums(PET[, warm, drop = FALSE], na.rm = TRUE), 1e-6)

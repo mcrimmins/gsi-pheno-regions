@@ -108,7 +108,7 @@ do_chunk <- function(row) {
         lat <- terra::yFromCell(g, cl)
         doy <- as.integer(format(dates, "%j"))
         PET <- hargreaves(TN, TX, ra_matrix(lat, doy))
-        rr <- fdm_rain_rate(P, PET, dates, dc$dry_class$ai_ann_lt %||% 0.8, dc$dry_class$ai_warm_lt %||% 0.5,
+        rr <- fdm_rain_rate(P, PET, dates, dc$dry_class$ai_ann_lt %||% -Inf, dc$dry_class$ai_warm_lt %||% 0.5,
                             dc$rain_rate_in_h$dry %||% 0.25, dc$rain_rate_in_h$wet %||% 0.05)
         map_in <- rowSums(P) / length(yrs) / 25.4
         sp <- seq_len(n_spin)                                             # spin-up: first year again

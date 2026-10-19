@@ -700,7 +700,8 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   1981 and PNW-RP-336), ppet60 (60-d P - Hargreaves PET, mm), vpd30 (kPa), kbdi (m_kbdi, MAP from
   the PRISM years), degree-day swe / snow_share and yearly snow-off DOY per cell. RH from PRISM:
   ea = es(Tmax) - VPDmax; rain hours = round((P_in + 0.02) / rate) <= 8, rate 0.25 in/h where
-  annual P/PET < 0.8 or Apr-Sep P/PET < 0.5 (NFDRS classes 1-2), else 0.05. Spin-up: first year
+  Apr-Sep P/PET < 0.5 (NFDRS classes 1-2), else 0.05 (decided Oct 18 after the first run: an
+  annual P/PET < 0.8 cutoff split region 13 cell by cell, median 0.81). Spin-up: first year
   run once first. Outputs fire_study/dfm/: region_daily (csv + parquet), region_snowoff.csv,
   rain_class.csv, dfm_climatology.csv (week quantiles), dfm_drivers.csv (weekly anomaly r of
   dfm1000 with ppet60 / vpd30 / kbdi, R2 ppet60 + vpd30, by region and season),
@@ -708,3 +709,7 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   equal an independent per-cell day loop to 5e-5 % moisture.
   DECIDED Oct 18 (Mike): ppet60 is the simple baseline fitted first; dfm1000 swapped in after;
   report the simple one if dfm1000 doesn't improve held-out years (config baseline: simple).
+  First CONUS run Oct 18 (annual + warm rule; rerun with force for the warm-only rule): fuel-weighted
+  1000-h driest-week medians 3 5.9 %, 12 5.4, 6 6.8, 11 8.4, 10 10.8, 13 16.0; wettest 14-23 %.
+  Weekly anomalies: r with ppet60 0.76-0.80, vpd30 -0.63..-0.80; ppet60 + vpd30 explain 62-72 %
+  (80-86 % in summer in 3, 10, 13). Snow-off median DOY: 10 ~90, 13 ~92, 6 ~83, 12 ~53.
