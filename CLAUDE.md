@@ -713,3 +713,21 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   1000-h driest-week medians 3 5.9 %, 12 5.4, 6 6.8, 11 8.4, 10 10.8, 13 16.0; wettest 14-23 %.
   Weekly anomalies: r with ppet60 0.76-0.80, vpd30 -0.63..-0.80; ppet60 + vpd30 explain 62-72 %
   (80-86 % in summer in 3, 10, 13). Snow-off median DOY: 10 ~90, 13 ~92, 6 ~83, 12 ~53.
+  Rerun (warm-only rule): 13 dry-class 4 % of fuel (was 69 %), 1000-h +1.5 points (max +4),
+  driest-week median 18.2 %; 10 dry-class 89 % (+0.2 points); 3, 6, 11, 12 unchanged.
+- `scripts/65_fire_weekly.R [profile]` (P720, minutes; built Oct 18; helpers R/fire_weekly.R): the
+  region x week x year table (pilot regions, 2001-2024, 52 fixed weeks) -> fire_study/weekly/
+  fire_weekly.csv (+ parquet): n_fires (C+, no debris, all causes), n_lightning / n_human /
+  n_unknown, acres, n_fires_debris, n_fires_top3 (cover_sensitivity regions); VIIRS px_days (unique
+  375 m sinusoidal-grid pixel-days of 63 `keep` detections, S-NPP + NOAA-20 on whole CONUS UTC days
+  without S-NPP data), px_days_nofill, px_noncrop_all (all non-crop, every region), fill_days,
+  outage_days (unfilled), viirs_ok (2012-2024, not 13); 64 weekly means (fuel weight) dfm1000,
+  ppet60, vpd30, kbdi, snow_share, snowoff_doy (snow regions); phenology from herb cells (rules
+  `herb`; 10 / 13: fuel share >= 0.35; 13 weighted by fuel share): cured_share (not green at
+  mid-week: green = inside that year's sos20..eos50, or the previous / next year's season shifted),
+  cured_share_typ (typical dates), greenup_dep / curing_dep (weighted median departure, |d| > 90 out);
+  flags cause_split_ok, era2020. Also pheno_cells.csv, viirs_fill.csv, weekly_summary.csv (incl.
+  share of fires in typically-cured weeks). Pixel keys use the sinusoidal formula directly (terra
+  project to EPSG:5070 tried to fetch PROJ grids over the network and returned NaN in the cloud
+  workspace). Tested on a planted fixture (counts, weeks incl. Dec 31 of a leap year -> 52, debris,
+  pixel de-duplication, outage fill, cured shares at the season edges, departures).
