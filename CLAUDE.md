@@ -750,6 +750,15 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   cured_dep coefficients positive everywhere (more cured than usual -> more fire). Seasonal: CA fire
   curve rises the week typical cured share passes half (week 21); 13's spring window closes ~4 weeks
   after half the fuel greens (weeks 16 -> 20). Region 10 all non-crop detections: no phenology gain.
+- Checks (decided Oct 19, Mike; 65 + 66 updated): burn check = phenology from cells not burned in
+  year Y or Y-1 (MTBS any type, non-crop S-NPP detection cells) -> 65 *_nb columns, 66 specs all_nb /
+  human_unk_nb / px_nb; year-shuffle = each region's cured_dep given to random other years, M2 vs M1,
+  GSI_FIRE_SHUFFLES (20) -> shuffle.csv (noise term costs ~ -15 log score, so compare with the shuffled
+  distribution, not 0); dates version = greenup_dep in weeks -4..+3 of the typical green-up week,
+  curing_dep in weeks 0..+7 of the typical curing week (per 10 d; 65 gu_week_typ / cu_week_typ) ->
+  specs all_dates / human_unk_dates / px_dates. Still to build: forecast test (lead-14 weather
+  adjustment refit for every pilot region, out-of-fold) and the C3/C4 gap test (two-pulse greenness
+  cells in the Plains).
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

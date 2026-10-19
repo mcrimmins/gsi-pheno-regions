@@ -28,6 +28,10 @@
 #   cured_share        share of those cells not green at mid-week that year (green = between that
 #                      year's green-up and curing, or inside the previous / next year's season)
 #   cured_share_typ    the same with the typical dates (the climatological window)
+#   *_nb               the same leaving out cells burned that year or the year before (MTBS any type,
+#                      non-crop S-NPP detections from 2012): the burn check (Oct 19)
+#   gu_week_typ, cu_week_typ  the region's typical green-up / curing week (weighted median of the
+#                      typical dates; for the dates model's seasonal windows)
 #   greenup_dep, curing_dep   that year's median departure (days) from the typical dates, cells with
 #                      |departure| > 90 d left out as season mismatches (mismatch shares in the
 #                      summary); constant within a region-year
@@ -106,7 +110,8 @@ log_msg(sprintf("FPA-FOD: %s C+ wildfires in %s region-weeks", format(sum(W$n_fi
 
 # ---- 2. VIIRS outcomes ------------------------------------------------------------------------------------
 link_file <- function(sen, y) fire_table_file(fire_dir(cfg, "link", sen, sprintf("link_%s_%d", sen, y)))
-cols <- c("lat", "lon", "date_utc", "date_solar", "region", "keep", "crop")
+cols <- c("lat", "lon", "date_utc", "date_solar", "region", "keep", "crop", "cell")
+BURN_V <- list()                                    # cells with non-crop S-NPP detections, per year (burn check)
 read_link <- function(sen, y) {
   f <- link_file(sen, y)
   if (is.na(f)) return(NULL)
@@ -131,6 +136,7 @@ for (y in vy) {
   }
   unfilled <- as.Date(setdiff(out, filled), origin = "1970-01-01")
   P <- P[P$region %in% regs, ]; if (!is.null(Fd)) Fd <- Fd[Fd$region %in% regs, ]
+  BURN_V[[as.character(y)]] <- unique(P$cell[!P$crop])
   pk <- function(d) { d$k <- key(d$region, y, fire_week(d$date_solar)); d$px <- fw_pixel_key(d$lon, d$lat, d$date_solar); d }
   P <- pk(P); A <- if (!is.null(Fd) && nrow(Fd)) rbind(P, pk(Fd)) else P
   upx <- function(d) { d <- d[!duplicated(d$px), ]; cnt(d$k) }
@@ -177,13 +183,23 @@ for (Y in seq(min(yrs) - 1, max(yrs) + 1)) {
   MY[[as.character(Y)]] <- as.matrix(terra::extract(r[[c(fs$greenup_metric %||% "sos20", fs$curing_metric %||% "eos50")]], allc))
 }
 log_msg("satellite metrics years: ", paste(range(as.integer(names(MY))), collapse = "-"), " (", length(MY), ")")
+# Burn check (decided Oct 19): cells that burned in year Y or Y-1 (any MTBS perimeter, any type; or a
+# non-crop S-NPP detection, 2012 on) are left out of the *_nb phenology columns, since fire and
+# post-fire regrowth change the satellite green-up and curing dates.
+MC <- fire_read_table(fire_dir(cfg, "mtbs", "mtbs_cells")); MF <- fire_read_table(fire_dir(cfg, "mtbs", "mtbs_fires"))
+MC$year <- as.integer(format(as.Date(MF$ig_date[match(MC$event_id, MF$event_id)]), "%Y"))
+burned <- function(Y) unique(c(MC$cell[MC$year %in% c(Y, Y - 1)], unlist(BURN_V[as.character(c(Y, Y - 1))])))
 mid <- fw_mid_doy(nw)
 W$cured_share <- NA_real_; W$cured_share_typ <- NA_real_; W$greenup_dep <- NA_real_; W$curing_dep <- NA_real_
+W$cured_share_nb <- NA_real_; W$cured_share_typ_nb <- NA_real_; W$greenup_dep_nb <- NA_real_; W$curing_dep_nb <- NA_real_
+W$gu_week_typ <- NA_integer_; W$cu_week_typ <- NA_integer_
 PH <- list()
 for (r in regs) {
   cr <- CELLS[[as.character(r)]]; ix <- match(cr, allc)
   wt <- if (r %in% as.integer(unlist(fs$herb_weighted_regions))) fuel[cr] else rep(1, length(cr))
   tg <- tdv[cr, "greenup_doy"]; tc <- tdv[cr, "curing_doy"]
+  wk <- function(doy) fire_week(as.Date("2001-01-01") + ((round(doy) - 1) %% 365))   # typical date -> week (wrapped)
+  W$gu_week_typ[W$region == r] <- wk(fw_wmedian(tg, wt)); W$cu_week_typ[W$region == r] <- wk(fw_wmedian(tc, wt))
   for (Y in yrs) {
     get <- function(yy, j) { m <- MY[[as.character(yy)]]; if (is.null(m)) rep(NA_real_, length(cr)) else m[ix, j] }
     S <- cbind(get(Y - 1, 1), get(Y, 1), get(Y + 1, 1)); E <- cbind(get(Y - 1, 2), get(Y, 2), get(Y + 1, 2))
@@ -200,7 +216,12 @@ for (r in regs) {
     mg <- abs(dg) > 90; mc <- abs(dc) > 90
     W$greenup_dep[iw] <- fw_wmedian(ifelse(mg, NA, dg), wt)
     W$curing_dep[iw] <- fw_wmedian(ifelse(mc, NA, dc), wt)
-    PH[[length(PH) + 1]] <- data.frame(region = r, year = Y, cells = length(cr), valid = sum(okY),
+    nb <- !(cr %in% burned(Y))
+    W$cured_share_nb[iw] <- vapply(seq_len(nw), function(j) fw_wmean(as.numeric(!G[okY & nb, j]), wt[okY & nb]), 0)[W$week[iw]]
+    W$cured_share_typ_nb[iw] <- vapply(seq_len(nw), function(j) fw_wmean(as.numeric(!GT[okT & nb, j]), wt[okT & nb]), 0)[W$week[iw]]
+    W$greenup_dep_nb[iw] <- fw_wmedian(ifelse(mg | !nb, NA, dg), wt)
+    W$curing_dep_nb[iw] <- fw_wmedian(ifelse(mc | !nb, NA, dc), wt)
+    PH[[length(PH) + 1]] <- data.frame(region = r, year = Y, cells = length(cr), valid = sum(okY), burned = sum(!nb),
                                        greenup_mismatch = mean(mg, na.rm = TRUE), curing_mismatch = mean(mc, na.rm = TRUE))
   }
 }

@@ -22,6 +22,11 @@
 #   top3         region 13 fires in the most herbaceous third of its cells
 #   px / px_nofill   VIIRS pixel-days 2012-2024 (no region 13); px_nofill drops weeks with filled days
 #   px10_all     region 10, all non-cropland detections (linked or not)
+#   all_nb, human_unk_nb, px_nb   burn check: phenology from cells not burned that year or the year before
+#   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
+#                seasonal windows around the typical green-up (-4..+3 weeks) and curing (0..+7 weeks)
+# Year-shuffle check (all, px): each region's cured-share departures assigned to random other years,
+# GSI_FIRE_SHUFFLES times (default 20) -> shuffle.csv; the real gain should beat the shuffled ones.
 #   (pixel-day specs: Gaussian model of log(1 + pixel-days); counts too heavy-tailed for the NB)
 # Seasonal test: per region and week, the mean fire count / pixel-days, typical cured share, mean
 # dryness -> seasonal.csv; and the weeks where the typical fire curve and the typical cured share
@@ -62,6 +67,15 @@ W$cured_dep <- (W$cured_share - W$cured_share_typ) * 10            # per 0.1 of 
 W$ppet <- W$ppet60 / 100                                           # per 100 mm
 for (k in 1:3) { W[[paste0("s", k)]] <- sin(2 * pi * k * W$week / 52); W[[paste0("c", k)]] <- cos(2 * pi * k * W$week / 52) }
 for (r in snow_regs) W[[paste0("snow", r)]] <- ifelse(W$region == r, W$snow_share, 0)
+# burn check (Oct 19): cured-share departure from cells not burned that year or the year before
+W$cured_dep_nb <- (W$cured_share_nb - W$cured_share_typ_nb) * 10
+# dates version (Oct 19): departures in days (per 10 d) acting in seasonal windows, each with its own
+# coefficient per region: green-up departure in the 8 weeks around the typical green-up week (-4..+3),
+# curing departure in the 8 weeks from the typical curing week (0..+7); weeks wrap around the year.
+in_win <- function(w, w0, lo, hi) { d <- (w - w0) %% 52; d[d > 26] <- d[d > 26] - 52; !is.na(w0) & d >= lo & d <= hi }
+gd <- W$greenup_dep; gd[is.na(gd)] <- 0; cd <- W$curing_dep; cd[is.na(cd)] <- 0
+W$gdep_win <- ifelse(in_win(W$week, W$gu_week_typ, -4, 3), gd / 10, 0)
+W$cdep_win <- ifelse(in_win(W$week, W$cu_week_typ, 0, 7), cd / 10, 0)
 
 specs <- list(
   all = list(y = "n_fires", rows = TRUE),
@@ -73,14 +87,21 @@ specs <- list(
   top3 = list(y = "n_fires_top3", rows = quote(region %in% as.integer(unlist(fs$cover_sensitivity$regions)))),
   px = list(y = "px_days", rows = quote(viirs_ok), log = TRUE),
   px_nofill = list(y = "px_days_nofill", rows = quote(viirs_ok & fill_days %in% 0), log = TRUE),
+  all_nb = list(y = "n_fires", rows = TRUE, pheno = "cured_dep_nb"),
+  human_unk_nb = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_nb"),
+  px_nb = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_nb"),
+  all_dates = list(y = "n_fires", rows = TRUE, pheno = c("gdep_win", "cdep_win")),
+  human_unk_dates = list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = c("gdep_win", "cdep_win")),
+  px_dates = list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = c("gdep_win", "cdep_win")),
   px10_all = list(y = "px_noncrop_all", log = TRUE, rows = quote(region %in% as.integer(unlist(fs$viirs_unlinked_sensitivity_regions)) &
                                                       year >= fs$viirs_outcome$years$start & year <= fs$viirs_outcome$years$end))
 )
 W$n_human_unk <- W$n_human + W$n_unknown
+for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
 pick <- args[-1]
 if (length(pick)) specs <- specs[intersect(names(specs), unlist(strsplit(pick, ",")))]
 
-terms_for <- function(d, model, era) {
+terms_for <- function(d, model, era, pheno = "cured_dep") {
   multi <- length(unique(d$region)) > 1
   rz <- function(x) if (multi) paste0("region_f:(", x, ")") else x
   h <- "s1 + c1 + s2 + c2 + s3 + c3"
@@ -91,7 +112,7 @@ terms_for <- function(d, model, era) {
   if (era) f <- c(f, rz("era2020"))
   dry <- switch(model, M1 = , M2 = "ppet", M1d = , M2d = "dfm1000", NULL)
   if (!is.null(dry)) f <- c(f, rz(dry))
-  if (model %in% c("M2", "M2d")) f <- c(f, rz("cured_dep"))
+  if (model %in% c("M2", "M2d")) f <- c(f, rz(paste(pheno, collapse = " + ")))
   stats::as.formula(paste("y ~", paste(f, collapse = " + ")))
 }
 fit_nb <- function(fm, d) {
@@ -108,6 +129,22 @@ fit_nb <- function(fm, d) {
 # those specs model log(1 + pixel-days) with a Gaussian linear model (score = Gaussian log density).
 fit_lm <- function(fm, d) { m <- stats::lm(fm, data = d); m$sigma <- summary(m)$sigma; m }
 ll_nb <- function(y, mu, theta) if (is.finite(theta)) stats::dnbinom(y, size = theta, mu = mu, log = TRUE) else stats::dpois(y, mu, log = TRUE)
+# Leave-one-year-out: per held-out year, fit on the others and score the year's weeks.
+loyo <- function(d, fm, fitf, logy) {
+  notes <- c(); out <- list()
+  for (yo in sort(unique(d$year))) {
+    tr <- d[d$year != yo, ]; te <- d[d$year == yo, ]
+    m <- fitf(fm, tr)
+    if (!is.null(m$note)) notes <- c(notes, yo)
+    te$region_f <- factor(te$region, levels = levels(tr$region_f))
+    mu <- stats::predict(m, newdata = te, type = "response")
+    ll <- if (logy) stats::dnorm(te$y, mu, m$sigma, log = TRUE) else ll_nb(te$y, mu, m$theta)
+    y <- te$y
+    if (logy) { y <- expm1(y); mu <- expm1(mu) }                   # yearly totals on the count scale
+    out[[length(out) + 1]] <- data.frame(region = te$region, year = yo, ll = ll, y = y, mu = mu, week = te$week)
+  }
+  list(scores = do.call(rbind, out), notes = notes)
+}
 models <- c("M0", "M1", "M2", "M1d", "M2d")
 comps <- list(pheno_simple = c("M2", "M1"), pheno_dfm = c("M2d", "M1d"), dry_simple = c("M1", "M0"), dry_dfm = c("M1d", "M0"),
               dfm_vs_simple = c("M1d", "M1"))
@@ -117,34 +154,27 @@ for (sn in names(specs)) {
   sp <- specs[[sn]]
   d <- W[eval(if (is.logical(sp$rows)) quote(rep(TRUE, nrow(W))) else sp$rows, W, environment()), ]
   d$y <- if (isTRUE(sp$log)) log1p(d[[sp$y]]) else d[[sp$y]]
-  need <- c("y", "ppet", "dfm1000", "cured_dep")
+  ph <- sp$pheno %||% "cured_dep"
+  need <- c("y", "ppet", "dfm1000", ph)
   d <- d[stats::complete.cases(d[, need]), ]
   d$region_f <- factor(d$region)
   yrs <- sort(unique(d$year))
   log_msg(sprintf("spec %-10s %s: %d rows, regions %s, years %d-%d, total %s", sn, sp$y, nrow(d), paste(sort(unique(d$region)), collapse = ","),
                   min(yrs), max(yrs), format(sum(d[[sp$y]]), big.mark = ",")))
   for (mo in models) {
-    fm <- terms_for(d, mo, isTRUE(sp$era))
+    fm <- terms_for(d, mo, isTRUE(sp$era), ph)
     fitf <- if (isTRUE(sp$log)) fit_lm else fit_nb
     full <- fitf(fm, d)
     if (!is.null(full$note)) NOTE[[length(NOTE) + 1]] <- data.frame(spec = sn, model = mo, fold = "full", note = full$note)
     if (mo %in% c("M2", "M2d", "M1", "M1d")) {
       cf <- summary(full)$coefficients
-      keep <- grepl("cured_dep|ppet|dfm1000", rownames(cf))
+      keep <- grepl("cured_dep|dep_win|ppet|dfm1000", rownames(cf))
       if (any(keep)) CO[[length(CO) + 1]] <- data.frame(spec = sn, model = mo, term = rownames(cf)[keep], est = cf[keep, 1], se = cf[keep, 2],
                                                          theta = full$theta %||% NA_real_, row.names = NULL)
     }
-    for (yo in yrs) {
-      tr <- d[d$year != yo, ]; te <- d[d$year == yo, ]
-      m <- fitf(fm, tr)
-      if (!is.null(m$note)) NOTE[[length(NOTE) + 1]] <- data.frame(spec = sn, model = mo, fold = yo, note = m$note)
-      te$region_f <- factor(te$region, levels = levels(tr$region_f))
-      mu <- stats::predict(m, newdata = te, type = "response")
-      te$ll <- if (isTRUE(sp$log)) stats::dnorm(te$y, mu, m$sigma, log = TRUE) else ll_nb(te$y, mu, m$theta)
-      if (isTRUE(sp$log)) { te$y <- expm1(te$y); mu <- expm1(mu) }        # yearly totals on the count scale
-      te$mu <- mu
-      SC[[length(SC) + 1]] <- data.frame(spec = sn, model = mo, region = te$region, year = yo, ll = te$ll, y = te$y, mu = te$mu, week = te$week)
-    }
+    lo <- loyo(d, fm, fitf, isTRUE(sp$log))
+    for (nt in lo$notes) NOTE[[length(NOTE) + 1]] <- data.frame(spec = sn, model = mo, fold = nt, note = "poisson fallback")
+    SC[[length(SC) + 1]] <- data.frame(spec = sn, model = mo, lo$scores)
   }
   log_msg(sprintf("  %s done, %.1f min", sn, as.numeric(difftime(Sys.time(), t0, units = "mins"))))
 }
@@ -178,6 +208,43 @@ CO <- do.call(rbind, CO)
 CO$z <- CO$est / CO$se
 utils::write.csv(CO, file.path(out_dir, "coefs.csv"), row.names = FALSE)
 utils::write.csv(if (length(NOTE)) do.call(rbind, NOTE) else data.frame(note = "none"), file.path(out_dir, "fit_notes.csv"), row.names = FALSE)
+
+# ---- year-shuffle check (Oct 19) ------------------------------------------------------------------------------
+# Each region's cured-share departures are given to other years at random (weeks kept); if phenology's gain
+# comes from year-specific timing, the shuffled gain should fall to about zero. n_shuffle permutations,
+# M2 vs M1 (60-day water balance baseline), specs all and px.
+n_shuffle <- as.integer(Sys.getenv("GSI_FIRE_SHUFFLES", "20"))
+SH <- list()
+for (sn in intersect(c("all", "px"), names(specs))) {
+  if (n_shuffle < 1) break
+  sp <- specs[[sn]]
+  d <- W[eval(if (is.logical(sp$rows)) quote(rep(TRUE, nrow(W))) else sp$rows, W, environment()), ]
+  d$y <- if (isTRUE(sp$log)) log1p(d[[sp$y]]) else d[[sp$y]]
+  d <- d[stats::complete.cases(d[, c("y", "ppet", "dfm1000", "cured_dep")]), ]
+  d$region_f <- factor(d$region)
+  fitf <- if (isTRUE(sp$log)) fit_lm else fit_nb
+  base <- stats::aggregate(ll ~ region + year, LY[LY$spec == sn & LY$model == "M1", ], sum)
+  obs <- sum(LY$ll[LY$spec == sn & LY$model == "M2"]) - sum(base$ll)
+  for (k in seq_len(n_shuffle)) {
+    d$cured_dep_shuf <- NA_real_
+    for (r in unique(d$region)) {
+      ys <- sort(unique(d$year[d$region == r])); src <- stats::setNames(sample(ys), ys)
+      i <- d$region == r
+      key_from <- paste(r, src[as.character(d$year[i])], d$week[i])
+      d$cured_dep_shuf[i] <- d$cured_dep[match(key_from, paste(d$region, d$year, d$week))]
+    }
+    fm <- terms_for(d, "M2", FALSE, "cured_dep_shuf")
+    lo <- loyo(d, fm, fitf, isTRUE(sp$log))$scores
+    g <- stats::aggregate(ll ~ region, lo, sum)
+    b <- stats::aggregate(ll ~ region, base, sum)
+    SH[[length(SH) + 1]] <- data.frame(spec = sn, shuffle = k, region = c(g$region, "pooled"),
+                                       gain = c(g$ll - b$ll[match(g$region, b$region)], sum(lo$ll) - sum(base$ll)), observed_pooled = obs)
+  }
+  x <- do.call(rbind, SH); x <- x[x$spec == sn & x$region == "pooled", ]
+  log_msg(sprintf("shuffle %-4s observed pooled gain %+.1f; shuffled median %+.1f, max %+.1f (%d of %d shuffles >= observed)",
+                  sn, obs, stats::median(x$gain), max(x$gain), sum(x$gain >= obs), nrow(x)))
+}
+if (length(SH)) utils::write.csv(do.call(rbind, SH), file.path(out_dir, "shuffle.csv"), row.names = FALSE)
 
 # ---- seasonal test ------------------------------------------------------------------------------------------
 SE <- stats::aggregate(W[, c("n_fires", "px_days", "cured_share_typ", "cured_share", "dfm1000", "ppet60", "snow_share")],

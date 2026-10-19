@@ -306,6 +306,7 @@ analysis is reviewed.
 | Oct 18 2026 | Satellite fire growth 2012–2024 only, and not in the upper Midwest | Detections after 2024 cannot be matched to reported fires; in the upper Midwest 97 % are agricultural or prescribed burning |
 | Oct 18 2026 | Linking screen kept as is; Great Plains check run counting all non-cropland detections | In the western regions unmatched detections spread across the year (burning outside the fire season); in the Great Plains they share the summer peak |
 | Oct 18 2026 | Weeks are fixed 7-day blocks from January 1 (last one or two days of the year in week 52) | Every year has the same 52 weeks on the same dates |
+| Oct 19 2026 | Checks before the write-up: leave out cells burned that year or the year before; give each year's phenology to other years at random; test forecast curing dates (weather adjustment in every region); test green-up and curing dates directly; C3/C4 gap test in two-pulse prairie | The phenology gain must not come from fires changing the satellite dates, and must hold for dates a manager could know in advance |
 | Oct 18 2026 | A 60-day rainfall-minus-evaporation baseline alongside the 1000-hour fuel moisture | The 1000-hour equations are nonlinear and need humidity and rain duration that PRISM lacks; the simple measure is readable and shows whether the operational index adds anything |
 
 : Study decisions {.striped}
@@ -325,6 +326,7 @@ analysis is reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-19 | Burn check, year-shuffle check and dates version added to the weekly table and the tests |
 | 2026-10-18 | Figures: seasonal fire curves against curing; held-out gains from phenology |
 | 2026-10-18 | Test step built and first run: dryness and phenology scored on held-out years |
 | 2026-10-18 | Weekly table step built (fires, satellite growth, dryness, green-up and curing by region and week) |
