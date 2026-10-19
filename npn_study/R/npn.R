@@ -1,6 +1,27 @@
 # NPN grass curing study helpers (scripts 51, 52). Needs R/features.R (ra_matrix, hargreaves,
 # first_true, last_true) and R/block2.R (run_lengths, onset_doy).
 
+# Region of each site: EPA / CEC Level II ecoregion code (e.g. "10.1"), from
+# data/npn_site_ecoregions.csv (scripts/59_npn_ecoregions.R); "none" when unknown. The NPN study
+# uses this published regionalization, not the fuel phenology regions (decided 18 Oct 2026).
+npn_site_regions <- function(site_id) {
+  f <- npn_path("data", "npn_site_ecoregions.csv")
+  if (!file.exists(f)) stop("needs data/npn_site_ecoregions.csv: run scripts/59_npn_ecoregions.R first")
+  e <- utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character", eco_l1_code = "character"))
+  r <- e$eco_l2_code[match(site_id, e$site_id)]
+  r[is.na(r) | !nzchar(r)] <- "none"
+  r
+}
+# Level II code -> name ("10.1" -> "Cold Deserts"), title case
+npn_region_names <- function() {
+  f <- npn_path("data", "npn_site_ecoregions.csv")
+  if (!file.exists(f)) return(character())
+  e <- unique(utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))[, c("eco_l2_code", "eco_l2_name")])
+  nm <- tools::toTitleCase(tolower(e$eco_l2_name))
+  nm <- gsub("\\bUsa\\b", "USA", nm); nm <- gsub("/", "/ ", nm, fixed = TRUE)   # wrap-friendly
+  stats::setNames(nm, e$eco_l2_code)
+}
+
 # Sensitivity variant for 52-54 from the second command-line argument (config npn_study:
 # sensitivity: <name>). Returns name, years to exclude, and the output sub-folder under npn_study/
 # ("" for the main run, "sens/<name>" otherwise).

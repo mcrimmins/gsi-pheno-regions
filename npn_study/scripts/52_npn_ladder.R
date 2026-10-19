@@ -21,23 +21,19 @@
 # level), scores.csv (MAE, skill vs L0, r of departures; all, by pathway, by region), selected.csv
 # (L3 drivers per fold), importance.csv (L4).
 #
-# Usage: Rscript scripts/52_npn_ladder.R [profile] [sensitivity]
+# Usage: Rscript npn_study/scripts/52_npn_ladder.R [profile] [sensitivity]
 #   sensitivity: a name under config npn_study: sensitivity (e.g. no1617); outputs then go to
 #   <run_dir>/npn_study/sens/<name>/ladder/
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
   base::get("gsi_profile", envir = globalenv())
-} else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+} else Sys.getenv("R_CONFIG_ACTIVE", "full")
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "features.R"))
-source(here::here("R", "block2.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
-source(here::here("R", "npn.R"))
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("52_npn_ladder", profile)
 ns <- cfg$npn_study %||% list()
 sens <- npn_sensitivity(ns, args)
@@ -203,7 +199,7 @@ SC <- list()
 for (k in split(P, paste(P$target, P$set))) {
   SC[[length(SC) + 1]] <- score(k, "all", "all")
   for (g in unique(k$pathway)) { u <- k[k$pathway %in% g, ]; if (nrow(u) >= 30) SC[[length(SC) + 1]] <- score(u, "pathway", g) }
-  for (g in unique(stats::na.omit(k$region))) { u <- k[k$region %in% g, ]; if (nrow(u) >= 30) SC[[length(SC) + 1]] <- score(u, "region", g) }
+  for (g in setdiff(unique(stats::na.omit(k$region)), "none")) { u <- k[k$region %in% g, ]; if (nrow(u) >= 30) SC[[length(SC) + 1]] <- score(u, "region", g) }
 }
 SC <- do.call(rbind, SC)
 utils::write.csv(SC, file.path(odir, "scores.csv"), row.names = FALSE)

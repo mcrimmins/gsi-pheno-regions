@@ -8,30 +8,28 @@
 #                  managed
 #   readings.csv   min-readings sensitivity (1, 4, 6, 8, 10, 12, 16, 20): plant-years and sites kept,
 #                  NEON versus other, per date; series with >= 1, 2, 3 years of the date
-#   by_region.csv  sites and plant-years per region (map number; 0 = unknown) and state: current
+#   by_region.csv  sites and plant-years per region (EPA Level II code; none = unknown) and state: current
 #                  analysis set (min readings, >= min_years) versus a relaxed Q2/Q4 set
 #                  (relaxed_min_readings, >= 1 year)
 #   density.csv    readings per plant-year and median reading gap, NEON versus other
 # Site names come from data/npn_site_names.csv (local only, 54a) and are used only for the NEON /
 # managed flags; no names are written. Runs anywhere (seconds).
 # Inputs: npn_curing_metrics.rds (GSI_OBS_DIR or config study_dir), data/npn_species_pathway.csv,
-# <run_dir>/npn_study/npn_site_daily.rds (50, optional), region from eval/target_check.
+# <run_dir>/npn_study/npn_site_daily.rds (50, optional), data/npn_site_ecoregions.csv (59).
 # Output <run_dir>/npn_study/inventory/.
 #
-# Usage: Rscript scripts/55_npn_filter_inventory.R [profile] [relaxed_min_readings, default 6]
+# Usage: Rscript npn_study/scripts/55_npn_filter_inventory.R [profile] [relaxed_min_readings, default 6]
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
   base::get("gsi_profile", envir = globalenv())
-} else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+} else Sys.getenv("R_CONFIG_ACTIVE", "full")
 relaxed_n <- if (length(args) >= 2) as.integer(args[2]) else 6L
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "obs.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("55_npn_filter_inventory", profile)
 ns <- cfg$npn_study %||% list()
 sdir <- file.path(cfg$run_dir, "npn_study"); odir <- file.path(sdir, "inventory")
@@ -41,14 +39,14 @@ log_msg("=== 55_npn_filter_inventory | profile: ", profile, " | relaxed min read
 min_n <- ns$min_readings %||% 12; min_years <- ns$min_years %||% 3
 yrs <- seq(ns$years$start %||% 2001, ns$years$end %||% 2025)
 
-cm <- readRDS(file.path(Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg)), "npn_curing_metrics.rds"))
+cm <- readRDS(file.path(npn_obs_dir(cfg), "npn_curing_metrics.rds"))
 log_msg(sprintf("npn_curing_metrics: %d rows, columns: %s", nrow(cm), paste(names(cm), collapse = ", ")))
-sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
+sp <- utils::read.csv(npn_path("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
 m <- match(cm$species_id, sp$species_id)
 cm$pathway <- sp$pathway[m]; cm$crop <- sp$crop[m] %in% "yes"
 
 # flags (names used only here, never written)
-nf <- here::here("data", "npn_site_names.csv")
+nf <- npn_path("data", "npn_site_names.csv")
 managed_re <- "garden|campus|universit|college|school|park|yard|home|house|residen|arboret|cemeter|golf|lawn|church|office|museum|zoo|nursery|farm|ranch hq|backyard|front|street|apartment|condo|library|center"
 if (file.exists(nf)) {
   sn <- utils::read.csv(nf, stringsAsFactors = FALSE)
@@ -61,12 +59,7 @@ if (file.exists(nf)) {
 }
 cm$group <- ifelse(is.na(cm$neon), "unknown", ifelse(cm$neon, "NEON", ifelse(cm$managed, "other_managed", "other")))
 
-tc <- file.path(cfg$run_dir, "eval", "target_check", "site_years.csv"); cm$region <- 0L
-if (file.exists(tc)) {
-  r <- utils::read.csv(tc, stringsAsFactors = FALSE)
-  r$site_id <- as.integer(sub("^npn(\\d+)\\|.*$", "\\1", r$site)); r <- r[!is.na(r$site_id) & !is.na(r$region), ]
-  cm$region <- r$region[match(cm$site_id, r$site_id)]; cm$region[is.na(cm$region)] <- 0L
-}
+cm$region <- npn_site_regions(cm$site_id)                  # EPA Level II ecoregion (59); "none" = unknown
 dfile <- file.path(sdir, "npn_site_daily.rds")
 prism_sites <- if (file.exists(dfile)) readRDS(dfile)$sites$site_id else NULL
 if (is.null(prism_sites)) log_msg("no npn_site_daily.rds: PRISM-site filter skipped")
@@ -157,7 +150,7 @@ for (tg in names(targets)) {
   bt <- do.call(rbind, B[vapply(B, function(d) d$target == tg && d$by == "region", TRUE)])
   log_msg(sprintf("%-8s sites current -> relaxed (>= %d readings, >= 1 yr): %d -> %d (non-NEON %d -> %d) | regions with >= 3 sites: %d -> %d",
     tg, relaxed_n, sum(bt$current_sites), sum(bt$relaxed_sites), sum(bt$current_sites - bt$current_neon_sites), sum(bt$relaxed_sites - bt$relaxed_neon_sites),
-    sum(bt$current_sites >= 3 & bt$level != "0"), sum(bt$relaxed_sites >= 3 & bt$level != "0")))
+    sum(bt$current_sites >= 3 & bt$level != "none"), sum(bt$relaxed_sites >= 3 & bt$level != "none")))
 }
 utils::write.csv(do.call(rbind, B), file.path(odir, "by_region.csv"), row.names = FALSE)
 

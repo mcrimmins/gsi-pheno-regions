@@ -13,28 +13,23 @@
 #      (a side needs >= 8 sites and 100 plant-years)
 # The estimates are shrunken (BLUPs), so correlations are conservative but not biased in sign.
 # Inputs: npn_curing_metrics.rds (GSI_OBS_DIR or study_dir), <run_dir>/npn_study/npn_metrics.rds
-# (51), npn_site_daily.rds (50), region from eval/target_check. Needs lme4.
+# (51), npn_site_daily.rds (50), region = EPA Level II ecoregion (59). Needs lme4.
 # Output <run_dir>/npn_study/site_signal/: signal.csv (site-year signal + drivers),
 # driver_r.csv, cv.csv, managed.csv (when names exist).
 #
-# Usage: Rscript scripts/54_npn_site_signal.R [profile] [sensitivity]
+# Usage: Rscript npn_study/scripts/54_npn_site_signal.R [profile] [sensitivity]
 #   sensitivity: a name under config npn_study: sensitivity (e.g. no1617); outputs then go to
 #   <run_dir>/npn_study/sens/<name>/site_signal/
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
   base::get("gsi_profile", envir = globalenv())
-} else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+} else Sys.getenv("R_CONFIG_ACTIVE", "full")
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "obs.R"))
-source(here::here("R", "features.R"))
-source(here::here("R", "block2.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
-source(here::here("R", "npn.R"))
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("54_npn_site_signal", profile)
 ns <- cfg$npn_study %||% list()
 sens <- npn_sensitivity(ns, args)
@@ -45,22 +40,17 @@ log_msg("=== 54_npn_site_signal | profile: ", profile, if (nzchar(sens$name)) sp
 if (!requireNamespace("lme4", quietly = TRUE)) stop("needs the lme4 package")
 lead <- ns$lead_days %||% 14
 
-ddir <- Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg))
+ddir <- npn_obs_dir(cfg)
 cm <- readRDS(file.path(ddir, "npn_curing_metrics.rds"))
-sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
+sp <- utils::read.csv(npn_path("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
 M <- readRDS(file.path(sdir, "npn_metrics.rds")); YM <- M$site_years
 D <- readRDS(file.path(sdir, "npn_site_daily.rds"))
 u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12) & !(cm$year %in% sens$exclude_years), ]
 m <- match(u$species_id, sp$species_id); u$pathway <- sp$pathway[m]; u <- u[!(sp$crop[m] %in% "yes"), ]
-tc <- file.path(cfg$run_dir, "eval", "target_check", "site_years.csv"); u$region <- 0
-if (file.exists(tc)) {
-  r <- utils::read.csv(tc, stringsAsFactors = FALSE)
-  r$site_id <- as.integer(sub("^npn(\\d+)\\|.*$", "\\1", r$site)); r <- r[!is.na(r$site_id) & !is.na(r$region), ]
-  u$region <- r$region[match(u$site_id, r$site_id)]; u$region[is.na(u$region)] <- 0
-}
+u$region <- npn_site_regions(u$site_id)                     # EPA Level II ecoregion (59)
 
 # likely managed sites from names (optional)
-nf <- here::here("data", "npn_site_names.csv")
+nf <- npn_path("data", "npn_site_names.csv")
 managed_re <- "garden|campus|universit|college|school|park|yard|home|house|residen|arboret|cemeter|golf|lawn|church|office|museum|zoo|nursery|farm|ranch hq|backyard|front|street|apartment|condo|library|center"
 u$managed <- NA
 if (file.exists(nf)) {

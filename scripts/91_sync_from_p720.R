@@ -9,8 +9,8 @@
 #   fire       fire study results: every <remote run dir>/fire_study/<step>/*.csv, plus the
 #              per-record tables (*.parquet / *.rds) of the steps in config `sync: fire_tables`
 #              (default fod), into <data_root>/full/fire_study/<step>/ on the laptop
-#   render     quarto render every page: report/index.qmd, report/npn_study.qmd (NPN curing
-#              study) and report/fire_study.qmd (fire activity study) -> report/<page>.html
+#   render     quarto render every page: report/index.qmd, npn_study/report/npn_study.qmd (NPN
+#              curing study, its own subfolder) and report/fire_study.qmd -> <page>.html next to its .qmd
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
 #              invalidation). Never runs unless asked for ("publish" or "all").
 #   all        figs + render + publish
@@ -141,8 +141,11 @@ if ("fire" %in% what) {
 }
 
 # ---- render -------------------------------------------------------------------------------
-pages <- c("index", "npn_study", "fire_study")                     # report/<page>.qmd -> <page>.html
-pages <- pages[file.exists(here::here("report", paste0(pages, ".qmd")))]
+pages <- c("index", "npn_study", "fire_study")                     # <page>.qmd -> <page>.html
+# Folder of each page: report/, except the NPN study, which lives in npn_study/report/ (moved Oct 18
+# 2026 so it can become its own repo). All pages still publish to the same S3 folder.
+page_dir <- function(pg) if (pg == "npn_study") here::here("npn_study", "report") else here::here("report")
+pages <- pages[file.exists(vapply(pages, function(pg) file.path(page_dir(pg), paste0(pg, ".qmd")), ""))]
 html <- here::here("report", "index.html")
 find_quarto <- function() {
   q1 <- Sys.getenv("QUARTO_PATH", ""); if (nzchar(q1) && file.exists(q1)) return(q1)
@@ -161,14 +164,14 @@ if ("render" %in% what) {
   old <- Sys.getenv("R_LIBS", unset = NA)
   Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
   for (pg in pages) {
-    out <- here::here("report", paste0(pg, ".html"))
-    r <- run(qbin, c("render", q(here::here("report", paste0(pg, ".qmd")))))
+    out <- file.path(page_dir(pg), paste0(pg, ".html"))
+    r <- run(qbin, c("render", q(file.path(page_dir(pg), paste0(pg, ".qmd")))))
     if (!r$ok || !file.exists(out)) {
       if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old)
       log_err("render failed (", pg, "):\n", paste(utils::tail(r$out, 15), collapse = "\n"))
       stop("quarto render failed for ", pg, ".qmd (see log)")
     }
-    log_msg("rendered report/", pg, ".html (", round(file.size(out) / 1e6, 1), " MB)")
+    log_msg("rendered ", out, " (", round(file.size(out) / 1e6, 1), " MB)")
   }
   if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old)
 }
@@ -184,10 +187,10 @@ if ("publish" %in% what) {
   pa <- if (nzchar(prof)) c("--profile", prof) else character()
   paths <- character()
   for (pg in pages) {
-    h <- here::here("report", paste0(pg, ".html"))
-    if (!file.exists(h)) stop("report/", pg, ".html missing: run the render step first")
-    newest_input <- max(file.mtime(c(here::here("report", paste0(pg, ".qmd")),
-                                     list.files(here::here("report", "figs"), full.names = TRUE))))
+    h <- file.path(page_dir(pg), paste0(pg, ".html"))
+    if (!file.exists(h)) stop(h, " missing: run the render step first")
+    newest_input <- max(file.mtime(c(file.path(page_dir(pg), paste0(pg, ".qmd")),
+                                     list.files(file.path(page_dir(pg), "figs"), full.names = TRUE))))
     if (file.mtime(h) < newest_input)
       log_warn(pg, ".html is older than its .qmd or a figure; publishing it anyway")
     d <- if (pg == "index" && !endsWith(dest, "/")) dest else paste0(folder, pg, ".html")   # a full key names the main page

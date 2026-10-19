@@ -14,25 +14,22 @@
 # interpolated inside a gap of that many days) against the plant residual, and the reliability
 # of a site-year mean.
 # Inputs: npn_curing_metrics.rds (GSI_OBS_DIR or config study_dir), data/npn_species_pathway.csv,
-# region from <run_dir>/eval/target_check/site_years.csv. Needs lme4. Runs anywhere (< 1 min).
+# region = EPA Level II ecoregion (data/npn_site_ecoregions.csv, 59). Needs lme4. Runs anywhere (< 1 min).
 # Output <run_dir>/npn_study/variance/components.csv, summary.csv.
 #
-# Usage: Rscript scripts/53_npn_variance.R [profile] [sensitivity]
+# Usage: Rscript npn_study/scripts/53_npn_variance.R [profile] [sensitivity]
 #   sensitivity: a name under config npn_study: sensitivity (e.g. no1617); outputs then go to
 #   <run_dir>/npn_study/sens/<name>/variance/
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
   base::get("gsi_profile", envir = globalenv())
-} else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+} else Sys.getenv("R_CONFIG_ACTIVE", "full")
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "obs.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
-source(here::here("R", "npn.R"))
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("53_npn_variance", profile)
 ns <- cfg$npn_study %||% list()
 sens <- npn_sensitivity(ns, args)
@@ -41,22 +38,15 @@ t0 <- Sys.time()
 log_msg("=== 53_npn_variance | profile: ", profile, if (nzchar(sens$name)) sprintf(" | sensitivity %s: excluding %s", sens$name, paste(sens$exclude_years, collapse = ", ")) else "")
 if (!requireNamespace("lme4", quietly = TRUE)) stop("needs the lme4 package")
 
-ddir <- Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg))
+ddir <- npn_obs_dir(cfg)
 cm <- readRDS(file.path(ddir, "npn_curing_metrics.rds"))
-sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
+sp <- utils::read.csv(npn_path("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
 u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12) & !(cm$year %in% sens$exclude_years), ]
 m <- match(u$species_id, sp$species_id)
 u$pathway <- sp$pathway[m]; u <- u[!(sp$crop[m] %in% "yes"), ]
-tc <- file.path(cfg$run_dir, "eval", "target_check", "site_years.csv")
-u$region <- NA_integer_
-if (file.exists(tc)) {
-  r <- utils::read.csv(tc, stringsAsFactors = FALSE)
-  r$site_id <- as.integer(sub("^npn(\\d+)\\|.*$", "\\1", r$site)); r <- r[!is.na(r$site_id) & !is.na(r$region), ]
-  u$region <- r$region[match(u$site_id, r$site_id)]
-}
-u$region[is.na(u$region)] <- 0                              # unknown region: one shared level
+u$region <- npn_site_regions(u$site_id)                     # EPA Level II ecoregion (59); "none" = one shared level
 log_msg(sprintf("plant-years: %d (%d plants, %d sites, %d species); region known for %.0f %%",
-                nrow(u), length(unique(u$individual_id)), length(unique(u$site_id)), length(unique(u$species_id)), 100 * mean(u$region > 0)))
+                nrow(u), length(unique(u$individual_id)), length(unique(u$site_id)), length(unique(u$species_id)), 100 * mean(u$region != "none")))
 
 cdiff <- function(a, b) { d <- (a - b) %% 365.25; ifelse(d > 182.625, d - 365.25, d) }
 cmed <- function(x) { x <- x[!is.na(x)]; a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }

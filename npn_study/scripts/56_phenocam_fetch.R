@@ -14,20 +14,18 @@
 # Nothing personal is written: NEON site codes and camera names only.
 # Output <run_dir>/npn_study/phenocam/: matches.csv, rois_all_neon.csv, raw/ (phenocamr files).
 #
-# Usage: Rscript scripts/56_phenocam_fetch.R [profile] [max_km, default 5]
+# Usage: Rscript npn_study/scripts/56_phenocam_fetch.R [profile] [max_km, default 5]
 # Needs: renv::install("phenocamr")
 
 args <- commandArgs(trailingOnly = TRUE)
-profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
 max_km <- if (length(args) >= 2) as.numeric(args[2]) else 5
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "obs.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 if (!requireNamespace("phenocamr", quietly = TRUE)) stop("needs the phenocamr package: renv::install('phenocamr')")
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("56_phenocam_fetch", profile)
 odir <- file.path(cfg$run_dir, "npn_study", "phenocam"); rdir <- file.path(odir, "raw")
 dir.create(rdir, showWarnings = FALSE, recursive = TRUE)
@@ -35,10 +33,10 @@ t0 <- Sys.time()
 log_msg("=== 56_phenocam_fetch | profile: ", profile, " | max_km: ", max_km)
 
 # 1. NEON sites in the NPN grass record
-nf <- here::here("data", "npn_site_names.csv")
+nf <- npn_path("data", "npn_site_names.csv")
 if (!file.exists(nf)) stop("needs data/npn_site_names.csv: run scripts/54a_npn_site_names.R first")
 sn <- utils::read.csv(nf, stringsAsFactors = FALSE)
-cm <- readRDS(file.path(Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg)), "npn_curing_metrics.rds"))
+cm <- readRDS(file.path(npn_obs_dir(cfg), "npn_curing_metrics.rds"))
 u <- cm[cm$usable %in% TRUE, ]
 S <- stats::aggregate(cbind(lat, lon) ~ site_id, data = u, FUN = stats::median)
 S$plant_years <- as.integer(table(u$site_id)[as.character(S$site_id)])

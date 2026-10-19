@@ -1,0 +1,57 @@
+# NPN grass curing study: configuration (standalone; does not read the parent repo's config.yml).
+# Scripts take the profile as their first argument (`Rscript npn_study/scripts/51_npn_metrics.R full`).
+# Profiles inherit from `default`; `full` is the only one in use.
+#
+# Paths are chosen by OS. Overrides: NPN_DATA_ROOT (data_root), GSI_OBS_DIR (folder with
+# npn_curing_metrics.rds and npn_green_obs.rds).
+# Outputs go to <data_root>/<run_name>/npn_study/ (unchanged from before the move, Oct 18 2026).
+
+default:
+  run_name: full
+  data_root:
+    windows: "C:/Users/Crimmins/data/gsi-pheno-regions"
+    linux: "~/data/gsi-pheno-regions"
+  # NPN graminoid percent-green tables (npn_curing_metrics.rds, npn_green_obs.rds) are built by
+  # GrowingSeasonIndex/study/02c_get_npn_intensity.R; they live in <study_dir>/data/derived.
+  study_dir:
+    windows: "C:/Users/Crimmins/RProjects/GrowingSeasonIndex/study"
+    linux: "~/RProjects/GrowingSeasonIndex/study"
+  # Yearly daily PRISM stacks prism_<var>_<year>.tif in <prism_daily_dir>/<var>/ (4 km CONUS).
+  # Only script 50 reads them (on the P720). null = <data_root>/<run_name>/prism_daily.
+  prism_daily_dir: null
+
+  # Daily climate thresholds used by the site-year metrics (51) and drivers (52, 54).
+  climate:
+    event_mm: [5, 2.5, 10]      # rain-event thresholds (mm/day); first = primary
+    dry_day_mm: 1               # dry day for dry spells: ppt < this
+    onset:                      # warm-season rain onset, calendar year Y
+      start_doy: 121            # search from May 1
+      end_doy: 273              # ... to Sep 30; no onset -> end_doy + 1 (censored)
+      window_days: 10           # onset day d: wet day and ppt(d .. d + 9) >= total_mm
+      total_mm: 20
+      check_days: 30            # false-start check: no dry spell >= max_dry_spell in d+1 .. d+30
+      max_dry_spell: 20
+    hard_freeze: -2.2           # freeze sensitivity threshold (C)
+
+  npn_study:
+    years: {start: 2001, end: 2025}   # PRISM daily available from 2001
+    vars: [ppt, tmin, tmax, vpdmax]
+    min_readings: 12                  # per plant-year, year-to-year analyses (52-54)
+    memory_days: [15, 30, 60]         # time constants of the antecedent P - PET index
+    daylength_gates_h: [12, 11]       # fall gates for northern C3 curing
+    normals: {start: 2002, end: 2025} # needs the year before, so starts one year after PRISM
+    min_years: 3                      # 52: series need >= 3 years with the date
+    lead_days: 14                     # 52: lead-time drivers end at the typical date minus this
+    max_predictors: 4                 # 52: L3 forward selection
+    l2_window_days: 60                # 52: L2 curing rule searches the typical date +/- this
+    # Regions: EPA / CEC Level II ecoregions (CEC 1997), assigned to every site by
+    # scripts/59_npn_ecoregions.R -> data/npn_site_ecoregions.csv.
+    ecoregions_url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
+    # Sensitivity runs of 52-54: `Rscript npn_study/scripts/5x_*.R full <name>`; outputs go to
+    # <run_dir>/npn_study/sens/<name>/ (main results untouched).
+    sensitivity:
+      no1617:                         # 16 Oct: NEON plants peaked lower in 2016-17 at 11 of 18
+        exclude_years: [2016, 2017]   #   sites (likely a judging / protocol change, not weather)
+
+full:
+  run_name: full

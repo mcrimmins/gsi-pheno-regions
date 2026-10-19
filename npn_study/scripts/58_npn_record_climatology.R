@@ -9,7 +9,7 @@
 #                                 group (NEON / other / managed) x pathway
 #                 readings.csv    readings per plant-year, median gap between readings, span
 #                 bins.csv        share of readings in each percent-green bin
-#                 coverage.csv    sites and plant-years per region (A2 k13 map number) x pathway
+#                 coverage.csv    sites and plant-years per region (EPA Level II ecoregion code) x pathway
 #                 peak_lt50.csv   plant-years with >= 6 readings that never pass 50 % green
 #                                 (dropped by `usable`): by group, and per NEON year (share of
 #                                 that year's plants) - possible drought-suppressed years
@@ -32,27 +32,21 @@
 # warm-season rain share, latitude.
 # Names (data/npn_site_names.csv, local only) are used only for the NEON / managed flags.
 # Inputs: npn_curing_metrics.rds and npn_green_obs.rds (GSI_OBS_DIR or config study_dir),
-# data/npn_species_pathway.csv, <run_dir>/npn_study/npn_metrics.rds (51), region rasters
-# (clusters/, as in 36). Needs lme4. Runs on the laptop (a few minutes: leave-one-site-out refits).
+# data/npn_species_pathway.csv, <run_dir>/npn_study/npn_metrics.rds (51), regions = EPA Level II
+# ecoregions (data/npn_site_ecoregions.csv, 59). Needs lme4. Runs on the laptop (a few minutes: leave-one-site-out refits).
 # Output <run_dir>/npn_study/record/.
 #
-# Usage: Rscript scripts/58_npn_record_climatology.R [profile]
+# Usage: Rscript npn_study/scripts/58_npn_record_climatology.R [profile]
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
   base::get("gsi_profile", envir = globalenv())
-} else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+} else Sys.getenv("R_CONFIG_ACTIVE", "full")
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "grid.R"))
-source(here::here("R", "features.R"))
-source(here::here("R", "cluster.R"))
-source(here::here("R", "evaluate.R"))
-source(here::here("R", "obs.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("58_npn_record_climatology", profile)
 ns <- cfg$npn_study %||% list()
 sdir <- file.path(cfg$run_dir, "npn_study"); odir <- file.path(sdir, "record")
@@ -70,12 +64,12 @@ cmed <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA_real_); a <- 
 cq <- function(x, p) { x <- x[!is.na(x)]; if (!length(x)) return(NA_real_); m <- cmed(x); (m + stats::quantile(cdiff(x, m), p, names = FALSE)) %% 365.25 }
 
 # ---- plant-years ------------------------------------------------------------------------------
-ddir <- Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg))
+ddir <- npn_obs_dir(cfg)
 cm <- readRDS(file.path(ddir, "npn_curing_metrics.rds"))
-sp <- utils::read.csv(here::here("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
+sp <- utils::read.csv(npn_path("data", "npn_species_pathway.csv"), stringsAsFactors = FALSE)
 m <- match(cm$species_id, sp$species_id)
 cm$pathway <- sp$pathway[m]; cm$life_cycle <- sp$life_cycle[m]; cm$crop <- sp$crop[m] %in% "yes"
-nf <- here::here("data", "npn_site_names.csv")
+nf <- npn_path("data", "npn_site_names.csv")
 managed_re <- "garden|campus|universit|college|school|park|yard|home|house|residen|arboret|cemeter|golf|lawn|church|office|museum|zoo|nursery|farm|ranch hq|backyard|front|street|apartment|condo|library|center"
 if (file.exists(nf)) {
   sn <- utils::read.csv(nf, stringsAsFactors = FALSE)
@@ -83,14 +77,9 @@ if (file.exists(nf)) {
   cm$group <- ifelse(grepl("\\.phenology\\.phe", nm), "NEON", ifelse(grepl(managed_re, nm), "managed", "other"))
 } else { log_msg("no data/npn_site_names.csv: NEON / managed flags unavailable"); cm$group <- "unknown" }
 
-# regions: A2 k13 map numbers by grid cell (as in 36), for every site
-tc <- cfg$target_check
-grid <- terra::rast(file.path(static_dir(cfg), "grid_mask.tif"))
-land <- which(!is.na(terra::values(grid, mat = FALSE)))
-RD <- region_display(cfg, grid, list(list(partition = tc$partition, k = tc$k)))[[1]]
-cell <- terra::cellFromXY(grid, as.matrix(cm[, c("lon", "lat")]))
-cm$region <- RD$num[match(cell, land)]; cm$region[is.na(cm$region)] <- 0L
-log_msg(sprintf("regions: %s k%d; region known for %.0f %% of plant-years", tc$partition, as.integer(tc$k), 100 * mean(cm$region > 0)))
+# regions: EPA / CEC Level II ecoregions (59), for every site
+cm$region <- npn_site_regions(cm$site_id)
+log_msg(sprintf("regions: EPA Level II ecoregions; region known for %.0f %% of plant-years, %d regions", 100 * mean(cm$region != "none"), length(unique(cm$region[cm$region != "none"]))))
 
 u <- cm[cm$usable %in% TRUE & !cm$crop & cm$year %in% yrs, ]
 u$series <- paste(u$site_id, u$species_id)
@@ -121,7 +110,7 @@ for (st in c("relaxed", "yty")) for (gn in names(grp_sets)) for (pw in c("all", 
     sites = length(unique(x$site_id)), species = length(unique(x$species_id)), series = length(unique(x$series)), readings = sum(x$n_obs),
     first_year = if (nrow(x)) min(x$year) else NA, last_year = if (nrow(x)) max(x$year) else NA,
     greenup = sum(!is.na(x$greenup)), curing = sum(!is.na(x$curing)), cured = sum(!is.na(x$cured)),
-    regions = length(unique(x$region[x$region > 0])))
+    regions = length(unique(x$region[x$region != "none"])))
 }
 REC <- do.call(rbind, rec); wcsv(REC, "record.csv")
 for (i in which(REC$pathway == "all" & REC$group %in% c("all", "NEON", "other")))
@@ -227,12 +216,12 @@ for (tg in c(names(targets), "season_len")) for (rg in sort(unique(TY$region))) 
     q75 = if (circ) cq(x[[tg]], 0.75) else stats::quantile(x[[tg]], 0.75, names = FALSE))
 }
 CLT <- do.call(rbind, CL); wcsv(CLT, "climatology.csv")
-for (tg in names(targets)) { z <- CLT[CLT$target == tg & CLT$series >= 3 & CLT$region > 0, ]
+for (tg in names(targets)) { z <- CLT[CLT$target == tg & CLT$series >= 3 & CLT$region != "none", ]
   log_msg(sprintf("climatology %-8s (region x pathway with >= 3 series): %s", tg,
-                  paste(sprintf("R%d %s %s (n %d)", z$region, z$pathway, format(as.Date("2001-01-01") + round(z$median) - 1, "%d %b"), z$series), collapse = "; "))) }
+                  paste(sprintf("%s %s %s (n %d)", z$region, z$pathway, format(as.Date("2001-01-01") + round(z$median) - 1, "%d %b"), z$series), collapse = "; "))) }
 # C4 minus C3 within region; annual minus perennial within C3
 cc <- list()
-for (tg in c(names(targets), "season_len")) for (rg in sort(unique(TY$region[TY$region > 0]))) {
+for (tg in c(names(targets), "season_len")) for (rg in sort(unique(TY$region[TY$region != "none"]))) {
   for (cmp in list(c("pathway", "C4", "C3"), c("life_cycle", "annual", "perennial"))) {
     x <- TY[TY$region == rg & !is.na(TY[[tg]]), ]
     if (cmp[1] == "life_cycle") x <- x[x$pathway %in% "C3", ]
@@ -244,7 +233,7 @@ for (tg in c(names(targets), "season_len")) for (rg in sort(unique(TY$region[TY$
   }
 }
 if (length(cc)) { CC <- do.call(rbind, cc); wcsv(CC, "c3c4.csv")
-  for (i in seq_len(nrow(CC))) with(CC[i, ], log_msg(sprintf("  %-10s R%-2d %-22s %+4.0f d (n %d vs %d, p %.2f)", target, region, contrast, diff_days, n_a, n_b, p))) }
+  for (i in seq_len(nrow(CC))) with(CC[i, ], log_msg(sprintf("  %-10s %-5s %-22s %+4.0f d (n %d vs %d, p %.2f)", target, region, contrast, diff_days, n_a, n_b, p))) }
 
 # ---- Q4 climate across space ------------------------------------------------------------------------
 M <- readRDS(file.path(sdir, "npn_metrics.rds")); N <- M$normals
@@ -272,7 +261,7 @@ r2_mixed <- function(f) {
   c(marginal = vf / (vf + vr + ve), conditional = (vf + vr) / (vf + vr + ve))
 }
 fit_set <- function(x, tg, pw, setname) {
-  x <- x[!is.na(x[[tg]]) & stats::complete.cases(x[, preds[[tg]]]) & x$region > 0 & x$pathway %in% c("C3", "C4"), ]
+  x <- x[!is.na(x[[tg]]) & stats::complete.cases(x[, preds[[tg]]]) & x$region != "none" & x$pathway %in% c("C3", "C4"), ]
   if (pw != "all") x <- x[x$pathway %in% pw, ]
   if (nrow(x) < 20 || length(unique(x$site_id)) < 10) return(NULL)
   x$y <- cmed(x[[tg]]) + cdiff(x[[tg]], cmed(x[[tg]]))

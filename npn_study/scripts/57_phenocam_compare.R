@@ -18,18 +18,16 @@
 # Inputs: <run_dir>/npn_study/phenocam/ (56), site_signal/signal.csv (54), npn_curing_metrics.rds.
 # Output <run_dir>/npn_study/phenocam/: camera_dates.csv, pairs.csv, compare.csv, camera_agreement.csv.
 #
-# Usage: Rscript scripts/57_phenocam_compare.R [profile] [window_days, default 60]
+# Usage: Rscript npn_study/scripts/57_phenocam_compare.R [profile] [window_days, default 60]
 
 args <- commandArgs(trailingOnly = TRUE)
-profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "dev")
+profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
 win_d <- if (length(args) >= 2) as.numeric(args[2]) else 60
 
-source(here::here("R", "config.R"))
-source(here::here("R", "log.R"))
-source(here::here("R", "obs.R"))
-`%||%` <- function(a, b) if (is.null(a)) b else a
+npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
+source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-cfg <- load_cfg(profile)
+cfg <- load_npn_cfg(profile)
 log_file <- log_init("57_phenocam_compare", profile)
 ns <- cfg$npn_study %||% list()
 sdir <- file.path(cfg$run_dir, "npn_study"); odir <- file.path(sdir, "phenocam"); rdir <- file.path(odir, "raw")
@@ -45,7 +43,7 @@ SG <- utils::read.csv(file.path(sdir, "site_signal", "signal.csv"), stringsAsFac
 SG <- SG[SG$site_id %in% MT$site_id, ]
 
 # typical NPN dates per site (same plant-year filter as 53 / 54)
-cm <- readRDS(file.path(Sys.getenv("GSI_OBS_DIR", obs_study_dir(cfg)), "npn_curing_metrics.rds"))
+cm <- readRDS(file.path(npn_obs_dir(cfg), "npn_curing_metrics.rds"))
 u <- cm[cm$usable %in% TRUE & cm$n_obs >= (ns$min_readings %||% 12) & cm$site_id %in% MT$site_id, ]
 typ <- lapply(c(greenup = "g50_up_doy", curing = "g50_down_doy", cured = "cured_doy"), function(col) c(tapply(u[[col]], u$site_id, cmed)))
 

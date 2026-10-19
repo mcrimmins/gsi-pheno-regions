@@ -49,3 +49,14 @@ report/*.html
 report/*_files/
 report/.quarto/
 data/npn_site_names.csv 
+
+# ---- NPN study subfolder (npn_study/, self-contained; becomes its own repo at publication) ----
+# Its two small data tables ARE committed; site names (people's yards) never are.
+!npn_study/data/
+npn_study/data/*
+!npn_study/data/npn_species_pathway.csv
+!npn_study/data/npn_site_ecoregions.csv
+npn_study/logs/
+npn_study/report/*.html
+npn_study/report/*_files/
+npn_study/report/.quarto/
