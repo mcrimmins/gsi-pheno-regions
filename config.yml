@@ -413,6 +413,9 @@ default:
     viirs_unlinked_sensitivity_regions: [10]
     # 68: C3/C4 gap test (decided Oct 19: two-pulse greenness cells in the Plains)
     c3c4: {regions: [10, 2], min_sep_days: 48, dip_frac: 0.15, peak_frac: 0.4, half_window_days: 14, n_boot: 2000}
+    # 65/66 GSI comparison (Oct 19): cured share from GSI dates (12_gsi.R variants): NFDRS2016 as published
+    # (Tmin x VPD x daylength) and FEMS with KBDI (best curing form in 35)
+    gsi_compare: [nfdrs_none, fems_kbdi]
     snow_regions: [10, 13]            # snow-off date in the baseline
     # Dryness baselines, all from PRISM (decided Oct 18: ppet60 added as the simple, readable
     # companion of the NFDRS 1000-h moisture; fit the model with ppet60 first, then swap in dfm1000)
@@ -429,6 +432,7 @@ default:
       photo_method: geometric
       ppet_days: 60                   # rain minus Hargreaves PET, trailing sum (mm)
       vpd_days: 30                    # trailing mean of PRISM VPDmax (kPa)
+      vpd_short_days: 7               # short-term VPD for the hot-spell check (Oct 19)
       kbdi_interception_in: 0.2
       snow: {t_snow_c: 1.0, t_melt_c: 0.0, ddf_mm_c: 3.0, swe_min_mm: 5, snowoff_by: "07-31"}
     curing_metric: eos50

@@ -784,7 +784,14 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   the trough weeks (30-33). Reading: no fire dip; 4 km curves can't resolve northern C3/C4 pulses.
   DECIDED Oct 19 (Mike): C3/C4 reported as a limitation; nowcast check = 66 specs *_lag2 (cured_dep
   two weeks earlier): pooled growth +20.5 [-0.5, +43] (vs +45.7), starts -2.4, human + unknown +11.0
-  [-15, +36]; write-up as a Docs artifact.
+  [-15, +36]; write-up as a Docs artifact ("Herbaceous phenology and fire activity: first findings").
+- Next checks (Oct 19, Mike yes): (1) GSI comparison: 65 cured_share_gsi_<v> / typ from 12_gsi.R
+  sos20 / eos50 (config fire_study: gsi_compare [nfdrs_none, fems_kbdi]; typical = cell median of GSI
+  dates; GSI features start 2002, so 2001 rows drop in those specs) + gsi_vs_sat.csv (r of GSI vs
+  satellite curing departures); 66 specs all_gsi_<v> / human_unk_gsi_<v> / px_gsi_<v>. (2) hot-spell:
+  64 vpd7 (7-day VPDmax, config dfm: vpd_short_days; needs 64 rerun with force), 65 carries it, 66
+  specs all_hs / human_unk_hs / px_hs add vpd7 to every model. Then: NPN ground check of the weekly
+  cured share at NPN grass sites; real-time (composites-to-date) cured share; NPN C3/C4 timing.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

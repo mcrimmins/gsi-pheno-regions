@@ -8,6 +8,8 @@
 #             7-day lagged update
 #   ppet60    rain minus Hargreaves PET over the last 60 days (mm): the simple, readable baseline
 #   vpd30     mean PRISM VPDmax over the last 30 days (kPa)
+#   vpd7      the same over the last 7 days (short-term hot, dry spells; added Oct 19 for the
+#             same-week check in 66)
 #   kbdi      Keetch-Byram drought index (as 12, mean annual precipitation from the PRISM years)
 #   swe, snow_share   degree-day snowpack (mm) and share of the region's weight with snow
 #                     (> swe_min); plus a yearly snow-off date per cell (decision 8)
@@ -78,7 +80,7 @@ RG <- fire_region_values(cfg, grid, fs$partition %||% "A2_groups", as.integer(fs
 region <- as.integer(RG$v)
 fuel <- fire_fuel_share(cfg); fuel[is.na(fuel)] <- 0
 log_msg("regions from ", RG$src, "; fuel share from static/nlcd_shares.tif")
-metrics <- c("dfm1000", "ppet60", "vpd30", "kbdi", "swe", "snow_share")
+metrics <- c("dfm1000", "ppet60", "vpd30", "vpd7", "kbdi", "swe", "snow_share")
 regs <- sort(unique(region[!is.na(region)]))
 
 nr_all <- terra::nrow(grid); nc <- terra::ncol(grid)
@@ -121,6 +123,7 @@ do_chunk <- function(row) {
         X <- list(dfm1000 = fdm_1000h(D, fr)[, keep, drop = FALSE]); rm(D)
         X$ppet60 <- m_roll_sum(P - PET, as.integer(dc$ppet_days %||% 60))[, keep, drop = FALSE]
         X$vpd30 <- m_roll_mean(VP / 10, as.integer(dc$vpd_days %||% 30))[, keep, drop = FALSE]
+        X$vpd7 <- m_roll_mean(VP / 10, as.integer(dc$vpd_short_days %||% 7))[, keep, drop = FALSE]   # hot-spell check (Oct 19)
         X$kbdi <- m_kbdi(P, TX, map_in, as.numeric(dc$kbdi_interception_in %||% 0.2))[, keep, drop = FALSE]
         X$swe <- fdm_snow(P, TN, TX, as.numeric(sc$t_snow_c %||% 1), as.numeric(sc$t_melt_c %||% 0),
                           as.numeric(sc$ddf_mm_c %||% 3))[, keep, drop = FALSE]

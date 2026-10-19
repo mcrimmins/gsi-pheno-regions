@@ -157,7 +157,7 @@ if (length(VS)) utils::write.csv(do.call(rbind, VS), file.path(out_dir, "viirs_f
 D <- fire_read_table(fire_dir(cfg, "dfm", "region_daily"))
 D <- D[D$weight == "fuel" & D$region %in% regs, ]
 D$date <- as.Date(D$date); D$year <- as.integer(format(D$date, "%Y")); D$week <- fire_week(D$date)
-bm <- c("dfm1000", "ppet60", "vpd30", "kbdi", "snow_share")
+bm <- intersect(c("dfm1000", "ppet60", "vpd30", "vpd7", "kbdi", "snow_share"), names(D))
 A <- stats::aggregate(D[, bm], D[, c("region", "year", "week")], mean)
 i <- match(W$k, key(A$region, A$year, A$week))
 for (m in bm) W[[m]] <- A[[m]][i]
@@ -227,6 +227,52 @@ for (r in regs) {
 }
 PH <- do.call(rbind, PH)
 utils::write.csv(PH, file.path(out_dir, "pheno_cells.csv"), row.names = FALSE)
+
+# ---- 4b. GSI comparison (Oct 19) ------------------------------------------------------------------------------
+# The same weekly cured share from GSI season dates (12_gsi.R sos20 / eos50 per variant in config
+# fire_study: gsi_compare) instead of the satellite's: does the weather-driven GSI carry the fire signal?
+# Typical = each cell's median GSI date over the years available. Columns cured_share_gsi_<v>,
+# cured_share_typ_gsi_<v>; gsi_vs_sat.csv = per region, correlation of GSI and satellite departures
+# (cell-years, |d| <= 90).
+GC <- list()
+for (v in unlist(fs$gsi_compare)) {
+  gfile <- function(Y) file.path(cfg$run_dir, "features", paste0("gsi_", v), sprintf("gsi_%s_%d.tif", v, Y))
+  gy <- seq(min(yrs) - 1, max(yrs) + 1); gy <- gy[file.exists(gfile(gy))]
+  if (!length(gy)) { log_warn("GSI ", v, ": no per-year files, skipped"); next }
+  GY <- lapply(stats::setNames(gy, gy), function(Y) as.matrix(terra::extract(terra::rast(gfile(Y))[[c("sos20", "eos50")]], allc)))
+  aS <- sapply(GY, function(m) m[, 1]); aE <- sapply(GY, function(m) m[, 2])
+  tgG <- apply(aS, 1, stats::median, na.rm = TRUE); tcG <- apply(aE, 1, stats::median, na.rm = TRUE)
+  cs <- paste0("cured_share_gsi_", v); ct <- paste0("cured_share_typ_gsi_", v)
+  W[[cs]] <- NA_real_; W[[ct]] <- NA_real_
+  for (r in regs) {
+    cr <- CELLS[[as.character(r)]]; ix <- match(cr, allc)
+    wt <- if (r %in% as.integer(unlist(fs$herb_weighted_regions))) fuel[cr] else rep(1, length(cr))
+    tg <- tgG[ix]; tc <- tcG[ix]; okT <- !is.na(tg) & !is.na(tc)
+    dg_all <- c(); ds_all <- c()
+    for (Y in yrs) {
+      if (!(as.character(Y) %in% names(GY))) next
+      get <- function(yy, j) { m <- GY[[as.character(yy)]]; if (is.null(m)) rep(NA_real_, length(cr)) else m[ix, j] }
+      S <- cbind(get(Y - 1, 1), get(Y, 1), get(Y + 1, 1)); E <- cbind(get(Y - 1, 2), get(Y, 2), get(Y + 1, 2))
+      lp <- as.numeric(as.Date(sprintf("%d-01-01", Y)) - as.Date(sprintf("%d-01-01", Y - 1)))
+      lt <- as.numeric(as.Date(sprintf("%d-01-01", Y + 1)) - as.Date(sprintf("%d-01-01", Y)))
+      okY <- !is.na(S[, 2]) & !is.na(E[, 2])
+      G <- fw_green(mid, S, E, lp, lt); GT <- fw_green(mid, cbind(tg, tg, tg), cbind(tc, tc, tc), lp, lt)
+      iw <- W$region == r & W$year == Y
+      W[[cs]][iw] <- vapply(seq_len(nw), function(j) fw_wmean(as.numeric(!G[okY, j]), wt[okY]), 0)[W$week[iw]]
+      W[[ct]][iw] <- vapply(seq_len(nw), function(j) fw_wmean(as.numeric(!GT[okT, j]), wt[okT]), 0)[W$week[iw]]
+      ms <- MY[[as.character(Y)]]
+      if (!is.null(ms)) { dg_all <- c(dg_all, E[, 2] - tc); ds_all <- c(ds_all, ms[ix, 2] - tdv[cr, "curing_doy"]) }
+    }
+    u <- !is.na(dg_all) & !is.na(ds_all) & abs(dg_all) <= 90 & abs(ds_all) <= 90
+    GC[[length(GC) + 1]] <- data.frame(variant = v, region = r, years = length(intersect(yrs, gy)), n = sum(u),
+                                       r_curing_dep = if (sum(u) > 30) stats::cor(dg_all[u], ds_all[u]) else NA_real_,
+                                       gsi_season_share = mean(okT))
+  }
+  log_msg(sprintf("GSI %s: years %d-%d; curing departure r with satellite by region: %s", v, min(gy), max(gy),
+                  paste(sprintf("%d %.2f", sapply(GC, `[[`, "region")[sapply(GC, `[[`, "variant") == v],
+                                sapply(GC, `[[`, "r_curing_dep")[sapply(GC, `[[`, "variant") == v]), collapse = ", ")))
+}
+if (length(GC)) utils::write.csv(do.call(rbind, GC), file.path(out_dir, "gsi_vs_sat.csv"), row.names = FALSE)
 
 # ---- 5. write and summarise ----------------------------------------------------------------------------------
 W$k <- NULL
