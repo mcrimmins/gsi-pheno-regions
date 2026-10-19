@@ -136,6 +136,14 @@ for (v in unlist(fs$gsi_compare)) {
   specs[[paste0("all_gsi_", v)]] <- list(y = "n_fires", rows = TRUE, pheno = pv)
   specs[[paste0("human_unk_gsi_", v)]] <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = pv)
   specs[[paste0("px_gsi_", v)]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = pv)
+  # does the GSI's gain come from its VPD ramp? GSI with this week's VPD (vpd7) in every model; and
+  # satellite + GSI together (the gain over each alone comes from loyo_scores: M2 of *_both vs M2 of each)
+  if ("vpd7" %in% names(W)) {
+    specs[[paste0("all_gsi_", v, "_hs")]] <- list(y = "n_fires", rows = TRUE, pheno = pv, extra = "vpd7")
+    specs[[paste0("px_gsi_", v, "_hs")]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = pv, extra = "vpd7")
+  }
+  specs[[paste0("all_both_", v)]] <- list(y = "n_fires", rows = TRUE, pheno = c("cured_dep", pv))
+  specs[[paste0("px_both_", v)]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = c("cured_dep", pv))
 }
 pick <- args[-1]
 if (length(pick)) specs <- specs[intersect(names(specs), unlist(strsplit(pick, ",")))]

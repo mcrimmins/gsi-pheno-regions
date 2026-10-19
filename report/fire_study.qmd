@@ -300,6 +300,12 @@ show_fig("fire_skill", "What phenology adds to predictions of years it was not f
   dates than the typical date (1–3 days better, r 0.30–0.50), but they add nothing to fire
   prediction. The fire signal is in the observed fuel state, which the weather forecast does not
   capture: monitoring curing as it happens looks more useful than forecasting it.
+- *Same-week weather.* Adding this week's vapour pressure deficit leaves most of the phenology
+  gain (growth +41 instead of +46), so the cured share is not just a stand-in for a hot, dry week.
+- *The GSI.* A cured share from NFDRS2016 GSI dates gains as much, but almost all of it in the
+  monsoon Southwest, and much of it disappears once this week's VPD is in the model: the GSI's value
+  for fire is mostly its VPD term. The satellite adds information the GSI lacks in California and
+  the Great Plains; the GSI adds the Southwest's pre-monsoon dryness.
 - *Ground check.* At single NPN grass sites the satellite and ground curing departures agree only
   modestly (r 0.35); averaged over a region's sites in a year, the scale used here, they agree at r
   0.66 (Great Plains 0.74, monsoon Southwest 0.84, upper Midwest 0.20).

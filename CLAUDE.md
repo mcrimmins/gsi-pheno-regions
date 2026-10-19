@@ -797,6 +797,14 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   averaged, >= 2 / >= 3 sites) -> fire_study/test/ground_check.csv. Result: curing (eos50) site-year r
   0.35 (421) -> region-year 0.66 (72); regions 10 0.74, 3 0.84, 2 0.78, 12 1.00 (n 5), 13 0.20; cured
   0.31 -> 0.36 (0.65 with >= 3 sites); green-up 0.48 -> 0.57.
+  Oct 19 GSI + hot-spell results (pooled gain over ppet60): hot-spell (vpd7 in all models) growth 41.2
+  [6, 77] (was 45.7), human + unknown 41.0, all 13.8. GSI curing departures vs satellite r: nfdrs_none
+  -0.00..0.26, fems_kbdi 0.02..0.40 by region. GSI cured share: nfdrs_none starts +38.1 [4, 69], human
+  + unknown +33.1, growth +52.4 [14, 92] (region 3 +41; 10 -1, 11 +3); fems_kbdi weaker (starts 17.4,
+  growth 29.8). With vpd7: GSI starts +9.5, growth +27.2 -> GSI gain is largely its VPD term. Joint
+  (66 specs *_both_<v>, 2002-24): growth satellite + GSI 70.8; satellite adds +18.4 over GSI (11 +15.8,
+  10 +5.2), GSI adds +25.1 over satellite (3 +23.5). Note satellite starts gain on 2002-24 only +8.2
+  (vs +17.8 with 2001): the all-cause starts result is fragile.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,
