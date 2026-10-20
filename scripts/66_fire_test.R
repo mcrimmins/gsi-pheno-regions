@@ -26,6 +26,7 @@
 #   all_fc, human_unk_fc, px_fc   forecast test: cured share from curing dates predicted 14 days ahead
 #                (67; skipped when forecast_weekly.csv is missing)
 #   all_lag2, human_unk_lag2, px_lag2   nowcast: cured-share departure lagged 2 weeks (satellite latency)
+#   all_rt, human_unk_rt, px_rt   real-time cured share (65b): only composites available that week
 #   all_hs, human_unk_hs, px_hs   hot-spell check: 7-day VPD (64 vpd7) in every model
 #   all_gsi_<v>, human_unk_gsi_<v>, px_gsi_<v>   cured share from GSI dates (config gsi_compare)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
@@ -121,6 +122,16 @@ if (file.exists(ff)) {
   i <- match(paste(W$region, W$year, W$week), paste(FC$region, FC$year, FC$week))
   W$cured_dep_fc <- (FC$cured_share_fc[i] - FC$cured_share_typ_fc[i]) * 10
 } else specs <- specs[!grepl("_fc$", names(specs))]
+# real-time cured share (65b, Oct 19): from the composites available each week, typical = other years
+rf <- fire_dir(cfg, "realtime", "realtime_weekly.csv")
+if (file.exists(rf)) {
+  RT <- utils::read.csv(rf)
+  i <- match(paste(W$region, W$year, W$week), paste(RT$region, RT$year, RT$week))
+  W$cured_dep_rt <- (RT$cured_share_rt[i] - RT$cured_share_rt_typ[i]) * 10
+  specs$all_rt <- list(y = "n_fires", rows = TRUE, pheno = "cured_dep_rt")
+  specs$human_unk_rt <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_rt")
+  specs$px_rt <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_rt")
+}
 for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
 # hot-spell check (Oct 19): 7-day VPD added to every model, so phenology must add beyond this week's dryness
 if ("vpd7" %in% names(W)) {

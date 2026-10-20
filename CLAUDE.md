@@ -805,6 +805,15 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   (66 specs *_both_<v>, 2002-24): growth satellite + GSI 70.8; satellite adds +18.4 over GSI (11 +15.8,
   10 +5.2), GSI adds +25.1 over satellite (3 +23.5). Note satellite starts gain on 2002-24 only +8.2
   (vs +17.8 with 2001): the all-cause starts result is fragile.
+- `scripts/65b_fire_realtime.R [profile]` (P720, forked by year, workers_by_step fire_realtime 8; built
+  Oct 19; config fire_study: realtime): real-time cured share from the MOD13A2 / MYD13A2 composites
+  available each week (start + 16 d + latency 3 d <= mid-week; quality as cutb_curves), relative
+  greenness g scaled by the cell's ndvi_base / ndvi_max medians of the OTHER years; green if g_now >=
+  0.5 or (g_now >= 0.2 and rising vs the previous 16 d); typical = mean of other years ->
+  fire_study/realtime/realtime_weekly.csv, realtime_check.csv (r with 65's after-the-fact share),
+  state_<Y>_<profile>.rds cache. 66 specs all_rt / human_unk_rt / px_rt when present. Planted test:
+  real-time green window lags the after-the-fact one by ~2 weeks (as designed) and follows a shifted
+  year.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

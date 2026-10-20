@@ -416,6 +416,8 @@ default:
     # 65/66 GSI comparison (Oct 19): cured share from GSI dates (12_gsi.R variants): NFDRS2016 as published
     # (Tmin x VPD x daylength) and FEMS with KBDI (best curing form in 35)
     gsi_compare: [nfdrs_none, fems_kbdi]
+    # 65b: real-time cured share from the composites available each week (Oct 19)
+    realtime: {latency_days: 3, greenup_frac: 0.2, curing_frac: 0.5}
     snow_regions: [10, 13]            # snow-off date in the baseline
     # Dryness baselines, all from PRISM (decided Oct 18: ppet60 added as the simple, readable
     # companion of the NFDRS 1000-h moisture; fit the model with ppet60 first, then swap in dfm1000)
@@ -787,6 +789,7 @@ full:
     cutb_curves: 16
     fire_link: 11             # 22 sensor-years -> two rounds
     fire_forecast: 8          # 67: one year of cues per worker (~5 GB each)
+    fire_realtime: 8          # 65b: one year of composites per worker
     fire_dfm: 16              # row chunks, all PRISM years per chunk (~4 GB peak per worker at 2 rows)
   memfrac: 0.08
   report:
