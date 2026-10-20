@@ -833,6 +833,11 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   check). 66 adds specs all_/human_unk_/px_ rt<L> and rts<L> for every realtime_weekly_lag*.csv;
   env GSI_FIRE_TEST_SUB=<name> writes 66 outputs to test/<name>/ (keeps the main tables). Fixture:
   lag 0 puts the planted 2021 green window at weeks 12-32 (truth 12-33), lag 19 at 15-35.
+  Delay results Oct 20 (test/delay/, pooled growth gain over ppet60, raw / smoothed): lag 19 -13 / -14,
+  12 -5 / -6, 4 +24 [-21, +68] / +23, 0 +38 [-26, +95] / +36 (hindsight +46); 3, 6, 10, 12 regain signal at
+  4 and 0, CA (11) negative at every lag. Departures r vs hindsight 0.28-0.51 (19) -> 0.37-0.62 (0). Starts
+  and human + unknown don't follow the lag (noise). Reading: delay is the growth bottleneck; ~10-12 d
+  (MCD43A4) likely not enough; daily reflectance with short compositing (MOD09GA / VNP09GA) is the candidate.
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.
