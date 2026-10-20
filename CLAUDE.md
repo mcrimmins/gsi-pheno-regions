@@ -826,6 +826,9 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   Smoothed nowcast full run Oct 19: departures r vs after-the-fact 0.32-0.56 (raw 0.28-0.51); 66
   (cloud preview): growth -13.9 [-25, -3] (no signal), starts +32.1 [-2, +66] (12 +19.9, 11 +12.8),
   human + unknown +14.1. Reading: 16-day composites are too slow; next would be daily MCD43A4.
+  C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
+  C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
+  fire page C3/C4 bullet and status updated.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

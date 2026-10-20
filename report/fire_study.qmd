@@ -71,8 +71,9 @@ region, shared for review with the project partners. It is a companion to the
 - **The GSI and the satellite carry different information.** The NFDRS2016 GSI's value for fire is
   mostly its vapour-pressure-deficit term, strongest in the monsoon Southwest; the satellite adds
   fuel-curing information the GSI lacks in California and the Great Plains.
-- **C3/C4:** the 4 km satellite curves cannot separate cool- and warm-season growth pulses in
-  northern mixed prairie; the question passes to the NPN study's ground data.
+- **C3/C4:** there is no gap between cool- and warm-season grass growth to produce a fire dip. On
+  the ground (NPN sites with both types), warm-season grasses green up months before cool-season
+  grasses cure, in every region and year checked; the satellite curves cannot separate the two.
 
 **The question.** At the scale of a region and a season, does the green-up and curing of
 grasses and other herbaceous plants shape fire activity? The regions work built typical
@@ -136,7 +137,7 @@ snowmelt as well as green-up.
 | Seasonal fire curves by region | Done (October 18) |
 | Seasonal and year-to-year tests | Done (October 18) |
 | Checks: burned cells, shuffled years, dates, forecast and real-time curing, same-week weather, GSI, ground data | Done (October 19) |
-| C3/C4 gap | Satellite test done (October 19); ground timing passed to the NPN study |
+| C3/C4 gap | Done (October 20): satellite test here, ground timing from the NPN study: no gap |
 | Partner review | Next |
 
 : Study status {.striped}
@@ -352,7 +353,14 @@ show_fig("fire_checks", "Phenology's gain in held-out prediction, per year, pool
   of 47,900 cells) and common in the southern Plains (43 %), where the two peaks are spring and fall
   growth around a summer drought trough. Fires there are most frequent in that summer trough, so
   there is no fire dip between growth pulses; the 4 km satellite curves cannot separate the C3 and
-  C4 pulses of northern mixed prairie.
+  C4 pulses of northern mixed prairie. The [NPN curing study](npn_study.html) answered it from the
+  ground (October 20): at sites with both grass types, warm-season (C4) grasses reach 50 % green in
+  late spring, four to six months before the cool-season (C3) grasses cure, in every year and every
+  region checked (Great Plains, southern Plains, upper Midwest, mid-South). The two pulses overlap;
+  there is no C3-to-C4 gap on the ground, so a mid-season dip in fire could only come from weather.
+- *Ground observations.* The NPN ground study found the same limit as the forecast test: weather
+  explains little of the year-to-year change in when grasses cure at a site, so curing has to be
+  observed, not forecast from weather.
 
 - *All-cause fire starts are fragile.* Their pooled gain is +18 over 2001–2024 but +8 over
   2002–2024: one year carries half of it. The fire-growth and human-cause results do not hinge on
@@ -402,6 +410,7 @@ reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-20 | C3/C4 answered from NPN ground data: the pulses overlap, no gap |
 | 2026-10-19 | Results consolidated: main findings, checks figure; same-week VPD, GSI, ground, real-time and smoothed real-time checks |
 | 2026-10-19 | Checks run: burn check, year shuffle, dates version, forecast curing dates, C3/C4 gap |
 | 2026-10-19 | Forecast test (curing predicted two weeks ahead) and C3/C4 gap test built |
