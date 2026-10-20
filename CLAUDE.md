@@ -836,3 +836,8 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   over ppet60 and dfm1000 baselines), fire_checks (Oct 19: pooled gain per year for the main result
   and every check / variant, three outcomes, shuffle median and range). Run after `91 ... fire`, then
   render. Page restructured Oct 19: findings in "At a glance", "Results" with Checks subsection.
+  Maps (Oct 20): fire_maps (2 x 2: pilot regions in region_display colours; FPA-FOD C+ density per
+  1,000 km2 / yr on 5 x 5-cell blocks; phenology gain per year by region for px and human_unk) and
+  fire_maps_gsi (satellite over GSI / GSI over satellite, growth, from loyo_scores *_both_nfdrs_none).
+  Regions from fire_region_values (laptop has no rules/: falls back to region_display, needs
+  clusters/a2_groups).

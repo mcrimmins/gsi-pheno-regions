@@ -8,6 +8,11 @@
 #                  (60-day water balance) and the 1000-h baselines, with bootstrap 90 % intervals (66)
 #   fire_checks    pooled phenology gain per year in every check and variant (66 skill.csv, shuffle.csv):
 #                  fire starts, human + unknown starts, fire growth
+#   fire_maps      2 x 2 maps: pilot regions; fire density (FPA-FOD fires >= 10 ac, no debris, 2001-2024,
+#                  per 1,000 km2 per year, ~20 km blocks); phenology gain per year by region for fire growth
+#                  and for human + unknown starts (66 skill.csv)
+#   fire_maps_gsi  where the satellite and the GSI each add: gain of adding the satellite to the GSI and the
+#                  GSI to the satellite, fire growth, by region (66 loyo_scores.csv, *_both_nfdrs_none)
 # Usage: Rscript scripts/69_fire_figs.R [profile] [figure ...]
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -16,10 +21,14 @@ profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir =
 } else Sys.getenv("R_CONFIG_ACTIVE", "dev")
 source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
+source(here::here("R", "grid.R"))
+source(here::here("R", "features.R"))
+source(here::here("R", "cluster.R"))
+source(here::here("R", "evaluate.R"))
 source(here::here("R", "fire.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
-all_figs <- c("fire_seasonal", "fire_skill", "fire_checks")
+all_figs <- c("fire_seasonal", "fire_skill", "fire_checks", "fire_maps", "fire_maps_gsi")
 want <- if (length(args) >= 2) args[-1] else all_figs
 cfg <- load_cfg(profile)
 log_file <- log_init("69_fire_figs", profile)
@@ -159,5 +168,105 @@ if ("fire_checks" %in% want && file.exists(kf)) {
       mtext("gain per year (held-out log score)", side = 1, line = 2.2, col = ink2, cex = 0.65)
     }
   })
+}
+# ---- maps ------------------------------------------------------------------------------------------------
+map_setup <- function() {
+  grid <- terra::rast(file.path(cfg$run_dir, "static", "grid_mask.tif"))
+  RG <- fire_region_values(cfg, grid, fs$partition %||% "A2_groups", as.integer(fs$k %||% 13))
+  R <- terra::rast(grid); terra::values(R) <- ifelse(RG$v %in% regs, RG$v, NA)
+  P <- terra::as.polygons(R, dissolve = TRUE); names(P) <- "region"
+  pal <- tryCatch({ D <- region_display(cfg, grid, list(list(partition = fs$partition %||% "A2_groups", k = as.integer(fs$k %||% 13))))[[1]]
+    stats::setNames(D$pal, seq_along(D$pal)) }, error = function(e) NULL)
+  st <- if (requireNamespace("maps", quietly = TRUE)) maps::map("state", plot = FALSE) else NULL
+  list(grid = grid, R = R, P = P, pal = pal, st = st, land = grid, asp = 1 / cos(mean(as.vector(terra::ext(grid))[3:4]) * pi / 180))
+}
+base_map <- function(M, title, sub) {
+  e <- as.vector(terra::ext(M$grid))
+  plot(NA, xlim = e[1:2], ylim = e[3:4], asp = M$asp, axes = FALSE, xlab = "", ylab = "")
+  terra::plot(M$land, col = grid_col, legend = FALSE, add = TRUE, axes = FALSE)
+  mtext(title, side = 3, adj = 0, line = 1.2, col = ink, font = 2, cex = 0.95)
+  mtext(sub, side = 3, adj = 0, line = 0.2, col = ink2, cex = 0.72)
+}
+outline <- function(M, lwd = 1.4) {
+  if (!is.null(M$st)) lines(M$st$x, M$st$y, col = "#ffffff", lwd = 0.6)
+  terra::lines(M$P, col = ink, lwd = lwd)
+}
+lab_regions <- function(M, labs) {
+  ct <- terra::centroids(M$P, inside = TRUE); xy <- terra::crds(ct)
+  for (k in seq_len(nrow(xy))) { rg <- as.character(M$P$region[k]); if (is.na(labs[rg])) next
+    text(xy[k, 1], xy[k, 2], labs[rg], col = ink, cex = 0.8, font = 2) }
+}
+gain_cols <- function(v) {                       # diverging: orange below zero, blue above, grey near zero
+  br <- c(-Inf, -1, -0.25, 0.25, 1, 2, Inf)
+  pal <- c("#c4541f", "#f3b58f", "#d9d7d2", "#9ec5f4", "#3987e5", "#184f95")
+  list(col = pal[findInterval(v, br, left.open = TRUE)], br = br, pal = pal,
+       lab = c("below -1", "-1 to -0.25", "about 0", "0.25 to 1", "1 to 2", "above 2"))
+}
+gain_map <- function(M, g, title, sub) {
+  base_map(M, title, sub)
+  gc <- gain_cols(g)
+  rv <- terra::values(M$R, mat = FALSE); cv <- rep(NA_character_, length(rv))
+  for (rg in names(g)) cv[rv %in% as.integer(rg)] <- if (is.na(g[[rg]])) "#f2f1ee" else gc$col[match(rg, names(g))]
+  r2 <- M$R; terra::values(r2) <- ifelse(is.na(cv), NA, match(cv, unique(stats::na.omit(cv))))
+  uc <- unique(stats::na.omit(cv))
+  if (length(uc)) terra::plot(r2, col = uc, legend = FALSE, add = TRUE, axes = FALSE)
+  outline(M)
+  lab_regions(M, stats::setNames(ifelse(is.na(g), "not tested", sprintf("%+.1f", g)), names(g)))
+  legend("bottomleft", fill = gc$pal, border = NA, legend = gc$lab, bty = "n", cex = 0.7, text.col = ink2, title = "gain per year", title.col = ink2)
+}
+if ("fire_maps" %in% want && file.exists(kf)) {
+  M <- map_setup()
+  K <- utils::read.csv(kf, stringsAsFactors = FALSE)
+  per <- function(spec) { x <- K[K$spec == spec & K$comparison == "pheno_simple" & K$region != "pooled", ]
+    stats::setNames(sapply(as.character(regs), function(r) { y <- x[x$region == r, ]; if (nrow(y)) y$gain / y$n_years else NA }), regs) }
+  F <- tryCatch(fire_read_table(fire_dir(cfg, "fod", "fod_fires")), error = function(e) NULL)
+  w <- 1300; h <- round(w / 2 * diff(as.vector(terra::ext(M$grid))[3:4]) / diff(as.vector(terra::ext(M$grid))[1:2]) * M$asp * 2 + 260)
+  plot_png("fire_maps", "2001-2024", 2 * w, h, function() {
+    par(mfrow = c(2, 2), mar = c(0.5, 0.5, 2.6, 0.5))
+    # (a) pilot regions
+    base_map(M, "Pilot regions", "A2 regions (13-region map numbers); herbaceous phenology from each region's grass and shrub cells")
+    pc <- if (!is.null(M$pal)) M$pal[as.character(regs)] else rep(c1, length(regs))
+    r2 <- M$R; terra::values(r2) <- match(terra::values(M$R, mat = FALSE), regs)
+    terra::plot(r2, col = grDevices::adjustcolor(pc, 0.85), legend = FALSE, add = TRUE, axes = FALSE)
+    outline(M)
+    lab_regions(M, stats::setNames(c("3 Monsoon SW", "6 Interior West", "12 Interior West", "11 California", "10 Great Plains", "13 Upper Midwest")[match(regs, c(3, 6, 12, 11, 10, 13))], regs))
+    # (b) fire density
+    base_map(M, "Wildfires of 10 acres or more", "FPA-FOD, 2001-2024, debris burning removed; per 1,000 km2 per year, ~20 km blocks")
+    if (!is.null(F)) {
+      F <- F[F$c_plus & !F$debris & F$year %in% seq(as.integer(fs$fod$years$start), as.integer(fs$fod$years$end)), ]
+      ag <- terra::aggregate(M$grid, fact = 5, fun = "max", na.rm = TRUE)
+      cnt <- terra::rasterize(terra::xyFromCell(M$grid, F$cell), ag, fun = "length", background = 0)
+      ar <- terra::cellSize(ag, unit = "km")
+      dens <- terra::mask(cnt / ar * 1000 / length(unique(F$year)), ag)
+      br <- c(0, 0.1, 0.3, 1, 3, 10, Inf); pal <- grDevices::colorRampPalette(c("#e6eefa", "#9ec5f4", "#3987e5", "#184f95", "#0b2a57"))(6)
+      terra::plot(terra::classify(dens, cbind(br[-7], br[-1], 1:6), include.lowest = TRUE), col = pal, legend = FALSE, add = TRUE, axes = FALSE)
+      legend("bottomleft", fill = pal, border = NA, legend = c("< 0.1", "0.1-0.3", "0.3-1", "1-3", "3-10", "> 10"), bty = "n", cex = 0.7, text.col = ink2, title = "fires / 1,000 km2 / yr", title.col = ink2)
+    }
+    outline(M, 1.1)
+    # (c), (d) phenology gain
+    gain_map(M, per("px"), "Phenology's gain: fire growth", "Held-out gain per year from the weekly cured share, 2012-2024 (upper Midwest not tested)")
+    gain_map(M, per("human_unk"), "Phenology's gain: human-caused starts", "Human + unknown-cause fires, 2001-2024 (California not split by cause)")
+  })
+}
+if ("fire_maps_gsi" %in% want) {
+  lf <- fire_dir(cfg, "test", "loyo_scores.csv")
+  if (file.exists(lf)) {
+    M <- map_setup()
+    L <- utils::read.csv(lf)
+    sc <- function(spec, model) { x <- L[L$spec == spec & L$model == model, ]; stats::aggregate(ll ~ region + year, x, sum) }
+    both <- sc("px_both_nfdrs_none", "M2"); gsi <- sc("px_gsi_nfdrs_none", "M2"); sat <- sc("px", "M2")
+    k <- function(d) paste(d$region, d$year)
+    yrs_g <- unique(gsi$year)
+    gain_of <- function(a, b) stats::setNames(sapply(as.character(regs), function(r) {
+      i <- a$region == as.integer(r) & a$year %in% yrs_g; if (!any(i)) return(NA)
+      sum(a$ll[i]) - sum(b$ll[match(k(a[i, ]), k(b))]) }) / length(yrs_g), regs)
+    s_over_g <- gain_of(both, gsi); g_over_s <- gain_of(both, sat)
+    w <- 1300; h <- round(w * diff(as.vector(terra::ext(M$grid))[3:4]) / diff(as.vector(terra::ext(M$grid))[1:2]) * M$asp + 200)
+    plot_png("fire_maps_gsi", "2012-2024", 2 * w, h, function() {
+      par(mfrow = c(1, 2), mar = c(0.5, 0.5, 2.6, 0.5))
+      gain_map(M, s_over_g, "What the satellite adds to the GSI", "Fire growth: gain per year from adding the satellite cured share to a model with the GSI one")
+      gain_map(M, g_over_s, "What the GSI adds to the satellite", "Fire growth: gain per year from adding the NFDRS2016 GSI cured share to a model with the satellite one")
+    })
+  }
 }
 log_msg("=== done | figures in ", fig_dir)

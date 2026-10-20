@@ -309,6 +309,16 @@ show_fig("fire_seasonal", "Typical fire season and typical curing by region. Blu
 show_fig("fire_skill", "What phenology adds to predictions of years it was not fitted to. Each dot is the gain in held-out prediction (log score per year) from adding that week's departure in cured fuel to a model with the region's fire season and a dryness measure (blue: 60-day water balance; orange: 1000-hour fuel moisture), with a 90 % bootstrap interval over years. Right of zero = phenology improves the forecast. Fire growth is modelled on a log scale, so its gains are not on the same scale as the fire-start panels.", "Dot-and-interval chart: rows are the six pilot regions and all regions together; columns are four outcomes; blue and orange dots for the two dryness baselines.")
 ```
 
+```{r fig-fire-maps}
+#| results: asis
+show_fig("fire_maps", "Where the pilot regions are and where phenology helps. Top left: the six pilot regions. Top right: wildfires of 10 acres or more per 1,000 km² per year, 2001–2024 (FPA-FOD, debris burning removed), in about 20 km blocks. Bottom: phenology's held-out gain per year by region, for fire growth (2012–2024; not tested in the upper Midwest, where satellite detections are mostly agricultural and prescribed burning) and for human-caused fire starts (2001–2024; California is not split by cause). Blue = phenology improves predictions; orange = it makes them worse.", "Four maps of the contiguous U.S.: pilot regions; fire density; phenology gain for fire growth by region; phenology gain for human-caused fire starts by region.")
+```
+
+```{r fig-fire-maps-gsi}
+#| results: asis
+show_fig("fire_maps_gsi", "The satellite and the GSI add information in different places. Left: gain per year in held-out predictions of fire growth from adding the satellite cured share to a model that already has the NFDRS2016 GSI cured share. Right: the reverse. The satellite adds most in California and the Great Plains; the GSI, mostly through its vapour-pressure-deficit term, adds most in the monsoon Southwest. 2012–2024; upper Midwest not tested.", "Two maps of the pilot regions colored by gain: what the satellite adds to the GSI, and what the GSI adds to the satellite.")
+```
+
 ### Checks
 
 Each check changes one thing and asks whether phenology still improves held-out predictions. The
@@ -410,6 +420,7 @@ reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-20 | Maps: pilot regions, fire density, phenology gain by region; where the satellite and the GSI each add |
 | 2026-10-20 | C3/C4 answered from NPN ground data: the pulses overlap, no gap |
 | 2026-10-19 | Results consolidated: main findings, checks figure; same-week VPD, GSI, ground, real-time and smoothed real-time checks |
 | 2026-10-19 | Checks run: burn check, year shuffle, dates version, forecast curing dates, C3/C4 gap |
