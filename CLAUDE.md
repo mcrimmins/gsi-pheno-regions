@@ -822,7 +822,10 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   the curve at the latest data node -> cured_share_rts / _typ, coverage_s; state cache is now a list
   (raw, smooth): delete old state_*.rds. 66 specs all_rts / human_unk_rts / px_rts. Noisy fixture:
   error vs the 2-week-shifted after-the-fact share 0.131 (raw) -> 0.114 (smoothed). C3/C4 ground timing
-  goes to the NPN study (decided Oct 19).
+  goes to the NPN study (decided Oct 19; project doc claude/gsi-npn-c3c4-request.md).
+  Smoothed nowcast full run Oct 19: departures r vs after-the-fact 0.32-0.56 (raw 0.28-0.51); 66
+  (cloud preview): growth -13.9 [-25, -3] (no signal), starts +32.1 [-2, +66] (12 +19.9, 11 +12.8),
+  human + unknown +14.1. Reading: 16-day composites are too slow; next would be daily MCD43A4.
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,

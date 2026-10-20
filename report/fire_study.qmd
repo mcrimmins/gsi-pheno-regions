@@ -307,8 +307,9 @@ show_fig("fire_skill", "What phenology adds to predictions of years it was not f
   for fire is mostly its VPD term. The satellite adds information the GSI lacks in California and
   the Great Plains; the GSI adds the Southwest's pre-monsoon dryness.
 - *Real-time cured share.* Built only from the satellite composites available each week, the cured
-  share runs about two weeks behind and does not carry the fire-growth signal; a monitoring product
-  would need a faster, smoother nowcast than raw 16-day composites.
+  share runs about two weeks behind and does not carry the fire-growth signal, even when each
+  week's curve is smoothed over the data available so far; a monitoring product would need data
+  faster than 16-day composites.
 - *Ground check.* At single NPN grass sites the satellite and ground curing departures agree only
   modestly (r 0.35); averaged over a region's sites in a year, the scale used here, they agree at r
   0.66 (Great Plains 0.74, monsoon Southwest 0.84, upper Midwest 0.20).
