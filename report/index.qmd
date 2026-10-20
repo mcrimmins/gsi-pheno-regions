@@ -51,6 +51,9 @@ This page tracks an ongoing analysis and is updated as the work moves along. Res
 shown here are **preliminary** and some come from a small Arizona test area. They are
 here to show the approach and invite feedback, not for operational use. The
 [changelog](#changelog) lists what changed and when.
+
+**Companion studies:** [Grass green-up and curing on the ground: the NPN curing study](npn_study.html) ·
+[Herbaceous phenology and fire activity](fire_study.html)
 :::
 
 ## At a glance
@@ -115,6 +118,11 @@ models. Where they disagree is where to look for what's missing.
   shared between species at a site, which caps what any weather model can explain.
   Across sites, typical warm-season green-up follows site climate better than the region
   map does; typical curing much less. The [NPN curing study](npn_study.html) has the details.
+- **Fire activity (first results, October 19):** in six pilot regions, weeks with more
+  herbaceous fuel cured than usual (from the satellite dates) have more fire, and adding the
+  weekly cured share improves held-out predictions of fire growth beyond dead-fuel dryness, and
+  of human-caused fire starts. The signal is in the observed fuel state: curing dates forecast
+  from weather add nothing. The [fire activity study](fire_study.html) has the details.
 
 ## Why regions?
 
@@ -1204,8 +1212,17 @@ of the record (6,331 plant-years at 130 sites) comes from NEON field sites.
 
 A second companion study, **[Herbaceous phenology and fire activity](fire_study.html)**,
 tests the same green-up and curing dates against fire records (fire starts, satellite
-active-fire detections and burned area) at the scale of regions and weeks. It is designed
-and about to be built.
+active-fire detections and burned area) at the scale of regions and weeks, in six pilot
+regions, 2001–2024. First results (October 19, preliminary): after dead-fuel dryness, the
+satellite's weekly share of herbaceous fuel cured improves held-out predictions of fire growth
+in all five regions tested and of human-caused fire starts, not of lightning starts; the result
+survives leaving out burned cells, adding the week's air dryness and shuffling the years. Curing
+dates forecast two weeks ahead from weather add nothing, and a cured share built from the
+satellite composites available each week does not carry the signal either, so the useful
+information is the observed, current fuel state. The NFDRS2016 GSI's value for fire is mostly
+its vapour-pressure-deficit term; the satellite adds curing information it lacks in California
+and the Great Plains. Averaged over a region's sites, satellite and NPN ground curing dates
+agree well (r 0.66), better than at single sites.
 
 ::: {.callout-note appearance="simple"}
 ## Reading the first comparisons
@@ -1496,6 +1513,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-19 | Fire activity study: first results summarized here and linked from the top of the page |
 | 2026-10-17 | Fire activity study designed; companion page added (fire_study.html) |
 | 2026-10-16 | NPN curing study: the record, typical dates on all usable curves, and typical dates against site climate; 2016–17 check (on the study page) |
 | 2026-10-16 | NPN curing study moved to its own companion page (npn_study.html); a summary and link stay here |
