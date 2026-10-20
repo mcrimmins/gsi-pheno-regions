@@ -3,7 +3,8 @@
 # warm-season (C4) grass growth. Request from the fire study (project doc gsi-npn-c3c4-request.md,
 # 19 Oct 2026): does fire activity dip between the C3 and C4 pulses in mixed prairie?
 # Two gaps, both C4 green-up (50 % green going up) minus a C3 date, in days (positive = a gap
-# with neither type green; negative = overlap, C4 is green before C3 has dried):
+# with neither type green; negative = overlap, C4 is green before C3 has dried). Plain within-calendar-
+# year differences, not circular: a circular difference flips sign past +/- 182 d (fixed 20 Oct):
 #   gap_cured   C3 cured date  -> C4 green-up   (the request's definition)
 #   gap_curing  C3 50 % curing -> C4 green-up   (both types below 50 % green in between)
 # Two views per region:
@@ -75,7 +76,7 @@ S <- do.call(rbind, lapply(split(u, u$site_id), function(d) {
              c4_greenup = f("C4", "greenup"), c4_curing = f("C4", "curing"), c4_cured = f("C4", "cured"))
 }))
 S$both <- S$c3_series > 0 & S$c4_series > 0
-S$gap_cured <- cdiff(S$c4_greenup, S$c3_cured); S$gap_curing <- cdiff(S$c4_greenup, S$c3_curing)
+S$gap_cured <- S$c4_greenup - S$c3_cured; S$gap_curing <- S$c4_greenup - S$c3_curing
 utils::write.csv(S, file.path(odir, "sites.csv"), row.names = FALSE)
 
 # per site-year (medians over that year's plants of each pathway)
@@ -84,7 +85,7 @@ SY <- do.call(rbind, lapply(split(u, paste(u$site_id, u$year)), function(d) {
   data.frame(site_id = d$site_id[1], year = d$year[1], region = d$region[1],
              c3_curing = f("C3", "curing"), c3_cured = f("C3", "cured"), c4_greenup = f("C4", "greenup"))
 }))
-SY$gap_cured <- cdiff(SY$c4_greenup, SY$c3_cured); SY$gap_curing <- cdiff(SY$c4_greenup, SY$c3_curing)
+SY$gap_cured <- SY$c4_greenup - SY$c3_cured; SY$gap_curing <- SY$c4_greenup - SY$c3_curing
 utils::write.csv(SY, file.path(odir, "site_years.csv"), row.names = FALSE)
 
 # region table
@@ -97,7 +98,7 @@ for (rg in setdiff(sort(unique(S$region)), "none")) {
   dc <- dep("gap_cured"); dg <- dep("gap_curing")
   # regional: per year, median C4 green-up minus median C3 date across that year's sites
   ry <- do.call(rbind, lapply(split(y, y$year), function(z) data.frame(year = z$year[1],
-          g = cdiff(cmed(z$c4_greenup), cmed(z$c3_cured)), h = cdiff(cmed(z$c4_greenup), cmed(z$c3_curing)))))
+          g = cmed(z$c4_greenup) - cmed(z$c3_cured), h = cmed(z$c4_greenup) - cmed(z$c3_curing))))
   R[[length(R) + 1]] <- data.frame(region = rg, region_name = if (rg %in% names(rname)) rname[[rg]] else "",
     sites = nrow(s), sites_c3 = sum(s$c3_series > 0), sites_c4 = sum(s$c4_series > 0), sites_both = nrow(b),
     # same-site view
@@ -106,7 +107,7 @@ for (rg in setdiff(sort(unique(S$region)), "none")) {
     ss_share_gap_cured_pos = mean(b$gap_cured > 0, na.rm = TRUE), ss_site_years = dc[["n"]], ss_sd_gap_cured = dc[["sd"]], ss_sd_gap_curing = dg[["sd"]],
     # regional view
     rg_c3_cured = cmed(s$c3_cured), rg_c3_curing = cmed(s$c3_curing), rg_c4_greenup = cmed(s$c4_greenup),
-    rg_gap_cured = cdiff(cmed(s$c4_greenup), cmed(s$c3_cured)), rg_gap_curing = cdiff(cmed(s$c4_greenup), cmed(s$c3_curing)),
+    rg_gap_cured = cmed(s$c4_greenup) - cmed(s$c3_cured), rg_gap_curing = cmed(s$c4_greenup) - cmed(s$c3_curing),
     rg_years = sum(!is.na(ry$g)), rg_sd_gap_cured = if (sum(!is.na(ry$g)) >= 3) stats::sd(ry$g, na.rm = TRUE) else NA,
     rg_sd_gap_curing = if (sum(!is.na(ry$h)) >= 3) stats::sd(ry$h, na.rm = TRUE) else NA)
 }

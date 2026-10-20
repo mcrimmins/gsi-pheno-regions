@@ -240,6 +240,12 @@ show_fig("npn_dates",
   Southeastern USA Plains (8.3) cool-season grasses green up 75 days earlier and cure 29 days
   later. In the Mixed Wood Plains (8.1) and West-Central Semiarid Prairies (9.3) the two types
   differ by less than three weeks.
+- **No gap between the cool- and warm-season pulses.** At sites with both types, warm-season
+  grasses reach 50 % green four to five months before the cool-season grasses beside them have
+  cured: on the Great Plains prairies (Temperate, West-Central and South Central Semiarid
+  Prairies, 9.2–9.4) warm-season green-up comes in April to June and cool-season cured dates in
+  late September to November, 140–160 days apart. Every year at every such site the two overlap;
+  the ground shows no stretch in which neither type is green.
 - **Annual grasses cure early.** In the Cold Deserts annual grasses (mostly cheatgrass) cure
   77 days earlier than perennial cool-season grasses, and in the Western Cordillera 97 days
   earlier (3 annual series each).
@@ -313,6 +319,9 @@ show_fig("npn_ladder",
   error. The same holds for C3 and C4 separately, in each region with enough data, when
   species are averaged within a site-year, and with the hindcast drivers that can see
   past the date.
+- **The same limit shows up in fire prediction.** A related fire study found that curing
+  forecast from weather 14 days ahead (refit for every region, leaving one year out) added nothing
+  to predicting fire activity, while satellite-observed curing did.
 - **The regression does not settle on drivers.** Its choices change from one left-out
   year to the next.
 - **The ceiling is low.** Species observed at the same site in the same year share only
@@ -363,6 +372,11 @@ show_fig("npn_variance",
   green").
 - **Averaging the plants helps but does not remove it.** In a site-species-year mean
   (median 3–5 plants) the shared part is about half (48–55 %) of the year-to-year variation.
+- **A satellite check points the same way.** In a related fire study, early or late curing in a
+  4 km satellite record agreed with NPN departures at r = 0.35 for single site-years, but at
+  r = 0.66 once both were averaged over a region's sites in a year (72 region-years; 0.74–0.84 on
+  the Great Plains, southern Plains and in the monsoon Southwest, 0.20 in the upper Midwest), as
+  expected if much of the scatter at a site is plant-to-plant noise rather than missed weather.
 
 ## Does the shared signal follow local weather?
 
@@ -472,7 +486,8 @@ adjustment has to beat it on ground data. ("First" still needs a literature chec
 3. **The record (Q1).** Size and coverage, reading density, use of the percent-green classes,
    second green-ups, plants that never pass 50 %. Figures: site map, record.
 4. **Typical dates (Q2).** By ecoregion and grass type; cool- versus warm-season and annual
-   versus perennial contrasts. Figure: dates by ecoregion.
+   versus perennial contrasts; no gap between the cool- and warm-season pulses. Figure: dates by
+   ecoregion.
 5. **What sets the typical date across sites (Q4).** Green-up follows site climate; cool-season
    curing follows the species; warm-season curing is unexplained. Figure: spatial.
 6. **Year to year (Q3, Q5, Q6).** Place dominates; a small shared year signal tracked weakly by
@@ -514,6 +529,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-20 | Cool- and warm-season overlap at sites with both; satellite agreement at regional scale; link to the fire study's forecast result |
 | 2026-10-18 | Regions switched to EPA Level II ecoregions; climatology, spatial, variance and 2016–17 results updated |
 | 2026-10-16 | The record, typical dates by region and grass type on all usable curves, and typical dates against site climate; 2016–17 check; PhenoCam first comparison (on hold) |
 | 2026-10-16 | Study moved to its own page, with figures (sites, dates by region, model ladder, variance partition, shared signal against VPD) |
