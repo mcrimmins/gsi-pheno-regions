@@ -29,6 +29,7 @@
 #   all_rt, human_unk_rt, px_rt   real-time cured share (65b): only composites available that week
 #   all_rts, human_unk_rts, px_rts   the same from the smoothed nowcast (65b *_rts)
 #   all_rt<L>, ..., px_rts<L>   delay diagnostic: 65b with GSI_RT_LAG = L (realtime_weekly_lag<L>.csv)
+#   all_vd, human_unk_vd, px_vd (and *_vdx)   daily VIIRS real-time cured share (65c; its regions only)
 #   all_hs, human_unk_hs, px_hs   hot-spell check: 7-day VPD (64 vpd7) in every model
 #   all_gsi_<v>, human_unk_gsi_<v>, px_gsi_<v>   cured share from GSI dates (config gsi_compare)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
@@ -43,7 +44,8 @@
 # (spec x comparison x region: total gain, bootstrap 90 % interval, share of years improved),
 # yearly_r.csv, coefs.csv, seasonal.csv, seasonal_windows.csv, fit_notes.csv.
 #
-# Usage: Rscript scripts/66_fire_test.R [profile] [spec,...]   (env GSI_FIRE_TEST_SUB=<name>: outputs to test/<name>/)
+# Usage: Rscript scripts/66_fire_test.R [profile] [spec,...]   (env GSI_FIRE_TEST_SUB=<name>: outputs to test/<name>/;
+#   GSI_FIRE_REGIONS=3,10: only these regions)
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
@@ -66,7 +68,11 @@ t0 <- Sys.time()
 test_sub <- Sys.getenv("GSI_FIRE_TEST_SUB", "")
 out_dir <- if (nzchar(test_sub)) fire_dir(cfg, "test", test_sub) else fire_dir(cfg, "test"); dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 W <- utils::read.csv(fire_dir(cfg, "weekly", "fire_weekly.csv"))
+# GSI_FIRE_REGIONS (Oct 20): restrict every spec to these regions (e.g. 3,10 to compare with the daily VIIRS test)
+only_regs <- as.integer(strsplit(Sys.getenv("GSI_FIRE_REGIONS", ""), ",")[[1]])
+if (length(only_regs) && !all(is.na(only_regs))) W <- W[W$region %in% only_regs, ]
 regs <- as.integer(unlist(fs$pilot_regions))
+if (length(only_regs) && !all(is.na(only_regs))) regs <- intersect(regs, only_regs)
 snow_regs <- as.integer(unlist(fs$snow_regions))
 skip_cause <- as.integer(unlist(fs$outcome$cause_split_skip_regions))
 set.seed(66)
@@ -140,6 +146,18 @@ if (file.exists(rf)) {
     specs$all_rts <- list(y = "n_fires", rows = TRUE, pheno = "cured_dep_rts")
     specs$human_unk_rts <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_rts")
     specs$px_rts <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_rts")
+  }
+}
+# daily VIIRS monitoring test (Oct 20): 65c realtime_weekly_vd.csv -> specs *_vd (clear-day mean composite), *_vdx (max)
+vf <- fire_dir(cfg, "realtime", "realtime_weekly_vd.csv")
+if (file.exists(vf)) {
+  VD <- utils::read.csv(vf)
+  i <- match(paste(W$region, W$year, W$week), paste(VD$region, VD$year, VD$week))
+  for (k in c("vd", "vdx")) {
+    pv <- paste0("cured_dep_", k); W[[pv]] <- (VD[[paste0("cured_share_", k)]][i] - VD[[paste0("cured_share_", k, "_typ")]][i]) * 10
+    specs[[paste0("all_", k)]] <- list(y = "n_fires", rows = TRUE, pheno = pv)
+    specs[[paste0("human_unk_", k)]] <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = pv)
+    specs[[paste0("px_", k)]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = pv)
   }
 }
 # delay diagnostic (Oct 20): 65b runs with GSI_RT_LAG write realtime_weekly_lag<L>.csv -> specs *_rt<L>, *_rts<L>

@@ -418,6 +418,27 @@ default:
     gsi_compare: [nfdrs_none, fems_kbdi]
     # 65b: real-time cured share from the composites available each week (Oct 19)
     realtime: {latency_days: 3, greenup_frac: 0.2, curing_frac: 0.5}
+    # 05 / 65c: daily VIIRS monitoring test (Oct 20, Mike): VNP09GA v2 via AppEEARS for the phenology cells
+    # of the test regions, cut to the 4 km grid; 65c builds a weekly real-time cured share from a short
+    # composite of clear days ending latency_days before mid-week (the delay test: growth signal needs
+    # about a week or less of delay)
+    viirs_daily:
+      product: "VNP09GA.002"
+      regions: [3, 10]
+      years: {start: 2012, end: 2024}
+      chunks_per_year: 4            # one AppEEARS task per region x quarter
+      max_pending_tasks: 4
+      poll_minutes: 5
+      # short name: regex matched against the AppEEARS layer names (checked at run time)
+      layers: {i1: "SurfReflect_I1", i2: "SurfReflect_I2", qf1: "SurfReflect_QF1", qf2: "SurfReflect_QF2",
+               qf6: "SurfReflect_QF6", qf7: "SurfReflect_QF7", vza: "SensorZenith"}
+      clear: {max_cloud_conf: 0, no_cirrus: true, no_adjacent: true, max_vza: 55}
+      test_dates: ["2023-06-01", "2023-06-10"]   # GSI_VD_TEST=1 smoke test (first region only)
+      composite_days: 8             # 65c: clear days in the window ending at the cut
+      prev_offset_days: 16          # 65c: "rising" compares with the window ending 16 days earlier
+      latency_days: 3               # 65c: data through mid-week minus 3 days
+      min_clear_px: 4               # 65c: a day counts for a cell with >= 4 clear 500 m pixels (of ~64)
+      range_quantiles: [0.05, 0.95] # 65c: each cell's NDVI base / top from the other years' composites
     snow_regions: [10, 13]            # snow-off date in the baseline
     # Dryness baselines, all from PRISM (decided Oct 18: ppet60 added as the simple, readable
     # companion of the NFDRS 1000-h moisture; fit the model with ppet60 first, then swap in dfm1000)
@@ -790,6 +811,7 @@ full:
     fire_link: 11             # 22 sensor-years -> two rounds
     fire_forecast: 8          # 67: one year of cues per worker (~5 GB each)
     fire_realtime: 8          # 65b: one year of composites per worker
+    viirs_daily: 8            # 05: days of one AppEEARS bundle reduced in parallel
     fire_dfm: 16              # row chunks, all PRISM years per chunk (~4 GB peak per worker at 2 rows)
   memfrac: 0.08
   report:

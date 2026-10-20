@@ -838,6 +838,22 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   4 and 0, CA (11) negative at every lag. Departures r vs hindsight 0.28-0.51 (19) -> 0.37-0.62 (0). Starts
   and human + unknown don't follow the lag (noise). Reading: delay is the growth bottleneck; ~10-12 d
   (MCD43A4) likely not enough; daily reflectance with short compositing (MOD09GA / VNP09GA) is the candidate.
+- Daily VIIRS monitoring test (Oct 20, Mike: VIIRS via AppEEARS, regions 3 and 10, 2012-2024; no Earth
+  Engine). `scripts/05_viirs_daily.R [profile]` (P720, tmux, ~1-3 days; config fire_study: viirs_daily,
+  workers_by_step viirs_daily 8; R/viirs_daily.R): VNP09GA.002 I1 / I2 (500 m) + QF1 / QF2 / QF6 / QF7 /
+  SensorZenith (1 km) per region x quarter (AppEEARS tasks, state viirs_daily/tasks.csv), bbox = the
+  region's phenology cells (65 / 65b rule); clear = day, confident clear, land, no shadow / snow / cirrus /
+  cloud-adjacent, I1-I2 good, view zenith <= 55; each day -> per cell mean NDVI of clear 500 m pixels,
+  n_clear, n_land (pixel centre -> 4 km cell with rowsum: terra 1.7 resample "average" returned NaN /
+  shifted cells for NA blocks in the cloud test) -> viirs_daily/VNP09GA/r<RR>/daily_<Y>_c<k>.rds; raw
+  deleted. GSI_VD_TEST=1: first region, 10 days (test_dates), viirs_daily_test/, raw kept, per-day log.
+  `scripts/65c_fire_viirs_daily.R [profile]`: weekly state from an 8-day composite ending 3 days before
+  mid-week (days with >= 4 clear px), g scaled by the cell's 5-95 % range of its weekly composites in the
+  OTHER years, 65b green rule; vd = clear-weighted mean, vdx = max composite -> fire_study/realtime/
+  realtime_weekly_vd.csv, realtime_check_vd.csv. 66 specs all_ / human_unk_ / px_ vd / vdx; env
+  GSI_FIRE_REGIONS=3,10 restricts every spec (fair comparison with px, px_rt, px_rt4). Tested: mocked
+  AppEEARS run (bit flags, fill, view zenith, snow / cloud days), synthetic shifted seasons (65c green
+  weeks within ~1 week of truth at start, exact at end).
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.
