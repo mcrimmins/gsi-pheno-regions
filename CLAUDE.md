@@ -813,7 +813,16 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   fire_study/realtime/realtime_weekly.csv, realtime_check.csv (r with 65's after-the-fact share),
   state_<Y>_<profile>.rds cache. 66 specs all_rt / human_unk_rt / px_rt when present. Planted test:
   real-time green window lags the after-the-fact one by ~2 weeks (as designed) and follows a shifted
-  year.
+  year. Full run Oct 19: real-time vs after-the-fact share r 0.57-0.85, departures 0.28-0.51, coverage
+  0.49 (12) to 0.95; 66 (cloud preview): growth -13.3 [-24, -3] (shuffle level), starts +38.5 [+2, +72]
+  mostly 12 (+23.6) and 11 (+14.9), human + unknown +20.7; weeks with coverage >= 0.8 only (drops 12):
+  starts +17.8, growth -10.1. Reading: raw 16-day composites with a 2-week lag lose the growth signal.
+  Smoothed nowcast added Oct 19 (Mike: try it before the daily product): each week whit_envelope
+  (cutb_curves lambda, envelope) on 4-day nodes fitted to the composites available so far, state from
+  the curve at the latest data node -> cured_share_rts / _typ, coverage_s; state cache is now a list
+  (raw, smooth): delete old state_*.rds. 66 specs all_rts / human_unk_rts / px_rts. Noisy fixture:
+  error vs the 2-week-shifted after-the-fact share 0.131 (raw) -> 0.114 (smoothed). C3/C4 ground timing
+  goes to the NPN study (decided Oct 19).
 - `scripts/69_fire_figs.R [profile] [figure ...]` (laptop, seconds; Oct 18): page figures from the
   synced 66 CSVs, same manifest / file conventions as 90 (fire figures kept out of 90, as NPN's
   are): fire_seasonal (per region: mean weekly fires as share of peak week + typical cured share,
