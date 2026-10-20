@@ -6,6 +6,8 @@
 #                  the typical share of herbaceous fuel cured, one 0-1 axis, by week (65 / 66)
 #   fire_skill     held-out gain from adding phenology, per region and outcome, over the simple
 #                  (60-day water balance) and the 1000-h baselines, with bootstrap 90 % intervals (66)
+#   fire_checks    pooled phenology gain per year in every check and variant (66 skill.csv, shuffle.csv):
+#                  fire starts, human + unknown starts, fire growth
 # Usage: Rscript scripts/69_fire_figs.R [profile] [figure ...]
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -17,7 +19,7 @@ source(here::here("R", "log.R"))
 source(here::here("R", "fire.R"))
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
-all_figs <- c("fire_seasonal", "fire_skill")
+all_figs <- c("fire_seasonal", "fire_skill", "fire_checks")
 want <- if (length(args) >= 2) args[-1] else all_figs
 cfg <- load_cfg(profile)
 log_file <- log_init("69_fire_figs", profile)
@@ -119,6 +121,43 @@ if ("fire_skill" %in% want && file.exists(kf)) {
     legend("bottomleft", inset = c(0.005, 0.005), bty = "n", pch = c(21, 22), pt.bg = c(c1, c2), col = bg, pt.cex = 1.3,
            text.col = ink, cex = 0.75, legend = c("Phenology added to the 60-day water balance baseline",
                                                  "Phenology added to the 1000-hour fuel moisture baseline"))
+  })
+}
+# ---- checks -------------------------------------------------------------------------------------------
+if ("fire_checks" %in% want && file.exists(kf)) {
+  K <- utils::read.csv(kf, stringsAsFactors = FALSE)
+  K <- K[K$region == "pooled" & K$comparison == "pheno_simple", ]
+  sf2 <- fire_dir(cfg, "test", "shuffle.csv")
+  SH <- if (file.exists(sf2)) { x <- utils::read.csv(sf2); x[x$region == "pooled", ] } else NULL
+  rows <- list(c("", "Satellite cured share (main result)"), c("_nb", "Burned cells left out"), c("_hs", "This week's VPD added"),
+               c("SHUFFLE", "Years shuffled (20 times)"), c("_dates", "Green-up and curing dates instead"),
+               c("_gsi_nfdrs_none", "GSI (NFDRS2016) instead of satellite"), c("_gsi_nfdrs_none_hs", "GSI, with this week's VPD"),
+               c("_both_nfdrs_none", "Satellite and GSI together"), c("_fc", "Curing forecast 2 weeks ahead"),
+               c("_lag2", "Satellite curing 2 weeks late"), c("_rt", "Real-time, raw composites"), c("_rts", "Real-time, smoothed to date"))
+  outs <- c(all = "Fire starts, all causes", human_unk = "Human + unknown starts", px = "Fire growth (2012-2024)")
+  plot_png("fire_checks", "2001-2024", 2200, 1250, function() {
+    layout(matrix(1:4, 1), widths = c(1.6, 1, 1, 1))
+    par(mar = c(3.6, 0.5, 3.4, 0.8))
+    n <- length(rows); y <- rev(seq_len(n))
+    plot(NA, xlim = c(0, 1), ylim = c(0.5, n + 0.5), axes = FALSE, xlab = "", ylab = "")
+    text(1, y, vapply(rows, `[`, "", 2), adj = 1, col = ink, cex = 0.9, font = ifelse(seq_len(n) == 1, 2, 1))
+    for (o in names(outs)) {
+      v <- t(vapply(rows, function(r) {
+        if (r[1] == "SHUFFLE") { if (is.null(SH) || !any(SH$spec == o)) return(c(NA, NA, NA)); g <- SH$gain[SH$spec == o]
+          return(c(stats::median(g), min(g), max(g)) / ifelse(o == "px", 13, 24)) }
+        x <- K[K$spec == paste0(o, r[1]), ]; if (!nrow(x)) return(c(NA, NA, NA))
+        c(x$gain, x$lo, x$hi) / x$n_years }, numeric(3)))
+      lim <- range(c(v, 0), na.rm = TRUE); lim <- lim + c(-1, 1) * 0.05 * diff(lim)
+      plot(NA, xlim = lim, ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "", ylab = "", bty = "n", cex.axis = 0.85, tcl = -0.2, mgp = c(2, 0.4, 0))
+      abline(v = 0, col = ink2); abline(h = y, col = grid_col, lwd = 0.8)
+      if (!is.na(v[1, 1])) abline(v = v[1, 1], col = c1, lty = 3)
+      ok <- !is.na(v[, 1]); col <- ifelse(seq_len(n) == 1, c1, ifelse(rows_kind <- vapply(rows, `[`, "", 1) == "SHUFFLE", "#9a9893", ink2))
+      segments(v[ok, 2], y[ok], v[ok, 3], y[ok], col = col[ok], lwd = 2)
+      points(v[ok, 1], y[ok], pch = 21, bg = col[ok], col = bg, cex = 1.6, lwd = 1.5)
+      if (any(!ok)) text(mean(lim), y[!ok], "not run", col = ink2, cex = 0.75)
+      mtext(outs[[o]], side = 3, line = 0.6, col = ink, cex = 0.8, font = 2)
+      mtext("gain per year (held-out log score)", side = 1, line = 2.2, col = ink2, cex = 0.65)
+    }
   })
 }
 log_msg("=== done | figures in ", fig_dir)

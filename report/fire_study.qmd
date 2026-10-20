@@ -46,13 +46,33 @@ show_fig <- function(name, caption, alt = caption) {
 ```
 
 ::: {.callout-important appearance="simple"}
-## Planned study
-This study is designed but not yet built. The page will be updated as the analysis runs.
-It is a companion to the [fuel phenology regions page](index.html) and the
-[NPN curing study](npn_study.html).
+## First results, October 2026 (preliminary)
+The analysis and its checks have run; the results below are first numbers from 13–24 seasons per
+region, shared for review with the project partners. It is a companion to the
+[fuel phenology regions page](index.html) and the [NPN curing study](npn_study.html).
 :::
 
 ## At a glance
+
+**Main findings (preliminary).**
+
+- **Dryness first.** Dead-fuel dryness from PRISM improves predictions of fire starts and fire
+  growth in all six pilot regions; the NFDRS 1000-hour fuel moisture does better than a simple
+  60-day water balance everywhere but California.
+- **Curing adds to fire growth.** Weeks with more herbaceous fuel cured than usual have more fire
+  in every region. Adding the satellite's weekly cured-fuel share improves held-out predictions of
+  fire growth (2012–2024) in about three years of four, in all five regions tested, and of
+  human-caused fire starts; not of lightning starts.
+- **The signal is real.** It survives leaving out burned cells and adding this week's air dryness,
+  and it beats 20 of 20 random reshufflings of the years.
+- **It is the observed fuel state that counts.** Curing dates forecast two weeks ahead from
+  weather add nothing; a cured share built from the 16-day satellite composites available each
+  week does not carry the growth signal either. Monitoring would need faster data.
+- **The GSI and the satellite carry different information.** The NFDRS2016 GSI's value for fire is
+  mostly its vapour-pressure-deficit term, strongest in the monsoon Southwest; the satellite adds
+  fuel-curing information the GSI lacks in California and the Great Plains.
+- **C3/C4:** the 4 km satellite curves cannot separate cool- and warm-season growth pulses in
+  northern mixed prairie; the question passes to the NPN study's ground data.
 
 **The question.** At the scale of a region and a season, does the green-up and curing of
 grasses and other herbaceous plants shape fire activity? The regions work built typical
@@ -113,8 +133,11 @@ snowmelt as well as green-up.
 | Linking satellite detections to reported fires | Done (October 18) |
 | Dead-fuel baseline from PRISM | Done (October 18) |
 | Weekly table: fires, satellite growth, dryness and phenology by region and week | Done (October 18) |
-| Seasonal fire curves by region | First look (October 18) |
-| Seasonal and year-to-year tests | First run (October 18); figures next |
+| Seasonal fire curves by region | Done (October 18) |
+| Seasonal and year-to-year tests | Done (October 18) |
+| Checks: burned cells, shuffled years, dates, forecast and real-time curing, same-week weather, GSI, ground data | Done (October 19) |
+| C3/C4 gap | Satellite test done (October 19); ground timing passed to the NPN study |
+| Partner review | Next |
 
 : Study status {.striped}
 
@@ -252,7 +275,7 @@ region by region with those of the 60-day water balance and the 30-day vapour pr
 The calculation was checked against an independent day-by-day implementation written from the
 published equations (agreement within 0.0001 % moisture).
 
-## First results (October 18, preliminary)
+## Results (October 19, preliminary)
 
 The test fits one model of weekly fire counts across the six pilot regions, with each region's
 typical fire season, then adds a dryness measure, then the phenology measure: how much more (or
@@ -285,7 +308,16 @@ show_fig("fire_seasonal", "Typical fire season and typical curing by region. Blu
 show_fig("fire_skill", "What phenology adds to predictions of years it was not fitted to. Each dot is the gain in held-out prediction (log score per year) from adding that week's departure in cured fuel to a model with the region's fire season and a dryness measure (blue: 60-day water balance; orange: 1000-hour fuel moisture), with a 90 % bootstrap interval over years. Right of zero = phenology improves the forecast. Fire growth is modelled on a log scale, so its gains are not on the same scale as the fire-start panels.", "Dot-and-interval chart: rows are the six pilot regions and all regions together; columns are four outcomes; blue and orange dots for the two dryness baselines.")
 ```
 
-**Checks (October 19).**
+### Checks
+
+Each check changes one thing and asks whether phenology still improves held-out predictions. The
+blue line is the main result; a check that keeps its dot near the line passes.
+
+```{r fig-fire-checks}
+#| results: asis
+show_fig("fire_checks", "Phenology's gain in held-out prediction, per year, pooled over the pilot regions, for the main result and each check (dot = estimate, line = 90 % bootstrap interval over years; for the shuffled years, the median and range of 20 shuffles). Gains are in held-out log score per year; fire growth is modelled on a log scale, so its scale differs from the fire-start panels. An extra term with no information scores about −0.5 per year for starts and −1.3 for growth (the shuffles), so that, not zero, is the bar to clear.", "Dot-and-interval chart with twelve rows (main result and eleven checks) and three columns (all fire starts, human and unknown starts, fire growth).")
+```
+
 
 - *Fires changing the satellite dates.* Leaving out every cell that burned that year or the year
   before (3–11 % of cells) leaves the gains unchanged, so the phenology signal is not made by the
@@ -299,7 +331,7 @@ show_fig("fire_skill", "What phenology adds to predictions of years it was not f
   refitted for every region and checked on years left out) are a little closer to the satellite
   dates than the typical date (1–3 days better, r 0.30–0.50), but they add nothing to fire
   prediction. The fire signal is in the observed fuel state, which the weather forecast does not
-  capture: monitoring curing as it happens looks more useful than forecasting it.
+  capture.
 - *Same-week weather.* Adding this week's vapour pressure deficit leaves most of the phenology
   gain (growth +41 instead of +46), so the cured share is not just a stand-in for a hot, dry week.
 - *The GSI.* A cured share from NFDRS2016 GSI dates gains as much, but almost all of it in the
@@ -321,6 +353,10 @@ show_fig("fire_skill", "What phenology adds to predictions of years it was not f
   growth around a summer drought trough. Fires there are most frequent in that summer trough, so
   there is no fire dip between growth pulses; the 4 km satellite curves cannot separate the C3 and
   C4 pulses of northern mixed prairie.
+
+- *All-cause fire starts are fragile.* Their pooled gain is +18 over 2001–2024 but +8 over
+  2002–2024: one year carries half of it. The fire-growth and human-cause results do not hinge on
+  single years like that.
 
 These are first numbers from 13–24 seasons per region; they will change as the analysis is
 reviewed.
@@ -344,6 +380,9 @@ reviewed.
 | Oct 18 2026 | Linking screen kept as is; Great Plains check run counting all non-cropland detections | In the western regions unmatched detections spread across the year (burning outside the fire season); in the Great Plains they share the summer peak |
 | Oct 18 2026 | Weeks are fixed 7-day blocks from January 1 (last one or two days of the year in week 52) | Every year has the same 52 weeks on the same dates |
 | Oct 19 2026 | Checks before the write-up: leave out cells burned that year or the year before; give each year's phenology to other years at random; test forecast curing dates (weather adjustment in every region); test green-up and curing dates directly; C3/C4 gap test in two-pulse prairie | The phenology gain must not come from fires changing the satellite dates, and must hold for dates a manager could know in advance |
+| Oct 19 2026 | Same-week VPD check; GSI (NFDRS2016, FEMS with KBDI) cured share compared with the satellite's; NPN ground check at the regional scale | Rule out a hot spell driving both curing and fire; test the operational index; check the satellite against the ground |
+| Oct 19 2026 | Real-time cured share from the composites available each week, raw and smoothed to date | A test of whether curing could be monitored in time to use |
+| Oct 19 2026 | C3/C4 reported as a limitation of the satellite test; ground timing passed to the NPN study | The 4 km curves cannot separate the two pulses in northern mixed prairie |
 | Oct 18 2026 | A 60-day rainfall-minus-evaporation baseline alongside the 1000-hour fuel moisture | The 1000-hour equations are nonlinear and need humidity and rain duration that PRISM lacks; the simple measure is readable and shows whether the operational index adds anything |
 
 : Study decisions {.striped}
@@ -363,6 +402,7 @@ reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-19 | Results consolidated: main findings, checks figure; same-week VPD, GSI, ground, real-time and smoothed real-time checks |
 | 2026-10-19 | Checks run: burn check, year shuffle, dates version, forecast curing dates, C3/C4 gap |
 | 2026-10-19 | Forecast test (curing predicted two weeks ahead) and C3/C4 gap test built |
 | 2026-10-19 | Burn check, year-shuffle check and dates version added to the weekly table and the tests |
