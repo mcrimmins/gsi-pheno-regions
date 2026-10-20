@@ -1,6 +1,6 @@
 ---
 title: "Grass green-up and curing on the ground: the NPN curing study"
-subtitle: "A companion study to the fuel phenology regions: approach, decisions and preliminary results"
+subtitle: "A national ground record of grass phenology: approach, decisions and preliminary results"
 author: "Mike Crimmins, University of Arizona Cooperative Extension"
 date: last-modified
 date-format: "MMMM D, YYYY"
@@ -23,7 +23,7 @@ execute:
 
 ```{r setup}
 #| include: false
-# Figures come from scripts/90_report_figs.R (figs/<figure>_<profile>.png + manifest.csv).
+# Figures come from npn_study/scripts/90_npn_figs.R (figs/<figure>_<profile>.png + manifest.csv).
 # The CONUS ("full") version of a figure is shown when it exists, otherwise the dev one.
 figs <- if (file.exists("figs/manifest.csv")) {
   utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
@@ -48,7 +48,8 @@ show_fig <- function(name, caption, alt = caption) {
 ::: {.callout-important appearance="simple"}
 ## Work in progress
 This page is updated as the analysis runs. Results are preliminary and will change.
-It is a companion to the [fuel phenology regions page](index.html).
+The study stands on its own (its own data, regions and code); a related project maps
+[fuel phenology regions](index.html) from satellite greenness.
 :::
 
 ## At a glance
@@ -60,12 +61,12 @@ month. This study asks what that record shows: when grasses green up and cure, w
 for which grass types, how much those dates change from year to year, and whether weather
 explains the early and late years.
 
-**How it fits the regions work.** The [regions page](index.html) builds typical green-up
-and curing dates for every 4 km cell and tested weather rules against satellite dates; most
-of those rules lost their skill when checked at NPN grass sites. This study works the other
-way round: it starts from the ground dates and asks what can be predicted from weather at
-all. It is the validation dataset for the typical-date product and for any future
-ground-fitted rules.
+**Why it matters.** Fire danger systems estimate grass curing from weather indices or
+satellite greenness, and both are rarely checked against plants on the ground. This study
+starts from the ground dates: it describes when grasses green up and cure across the
+country, asks how much of that is fixed by place and how much changes from year to year, and
+tests what can be predicted from weather at all. The result is a ground baseline that any
+weather- or satellite-based curing estimate can be checked against.
 
 **Questions.**
 
@@ -453,8 +454,7 @@ show_fig("npn_sensitivity",
 
 ## What it means so far
 
-On the ground, as with the satellite rules on the [regions page](index.html), the typical
-date is the baseline to beat, and so far nothing beats it. The typical date itself is
+On the ground, the typical date is the baseline to beat, and so far nothing beats it. The typical date itself is
 predictable for green-up, which follows site climate, and much less so for curing, which
 follows the species for cool-season grasses and nothing measured here for warm-season
 ones. There is a shared year signal, mostly local to the site, that
@@ -464,6 +464,14 @@ not a fair test: the camera transition dates skip years with a weak green-up, ma
 different stage of the season (the end of the spring flush rather than half-cured plants),
 and switch between seasons at sites that green up twice. A comparison based on camera
 greenness around each site's typical curing date would avoid those problems; it is on hold.
+
+For fire danger this points three ways. The typical date by place and grass type is the
+starting point, and on the Great Plains it has no gap between the cool- and warm-season
+pulses: warm-season grasses are green through cool-season curing. Year-to-year departures
+are better observed than forecast: weather adds no skill on the ground, while averaged over
+a region's sites the ground departures agree with satellite curing (r = 0.66). And single
+plants are noisy, so ground monitoring needs several plants and sites to give a regional
+signal.
 
 ## Toward a paper
 
@@ -511,7 +519,7 @@ PhenoCam comparison earns a place.
 |---|---|---|
 | Oct 11 2026 | Scope: NPN "percent green" records for grasses with daily PRISM; no GSI, no soil data | Curing measured directly; mapped soil is unlikely to describe the soil under a tagged plant |
 | Oct 11 2026 | Moisture as a running P − PET memory (15, 30, 60 days) instead of a soil bucket | Carries wet and dry spells without a soil parameter |
-| Oct 15 2026 | A companion study to the regions work, with its own page; code shared with the regions work | Reuses the PRISM, cue and region code; region numbers match the maps |
+| Oct 15 2026 | A companion study to the regions work, with its own page; code shared with the regions work (superseded Oct 18) | Reuses the PRISM, cue and region code; region numbers match the maps |
 | Oct 15 2026 | Cool- and warm-season (C3/C4) assigned by species from the literature, to be reviewed with USA-NPN | No national C3/C4 grass layer |
 | Oct 15 2026 | At least 12 readings per plant-year; series need 3 or more years; dates more than 90 days from a series' usual date counted as a season mismatch | Enough readings to place the crossings; mismatches would dominate the errors |
 | Oct 15 2026 | Likely managed sites flagged and reported both ways | Gardens and yards may not follow local weather |
@@ -520,6 +528,7 @@ PhenoCam comparison earns a place.
 | Oct 16 2026 | Two sets: every usable curve (≥ 6 readings, any number of years) for the record, typical dates and climate across space; ≥ 12 readings and ≥ 3 years for the year-to-year analyses | Short volunteer series still give typical dates; year-to-year needs repeated years |
 | Oct 16 2026 | NPN-derived "usable" rule (≥ 6 readings, peak above 50 % green) left as is | Sparser volunteer records cannot place a crossing |
 | Oct 16 2026 | 2016–2017 reported as a sensitivity check; main results keep all years | Likely a judging change, not yet confirmed with USA-NPN and NEON |
+| Oct 18 2026 | A standalone paper, ahead of the fuel phenology regions analysis; its own code folder (`npn_study/`), to become its own repository at publication | The ground record answers its own questions and should not depend on regions built partly from it |
 | Oct 18 2026 | EPA Level II ecoregions for all region results | A published regionalization, independent of the fuel phenology regions (which were chosen partly on these ground dates) |
 | Oct 16 2026 | Second green-up: below 25 % green, then above 50 % on two readings at least three weeks later | A looser rule mostly caught readings flickering around 50 % |
 
@@ -529,6 +538,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-20 | Opening and conclusions rewritten for a standalone study |
 | 2026-10-20 | Cool- and warm-season overlap at sites with both; satellite agreement at regional scale; link to the fire study's forecast result |
 | 2026-10-18 | Regions switched to EPA Level II ecoregions; climatology, spatial, variance and 2016–17 results updated |
 | 2026-10-16 | The record, typical dates by region and grass type on all usable curves, and typical dates against site climate; 2016–17 check; PhenoCam first comparison (on hold) |
