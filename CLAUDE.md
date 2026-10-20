@@ -826,6 +826,13 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   Smoothed nowcast full run Oct 19: departures r vs after-the-fact 0.32-0.56 (raw 0.28-0.51); 66
   (cloud preview): growth -13.9 [-25, -3] (no signal), starts +32.1 [-2, +66] (12 +19.9, 11 +12.8),
   human + unknown +14.1. Reading: 16-day composites are too slow; next would be daily MCD43A4.
+  Delay diagnostic (Oct 20, Mike: before any daily-data pull): 65b env GSI_RT_LAG = days from mid-week back
+  to the centre of the raw g_now window (latest usable composite start = mid - lag; default 16 + latency
+  = 19, reproduced exactly on the fixture); sweep 19 / 12 (~daily MCD43A4, day D posted ~D + 10) / 4
+  (truly daily) / 0 (oracle); smoothed state is read at lag - 8. Outputs *_lag<L> (state, weekly,
+  check). 66 adds specs all_/human_unk_/px_ rt<L> and rts<L> for every realtime_weekly_lag*.csv;
+  env GSI_FIRE_TEST_SUB=<name> writes 66 outputs to test/<name>/ (keeps the main tables). Fixture:
+  lag 0 puts the planted 2021 green window at weeks 12-32 (truth 12-33), lag 19 at 15-35.
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.

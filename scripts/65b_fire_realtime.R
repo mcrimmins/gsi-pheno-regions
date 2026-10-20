@@ -20,6 +20,13 @@
 # cured_share_rt_typ = mean of the other years, coverage = share of cells with a state), realtime_check.csv
 # (per region: correlation of the weekly real-time and after-the-fact cured shares, departures too).
 # 66 reads realtime_weekly.csv when present (specs all_rt, human_unk_rt, px_rt).
+# Delay diagnostic (Oct 20): env GSI_RT_LAG = days from the week's middle day back to the centre of the
+# g_now window (the latest usable composite start is mid - lag). Default 16 + latency_days = 19 (what a
+# manager has from 16-day composites). Sweep 19 / 12 (about what daily MCD43A4 would give: day D posted
+# ~D + 10) / 4 (truly daily data) / 0 (oracle: window centred on the week). With GSI_RT_LAG set, outputs
+# get a _lag<L> suffix (state_<Y>_<profile>_lag<L>.rds, realtime_weekly_lag<L>.csv,
+# realtime_check_lag<L>.csv) and the default files are left alone; 66 adds specs *_rt<L> / *_rts<L>.
+# The smoothed state is read at the latest available composite's centre, i.e. lag - 8 days before mid-week.
 #
 # Usage: Rscript scripts/65b_fire_realtime.R [profile]
 
@@ -46,12 +53,14 @@ out_dir <- fire_dir(cfg, "realtime"); dir.create(out_dir, showWarnings = FALSE, 
 regs <- as.integer(unlist(fs$pilot_regions))
 yrs <- seq(as.integer(fs$fod$years$start), as.integer(fs$fod$years$end))
 nw <- as.integer(fs$week$n_weeks %||% 52); mid <- fw_mid_doy(nw)
-lat_d <- as.numeric(rt$latency_days %||% 3); gu <- as.numeric(rt$greenup_frac %||% 0.2); cu <- as.numeric(rt$curing_frac %||% 0.5)
+lat_d <- as.numeric(rt$latency_days %||% 3); lag_env <- Sys.getenv("GSI_RT_LAG", "")
+lag_d <- if (nzchar(lag_env)) as.numeric(lag_env) else 16 + lat_d; tag <- if (nzchar(lag_env)) sprintf("_lag%d", as.integer(lag_d)) else ""
+if (!is.finite(lag_d)) stop("GSI_RT_LAG must be a number of days"); gu <- as.numeric(rt$greenup_frac %||% 0.2); cu <- as.numeric(rt$curing_frac %||% 0.5)
 min_valid <- as.numeric(cc$min_valid %||% 5); max_snow <- as.numeric(cc$max_snow_frac %||% 0.5)
 full_valid <- as.numeric(cc$full_valid %||% 20); lam <- as.numeric(cc$lambda %||% 30)
 env_iter <- as.integer(cc$envelope$iter %||% 1); env_below <- as.numeric(cc$envelope$below_weight %||% 0.5)
 sw <- step_workers(cfg, "fire_realtime")
-log_msg("=== 65b_fire_realtime | profile: ", profile, " | years ", min(yrs), "-", max(yrs), " | latency ", lat_d, " d, green-up ", gu,
+log_msg("=== 65b_fire_realtime | profile: ", profile, " | years ", min(yrs), "-", max(yrs), " | latency ", lat_d, " d, lag ", lag_d, " d", tag, ", green-up ", gu,
         ", curing ", cu, " | workers ", sw$n)
 
 fuel <- fire_fuel_share(cfg)
@@ -95,7 +104,7 @@ year_state <- function(Y) {
     G <- (V - base) / amp                                     # relative greenness per composite
     S <- matrix(NA_real_, length(allc), nw)
     for (w in seq_len(nw)) {
-      cut <- as.Date(sprintf("%d-01-01", Y)) + mid[w] - 1 - 16 - lat_d   # latest usable composite start
+      cut <- as.Date(sprintf("%d-01-01", Y)) + mid[w] - 1 - lag_d   # latest usable composite start
       a <- which(st > cut - 16 & st <= cut); b <- which(st > cut - 32 & st <= cut - 16)
       gn <- if (length(a)) rowMeans(G[, a, drop = FALSE], na.rm = TRUE) else rep(NA_real_, length(allc))
       gp <- if (length(b)) rowMeans(G[, b, drop = FALSE], na.rm = TRUE) else rep(NA_real_, length(allc))
@@ -116,7 +125,7 @@ year_state <- function(Y) {
     }
     S2 <- matrix(NA_real_, length(allc), nw)
     for (w in seq_len(nw)) {
-      cut <- as.Date(sprintf("%d-01-01", Y)) + mid[w] - 1 - 16 - lat_d
+      cut <- as.Date(sprintf("%d-01-01", Y)) + mid[w] - 1 - lag_d
       av <- which(st <= cut); if (!length(av)) next
       L <- max(ni[av]); if (L < 8) next
       Wc <- WN[, 1:L, drop = FALSE]; late <- ni[-av]; late <- late[late <= L]
@@ -127,10 +136,10 @@ year_state <- function(Y) {
       green <- gn >= cu | (gn >= gu & gn > gp)
       S2[, w] <- ifelse(!recent | is.na(gn), NA, ifelse(green, 0, 1))
     }
-    f <- file.path(out_dir, sprintf("state_%d_%s.rds", Y, profile)); saveRDS(list(raw = S, smooth = S2), f); f
+    f <- file.path(out_dir, sprintf("state_%d_%s%s.rds", Y, profile, tag)); saveRDS(list(raw = S, smooth = S2), f); f
   }, error = function(e) paste("ERROR", Y, conditionMessage(e)))
 }
-need <- yrs[!file.exists(file.path(out_dir, sprintf("state_%d_%s.rds", yrs, profile)))]
+need <- yrs[!file.exists(file.path(out_dir, sprintf("state_%d_%s%s.rds", yrs, profile, tag)))]
 log_msg(length(need), " year(s) to compute")
 if (length(need)) {
   res <- if (.Platform$OS.type == "unix" && sw$n > 1) parallel::mclapply(need, year_state, mc.cores = min(sw$n, length(need)), mc.preschedule = FALSE) else lapply(need, year_state)
@@ -140,7 +149,7 @@ if (length(need)) {
 
 OUT <- list()
 for (Y in yrs) {
-  SS <- readRDS(file.path(out_dir, sprintf("state_%d_%s.rds", Y, profile)))
+  SS <- readRDS(file.path(out_dir, sprintf("state_%d_%s%s.rds", Y, profile, tag)))
   if (!is.list(SS)) stop("old state cache for ", Y, ": delete state_*.rds and rerun")
   S <- SS$raw; S2 <- SS$smooth
   for (r in regs) {
@@ -160,7 +169,7 @@ for (k in seq_len(nrow(O))) {                           # typical = mean of the 
   O$cured_share_rt_typ[k] <- mean(O$cured_share_rt[j], na.rm = TRUE)
   O$cured_share_rts_typ[k] <- mean(O$cured_share_rts[j], na.rm = TRUE)
 }
-utils::write.csv(O, file.path(out_dir, "realtime_weekly.csv"), row.names = FALSE)
+utils::write.csv(O, file.path(out_dir, paste0("realtime_weekly", tag, ".csv")), row.names = FALSE)
 
 # check against 65's after-the-fact cured share
 wf <- fire_dir(cfg, "weekly", "fire_weekly.csv")
@@ -175,10 +184,10 @@ if (file.exists(wf)) {
                r_share_smooth = stats::cor(x$cured_share_rts[v], x$cured_share[v]),
                r_departure_smooth = stats::cor((x$cured_share_rts - x$cured_share_rts_typ)[v], (x$cured_share - x$cured_share_typ)[v]),
                mean_coverage_smooth = mean(x$coverage_s, na.rm = TRUE)) }))
-  utils::write.csv(CK, file.path(out_dir, "realtime_check.csv"), row.names = FALSE)
+  utils::write.csv(CK, file.path(out_dir, paste0("realtime_check", tag, ".csv")), row.names = FALSE)
   for (k in seq_len(nrow(CK))) with(CK[k, ], log_msg(sprintf("region %2d: real-time vs after-the-fact cured share r %.2f (smoothed %.2f), departures r %.2f (smoothed %.2f), coverage %.0f %% (%.0f %%)",
                                                           region, r_share, r_share_smooth, r_departure, r_departure_smooth, 100 * mean_coverage, 100 * mean_coverage_smooth)))
 }
-msg <- sprintf("%d years, %.1f min", length(yrs), as.numeric(difftime(Sys.time(), t0, units = "mins")))
+msg <- sprintf("lag %g d: %d years, %.1f min", lag_d, length(yrs), as.numeric(difftime(Sys.time(), t0, units = "mins")))
 log_msg("=== done | ", msg, " | log: ", log_file)
 notify("65b_fire_realtime finished", msg, priority = 3, tags = "white_check_mark")

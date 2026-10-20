@@ -28,6 +28,7 @@
 #   all_lag2, human_unk_lag2, px_lag2   nowcast: cured-share departure lagged 2 weeks (satellite latency)
 #   all_rt, human_unk_rt, px_rt   real-time cured share (65b): only composites available that week
 #   all_rts, human_unk_rts, px_rts   the same from the smoothed nowcast (65b *_rts)
+#   all_rt<L>, ..., px_rts<L>   delay diagnostic: 65b with GSI_RT_LAG = L (realtime_weekly_lag<L>.csv)
 #   all_hs, human_unk_hs, px_hs   hot-spell check: 7-day VPD (64 vpd7) in every model
 #   all_gsi_<v>, human_unk_gsi_<v>, px_gsi_<v>   cured share from GSI dates (config gsi_compare)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
@@ -42,7 +43,7 @@
 # (spec x comparison x region: total gain, bootstrap 90 % interval, share of years improved),
 # yearly_r.csv, coefs.csv, seasonal.csv, seasonal_windows.csv, fit_notes.csv.
 #
-# Usage: Rscript scripts/66_fire_test.R [profile] [spec,...]
+# Usage: Rscript scripts/66_fire_test.R [profile] [spec,...]   (env GSI_FIRE_TEST_SUB=<name>: outputs to test/<name>/)
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
@@ -61,7 +62,9 @@ log_file <- log_init("66_fire_test", profile)
 notify_init(cfg)
 fs <- cfg$fire_study
 t0 <- Sys.time()
-out_dir <- fire_dir(cfg, "test"); dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
+# GSI_FIRE_TEST_SUB (Oct 20): write to test/<sub>/ so a run on a few specs doesn't replace the main tables
+test_sub <- Sys.getenv("GSI_FIRE_TEST_SUB", "")
+out_dir <- if (nzchar(test_sub)) fire_dir(cfg, "test", test_sub) else fire_dir(cfg, "test"); dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 W <- utils::read.csv(fire_dir(cfg, "weekly", "fire_weekly.csv"))
 regs <- as.integer(unlist(fs$pilot_regions))
 snow_regs <- as.integer(unlist(fs$snow_regions))
@@ -137,6 +140,17 @@ if (file.exists(rf)) {
     specs$all_rts <- list(y = "n_fires", rows = TRUE, pheno = "cured_dep_rts")
     specs$human_unk_rts <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_rts")
     specs$px_rts <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_rts")
+  }
+}
+# delay diagnostic (Oct 20): 65b runs with GSI_RT_LAG write realtime_weekly_lag<L>.csv -> specs *_rt<L>, *_rts<L>
+for (lf in Sys.glob(fire_dir(cfg, "realtime", "realtime_weekly_lag*.csv"))) {
+  L <- sub("^realtime_weekly_lag(-?[0-9]+)\\.csv$", "\\1", basename(lf)); RL <- utils::read.csv(lf)
+  i <- match(paste(W$region, W$year, W$week), paste(RL$region, RL$year, RL$week))
+  for (k in c("rt", "rts")) {
+    pv <- paste0("cured_dep_", k, L); W[[pv]] <- (RL[[paste0("cured_share_", k)]][i] - RL[[paste0("cured_share_", k, "_typ")]][i]) * 10
+    specs[[paste0("all_", k, L)]] <- list(y = "n_fires", rows = TRUE, pheno = pv)
+    specs[[paste0("human_unk_", k, L)]] <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = pv)
+    specs[[paste0("px_", k, L)]] <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = pv)
   }
 }
 for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
