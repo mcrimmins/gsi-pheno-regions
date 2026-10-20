@@ -27,6 +27,7 @@
 #                (67; skipped when forecast_weekly.csv is missing)
 #   all_lag2, human_unk_lag2, px_lag2   nowcast: cured-share departure lagged 2 weeks (satellite latency)
 #   all_rt, human_unk_rt, px_rt   real-time cured share (65b): only composites available that week
+#   all_rts, human_unk_rts, px_rts   the same from the smoothed nowcast (65b *_rts)
 #   all_hs, human_unk_hs, px_hs   hot-spell check: 7-day VPD (64 vpd7) in every model
 #   all_gsi_<v>, human_unk_gsi_<v>, px_gsi_<v>   cured share from GSI dates (config gsi_compare)
 #   all_dates, human_unk_dates, px_dates   dates version: green-up / curing departures (per 10 days) in
@@ -131,6 +132,12 @@ if (file.exists(rf)) {
   specs$all_rt <- list(y = "n_fires", rows = TRUE, pheno = "cured_dep_rt")
   specs$human_unk_rt <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_rt")
   specs$px_rt <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_rt")
+  if ("cured_share_rts" %in% names(RT)) {
+    W$cured_dep_rts <- (RT$cured_share_rts[i] - RT$cured_share_rts_typ[i]) * 10
+    specs$all_rts <- list(y = "n_fires", rows = TRUE, pheno = "cured_dep_rts")
+    specs$human_unk_rts <- list(y = "n_human_unk", rows = quote(!(region %in% skip_cause)), pheno = "cured_dep_rts")
+    specs$px_rts <- list(y = "px_days", rows = quote(viirs_ok), log = TRUE, pheno = "cured_dep_rts")
+  }
 }
 for (v in c("viirs_ok", "cause_split_ok", "era2020")) W[[v]] <- as.logical(W[[v]])     # robust to "True" / "TRUE"
 # hot-spell check (Oct 19): 7-day VPD added to every model, so phenology must add beyond this week's dryness
