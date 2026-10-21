@@ -1,0 +1,30 @@
+"species_id","genus","species","common_name","pathway","life_cycle","target","series","series_years","plant_years","sd_year","sd_plant"
+129,"Andropogon","gerardii","big bluestem","C4","perennial","curing",3,18,166,13.2268731765184,18.6006153632332
+129,"Andropogon","gerardii","big bluestem","C4","perennial","cured",3,19,190,9.65457524714024,11.4982192937551
+130,"Bouteloua","curtipendula","sideoats grama","C4","perennial","curing",6,19,74,19.3879721770738,26.1787775909959
+130,"Bouteloua","curtipendula","sideoats grama","C4","perennial","cured",6,19,71,29.6792024733802,22.2840360765749
+130,"Bouteloua","curtipendula","sideoats grama","C4","perennial","greenup",4,12,17,9.54315318764747,4.85843970787193
+131,"Bouteloua","gracilis","blue grama","C4","perennial","greenup",7,37,368,26.2563532999792,14.0854910103881
+131,"Bouteloua","gracilis","blue grama","C4","perennial","curing",8,48,536,35.0406827713364,32.674283421245
+131,"Bouteloua","gracilis","blue grama","C4","perennial","cured",8,48,454,33.0444398401934,23.1151757784029
+137,"Panicum","virgatum","switchgrass","C4","perennial","curing",3,9,23,11.3532807130186,9.54860617300058
+795,"Aristida","stricta","pineland threeawn","C4","perennial","greenup",4,37,554,32.1862855646774,27.0733020912354
+795,"Aristida","stricta","pineland threeawn","C4","perennial","curing",4,36,309,39.5919064977497,38.5978763911263
+971,"Poa","pratensis","Kentucky bluegrass","C3","perennial","cured",3,20,77,45.7454821652094,23.1934009514863
+971,"Poa","pratensis","Kentucky bluegrass","C3","perennial","curing",4,33,396,38.029055439545,22.8121575789211
+1357,"Microstegium","vimineum","Nepalese browntop","C4","annual","curing",3,19,250,12.1220723971885,12.1877526721612
+1357,"Microstegium","vimineum","Nepalese browntop","C4","annual","cured",3,19,257,8.42500500491651,10.0067071774166
+1435,"Aristida","purpurea","purple threeawn","C4","perennial","greenup",5,22,145,31.234744596671,13.3109208666912
+1435,"Aristida","purpurea","purple threeawn","C4","perennial","cured",6,29,209,28.667756416702,24.574435440645
+1435,"Aristida","purpurea","purple threeawn","C4","perennial","curing",6,27,217,31.6129096944255,45.1220577687224
+1440,"Bouteloua","eriopoda","black grama","C4","perennial","cured",3,19,191,19.3815909685019,13.0447351908574
+1440,"Bouteloua","eriopoda","black grama","C4","perennial","greenup",3,19,183,36.2503145646377,32.1803646935697
+1440,"Bouteloua","eriopoda","black grama","C4","perennial","curing",3,19,185,20.1768612925607,20.893477572639
+1441,"Bromus","inermis","smooth brome","C3","perennial","curing",5,32,308,34.231585587069,23.758055247768
+1441,"Bromus","inermis","smooth brome","C3","perennial","cured",4,25,104,30.3402113316253,25.3586696283942
+1641,"Schizachyrium","scoparium","little bluestem","C4","perennial","greenup",6,26,109,17.7396323618743,12.8765287472955
+1641,"Schizachyrium","scoparium","little bluestem","C4","perennial","curing",12,55,358,23.9227660018053,28.564943842208
+1641,"Schizachyrium","scoparium","little bluestem","C4","perennial","cured",10,49,346,23.3926659902552,19.6945666803627
+1695,"Sorghastrum","nutans","Indiangrass","C4","perennial","cured",3,18,174,19.6414068108131,11.5058343598183
+1695,"Sorghastrum","nutans","Indiangrass","C4","perennial","curing",3,17,143,25.6781503504721,11.890964183804
+1903,"Arundinaria","gigantea","giant cane","C3","perennial","curing",3,11,40,30.8539684623533,31.0997706209722

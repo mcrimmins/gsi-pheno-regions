@@ -16,6 +16,12 @@
 #                    Mar-Apr temperature; curing vs aridity (58)
 #   npn_sensitivity  2016-17 check: NEON plants never above 50 % green by year (58); shared year
 #                    signal with and without 2016-17 (53, sens/no1617)
+#   npn_species      typical season of each species with >= 3 site series: green-up, 50 % curing
+#                    (with quartiles across sites) and cured (58c, report/tables/npn_species.csv)
+#   npn_species_sites   the five species with most sites: typical green-up vs March-April temperature
+#                       and 50 % curing vs aridity, one point per site (58, 51 normals)
+#   npn_species_spread  per species: SD of the date between years vs between plants in the same
+#                       site and year (58c, report/tables/npn_species_spread.csv)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -24,7 +30,8 @@ profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "fu
 npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study") else here::here()
 source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
-all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity")
+all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
+              "npn_species_sites", "npn_species_spread")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -360,5 +367,108 @@ if (do("npn_sensitivity") && have(pk_csv, vs_main, vs_sens)) {
   })
 }
 
+sp_csv <- npn_path("report", "tables", "npn_species.csv")
+if (do("npn_species") && have(sp_csv)) {
+  P <- utils::read.csv(sp_csv, stringsAsFactors = FALSE)
+  P <- P[P$pathway %in% c("C3", "C4") & P$curing_series >= 3, ]
+  P <- P[order(P$pathway == "C3", -P$curing_doy), ]            # C3 block on top, each block early curing on top
+  n <- nrow(P); P$y <- seq_len(n)
+  plot_png("npn_species", paste0(min(P$first_year), "-", max(P$last_year)), 2200, 330 + 62 * n, function() {
+    par(mar = c(4.2, 17, 3.8, 1))
+    plot(NA, xlim = c(1, 366), ylim = c(0.5, n + 0.5), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n")
+    abline(v = as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, col = "#ecebe7")
+    k <- sum(P$pathway == "C4"); if (k > 0 && k < n) abline(h = k + 0.5, col = ink2, lty = 3)
+    mon_axis(1, 0.85)
+    lab <- sprintf("%s. %s (%d sites)%s", substr(P$genus, 1, 1), P$species, P$sites, ifelse(P$life_cycle == "annual", " *", ""))
+    axis(2, at = P$y, labels = lab, tick = FALSE, cex.axis = 0.78, font.axis = 3)
+    seg <- function(a, b, y, ...) {                                # season line, wrapping past Dec 31
+      ok <- !is.na(a) & !is.na(b) & (b - a) %% 365.25 < 300     # medians out of order: no line
+      a <- a[ok]; b <- b[ok]; y <- y[ok]; w <- b < a
+      if (any(!w)) segments(a[!w], y[!w], b[!w], y[!w], ...)
+      if (any(w)) { segments(a[w], y[w], 366, y[w], ...); segments(1, y[w], b[w], y[w], ...) }
+    }
+    col <- pw_col[P$pathway]
+    seg(P$greenup_doy, P$curing_doy, P$y, col = grDevices::adjustcolor(col, 0.45), lwd = 5, lend = 1)
+    seg(P$curing_doy, P$cured_doy, P$y, col = grDevices::adjustcolor(ink2, 0.5), lwd = 2, lend = 1)
+    seg(P$curing_q25, P$curing_q75, P$y + 0.22, col = col, lwd = 1.2)
+    points(P$greenup_doy, P$y, pch = 21, bg = bg, col = col, cex = 1.1, lwd = 1.5)
+    points(P$curing_doy, P$y, pch = 21, bg = col, col = bg, cex = 1.4)
+    points(P$cured_doy, P$y, pch = 15, col = ink2, cex = 0.9)
+    mtext("Typical season by species", side = 3, line = 2.2, adj = 0, cex = 1.05, font = 2, col = ink)
+    mtext("Species with 3 or more site series; median over sites. Thin line above: middle half of sites' curing dates. * annual",
+          side = 3, line = 0.8, adj = 0, cex = 0.72, col = ink2)
+    legend("bottom", inset = c(0, -0.1 * 30 / max(n, 30)), xpd = NA, horiz = TRUE, bty = "n", cex = 0.78, text.col = ink2,
+           legend = c("green-up", "50 % curing (C4)", "50 % curing (C3)", "cured"), pch = c(21, 21, 21, 15),
+           pt.bg = c(bg, pw_col[["C4"]], pw_col[["C3"]], NA), col = c(ink2, bg, bg, ink2), pt.cex = c(1.1, 1.4, 1.4, 0.9))
+  })
+}
+
+# ---- NPN study: the same species at different sites (58 series_typical, 51 normals) ----------
+nm_rds2 <- file.path(npn_dir, "npn_metrics.rds")
+if (do("npn_species_sites") && !is.null(TY) && have(nm_rds2)) {
+  Nn <- readRDS(nm_rds2)$normals
+  X <- merge(TY, Nn[, c("site_id", "t_marapr", "aridity")], by = "site_id")
+  cm2 <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
+  unw <- function(x) { m <- cm2(x); d <- (x - m) %% 365.25; m + ifelse(d > 182.625, d - 365.25, d) }
+  ns_cur <- sort(table(paste(X$genus, X$species)[!is.na(X$curing)]), decreasing = TRUE)
+  top <- names(ns_cur)[seq_len(min(5, length(ns_cur)))]
+  plot_png("npn_species_sites", "site and species typical dates", 2700, 1250, function() {
+    par(mfrow = c(2, length(top)), mar = c(4.2, 4.2, 3.6, 0.8), oma = c(0, 0, 2.4, 0))
+    panel <- function(sp, xv, tg, xlab, logx) {
+      d <- X[paste(X$genus, X$species) == sp & !is.na(X[[tg]]) & !is.na(X[[xv]]), ]
+      d$y <- unw(d[[tg]]); colp <- pw_col[[d$pathway[1]]]
+      at <- as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1
+      at <- c(at - 365, at, at + 365); lb <- rep(month.abb, 3)
+      yl <- range(d$y) + c(-15, 15); k <- at >= yl[1] & at <= yl[2]
+      plot(d[[xv]], d$y, log = if (logx) "x" else "", ylim = yl, pch = 16, cex = 0.7 + 0.35 * sqrt(pmin(d$years, 9)),
+           col = grDevices::adjustcolor(colp, 0.65), yaxt = "n", xlab = xlab, ylab = "", bty = "n", cex.axis = 0.85, cex.lab = 0.9)
+      axis(2, at = at[k], labels = lb[k], cex.axis = 0.8)
+      sub <- sprintf("%d sites", nrow(d))
+      if (nrow(d) >= 5) {
+        xx <- if (logx) log(d[[xv]]) else d[[xv]]; f <- stats::lm(d$y ~ xx); o <- order(xx)
+        lines(d[[xv]][o], stats::fitted(f)[o], col = colp, lwd = 2)
+        sub <- sprintf("%d sites; Spearman r = %.2f", nrow(d), stats::cor(xx, d$y, method = "spearman"))
+      }
+      mtext(sprintf("%s. %s", substr(sp, 1, 1), sub(".* ", "", sp)), side = 3, line = 1.6, adj = 0, cex = 0.9, font = 4, col = ink)
+      mtext(paste0(c(greenup = "green-up", curing = "50 % curing")[[tg]], ": ", sub), side = 3, line = 0.4, adj = 0, cex = 0.7, col = ink2)
+    }
+    for (sp in top) panel(sp, "t_marapr", "greenup", "March-April mean temperature (deg C)", FALSE)
+    for (sp in top) panel(sp, "aridity", "curing", "aridity, P / PET (log scale)", TRUE)
+    mtext("The same species at different sites: typical green-up against spring temperature (top) and curing against site wetness (bottom)",
+          side = 3, line = 0.6, adj = 0, outer = TRUE, cex = 0.95, font = 2, col = ink)
+  })
+}
+
+# ---- NPN study: year-to-year vs plant-to-plant spread by species (58c) ------------------------
+spr_csv <- npn_path("report", "tables", "npn_species_spread.csv")
+if (do("npn_species_spread") && have(spr_csv)) {
+  R <- utils::read.csv(spr_csv, stringsAsFactors = FALSE); R <- R[R$series_years >= 10, ]
+  tgs <- intersect(c("greenup", "curing", "cured"), unique(R$target))
+  ref <- R[R$target == "curing", ]; spp <- unique(c(ref$species_id[order(-ref$sd_year)], R$species_id))
+  lab <- function(id) { r <- R[R$species_id == id, ][1, ]; sprintf("%s. %s", substr(r$genus, 1, 1), r$species) }
+  n <- length(spp)
+  plot_png("npn_species_spread", "plant-years", 2500, 300 + 60 * n, function() {
+    par(mfrow = c(1, length(tgs)), mar = c(4.4, 9.6, 3.6, 0.8), oma = c(2.2, 0, 0, 0))
+    xm <- max(c(R$sd_year, R$sd_plant), na.rm = TRUE) * 1.05
+    for (tg in tgs) {
+      plot(NA, xlim = c(0, xm), ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "standard deviation (days)", ylab = "", bty = "n", cex.axis = 0.85)
+      abline(v = seq(0, xm, 10), col = "#ecebe7")
+      axis(2, at = seq_len(n), labels = vapply(spp, lab, ""), tick = FALSE, cex.axis = 0.8, font.axis = 3)
+      for (i in seq_len(n)) { r <- R[R$species_id == spp[i] & R$target == tg, ]; if (!nrow(r)) next
+        colp <- pw_col[[r$pathway]]
+        segments(min(r$sd_year, r$sd_plant, na.rm = TRUE), i, max(r$sd_year, r$sd_plant, na.rm = TRUE), i, col = "#d6d5d0", lwd = 2)
+        points(r$sd_plant, i, pch = 21, bg = bg, col = ink2, cex = 1.2, lwd = 1.3)
+        points(r$sd_year, i, pch = 21, bg = colp, col = bg, cex = 1.5)
+        text(xm, i, r$series_years, adj = 1, cex = 0.65, col = ink2) }
+      mtext(c(greenup = "Green-up", curing = "50 % curing", cured = "Cured")[[tg]], side = 3, line = 1.8, adj = 0, cex = 0.95, font = 2, col = ink)
+      mtext("Numbers at right: series-years", side = 3, line = 0.5, adj = 0, cex = 0.7, col = ink2)
+    }
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+    plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 1, pch = 21, pt.cex = c(1.5, 1.5, 1.2),
+           pt.bg = c(pw_col[["C4"]], pw_col[["C3"]], bg), col = c(bg, bg, ink2),
+           legend = c("between years, warm-season (C4)", "between years, cool-season (C3)", "between plants in the same site and year"))
+  })
+}
 
 log_msg(sprintf("=== done | figures in %s | log: %s", fig_dir, log_file))

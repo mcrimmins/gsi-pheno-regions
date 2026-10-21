@@ -19,7 +19,7 @@ inside that repo (`npn_study/`) or is the repository root.
 | `R/npn.R` | study helpers (series-years, site-year metrics, normals, regions, sensitivity) |
 | `scripts/` | the analysis, in run order below |
 | `data/` | `npn_species_pathway.csv` (C3 / C4, life cycle, origin, crop), `npn_site_ecoregions.csv` (EPA Level II per site); `npn_site_names.csv` is local only (not in git) |
-| `report/` | `npn_study.qmd` (study page) and `figs/` (PNGs + `manifest.csv`) |
+| `report/` | `npn_study.qmd` (study page), `figs/` (PNGs + `manifest.csv`) and `tables/` (`npn_species.csv`, from 58c) |
 | `logs/` | run logs (not in git) |
 
 ## Inputs
@@ -45,6 +45,8 @@ Rscript npn_study/scripts/53_npn_variance.R full         # variance partition (Q
 Rscript npn_study/scripts/54_npn_site_signal.R full      # shared site-year signal vs weather
 Rscript npn_study/scripts/55_npn_filter_inventory.R full # what each filter removes
 Rscript npn_study/scripts/58_npn_record_climatology.R full  # record, climatology, climate across space (Q1, Q2, Q4)
+Rscript npn_study/scripts/58b_npn_c3c4_gap.R full         # C3 -> C4 gap by region (optional: region CSV + tag)
+Rscript npn_study/scripts/58c_npn_species.R full           # species list for the page (report/tables/npn_species.csv)
 Rscript npn_study/scripts/90_npn_figs.R full             # figures for the page
 ```
 

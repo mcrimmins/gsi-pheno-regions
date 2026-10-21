@@ -219,6 +219,87 @@ show_fig("npn_record",
   below 50 % all year, so they have no green-up or curing date. Almost all are in 2016 and
   2017 (see [the check below](#a-check-2016-and-2017)).
 
+## The species
+
+```{r fig-npn-species}
+#| results: asis
+show_fig("npn_species",
+  "Typical season of each species observed at three or more sites: green-up (open circle), 50 % curing (filled circle) and cured (square), as medians over the species' sites. The thin line above each species spans the middle half of its sites' curing dates.",
+  "Horizontal timeline per grass species from green-up through 50 % curing to cured, cool-season species in blue at the top and warm-season in orange below.")
+```
+
+- **A few species carry the record.** 70 species are observed (29 perennial and 4 annual
+  cool-season, 36 perennial and 1 annual warm-season; 12 introduced). The five largest
+  (pineland threeawn, blue grama, little bluestem, Kentucky bluegrass and smooth brome) hold
+  44 % of the plant-years, and 31 species are seen at a single site.
+- **Widespread species give the best view of place.** Little bluestem (23 sites), blue grama and
+  sideoats grama (18 each), buffelgrass (15) and switchgrass (14) span several ecoregions; the
+  middle half of their sites' curing dates spans six weeks to two and a half months.
+- **Most warm-season species cure in September or early October.** Bush muhly in the Warm
+  Deserts is earliest among those with three or more sites (end of August) and pineland threeawn, on the Southeastern
+  coastal plains, holds 50 % green into December. Among cool-season species the annual
+  cheatgrass cures in mid-May, four months before the perennials.
+- Grass type (C3 / C4), life cycle and origin are assigned by species from the literature, to be
+  reviewed with USA-NPN.
+
+```{r fig-npn-species-sites}
+#| results: asis
+show_fig("npn_species_sites",
+  "The same species at different sites, for the five species observed at the most sites. Top: typical green-up against the site's March–April mean temperature. Bottom: typical 50 % curing against site aridity (precipitation / potential evapotranspiration). One point per site; point size = years observed.",
+  "Ten scatter plots, two rows of five species: green-up dates fall with warmer spring temperature in every species; curing dates show little relation to site wetness except in blue grama.")
+```
+
+- **Within a species, green-up follows spring warmth.** Little bluestem, sideoats grama, blue
+  grama and big bluestem all green up earlier at warmer sites (rank correlations −0.46 to −0.89),
+  so the across-site result above is not just a matter of which species grow where.
+- **Curing hardly follows site wetness, even within a species.** Only blue grama cures clearly
+  later at wetter sites (r = 0.54, 13 sites); for the others the correlation is between −0.15 and
+  0.26. A few sites with early typical curing (for example little bluestem in May–June) are sites
+  where the species cures after a spring flush.
+
+```{r fig-npn-species-spread}
+#| results: asis
+show_fig("npn_species_spread",
+  "How much each species' dates move from year to year (filled) against how much plants of that species differ in the same site and year (open), in the year-to-year set (≥ 12 readings, series with ≥ 3 years); species with at least 10 series-years, ordered by the year-to-year spread of 50 % curing.",
+  "Three dot charts, green-up, curing and cured, with one row per species showing the between-year and between-plant standard deviations.")
+```
+
+- **Plants differ about as much as years do.** For 50 % curing the year-to-year standard deviation
+  is 12–40 days by species (median 26) and the spread between plants in the same site and year is
+  about the same (median 24). So a single plant's curing date says little about the year.
+- **Some species are steadier.** Big bluestem and Nepalese browntop move about two weeks from year
+  to year; blue grama, purple threeawn, Kentucky bluegrass and pineland threeawn move four to six
+  weeks, and purple threeawn's plants differ even more than its years. For ground monitoring of curing, the steadier species
+  give a clearer year signal per plant observed.
+
+```{r tbl-npn-species}
+#| results: asis
+sp_f <- "tables/npn_species.csv"
+if (file.exists(sp_f)) {
+  S <- utils::read.csv(sp_f, stringsAsFactors = FALSE)
+  dl <- function(d) ifelse(is.na(d), "", format(as.Date("2001-01-01") + round(d) - 1, "%b %-d"))
+  dn <- function(d, n) ifelse(is.na(d), "", sprintf("%s (%d)", dl(d), n))
+  pw <- c(C3 = "cool (C3)", C4 = "warm (C4)")
+  T <- data.frame(
+    Species = sprintf("*%s %s*", S$genus, S$species), `Common name` = S$common_name,
+    Type = unname(pw[S$pathway]), `Life cycle` = S$life_cycle, Origin = S$origin,
+    `Sites (NEON)` = sprintf("%d (%d)", S$sites, S$sites_neon),
+    `Plant-years` = format(S$plant_years, big.mark = ","), Plants = S$plants,
+    Readings = format(S$readings, big.mark = ","),
+    Years = ifelse(S$first_year == S$last_year, S$first_year, sprintf("%d–%d", S$first_year, S$last_year)),
+    `Ecoregions (Level II)` = S$ecoregions, States = S$states,
+    `Green-up` = dn(S$greenup_doy, S$greenup_series), `50 % curing` = dn(S$curing_doy, S$curing_series),
+    Cured = dn(S$cured_doy, S$cured_series), `Year-to-year series` = S$series_yty,
+    check.names = FALSE)
+  cat('\n::: {.callout-note collapse="true" appearance="simple"}\n')
+  cat(sprintf("## All %d species: where, how much record, typical dates (click to open)\n\n", nrow(T)))
+  cat("Sorted by grass type, then plant-years. Typical dates are circular medians over the species' site series, with the number of series in brackets. Ecoregion codes as in the dates figure. Year-to-year series: site series in the stricter set (≥ 12 readings, ≥ 3 years).\n\n")
+  cat("::: {.species-table}\n\n")
+  print(knitr::kable(T, format = "pipe", align = c("l", "l", "l", "l", "l", rep("r", 5), "l", "l", rep("r", 4))))
+  cat("\n\n: Species in the NPN grass percent-green record (relaxed set) {.striped}\n\n:::\n\n:::\n\n")
+} else cat('\n::: {.callout-note appearance="simple"}\n## Table pending\nRun npn_study/scripts/58c_npn_species.R.\n:::\n\n')
+```
+
 ## When grasses green up and cure
 
 ```{r fig-npn-dates}
@@ -538,6 +619,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-20 | Species list, typical season by species, the same species across sites, and year-to-year versus plant-to-plant spread by species |
 | 2026-10-20 | Opening and conclusions rewritten for a standalone study |
 | 2026-10-20 | Cool- and warm-season overlap at sites with both; satellite agreement at regional scale; link to the fire study's forecast result |
 | 2026-10-18 | Regions switched to EPA Level II ecoregions; climatology, spatial, variance and 2016–17 results updated |

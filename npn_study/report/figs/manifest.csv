@@ -6,4 +6,7 @@
 "npn_signal","full","CONUS","site-years","2026-10-18"
 "npn_sites","full","CONUS","2014-2024","2026-10-18"
 "npn_spatial","full","CONUS","site and species typical dates","2026-10-18"
+"npn_species","full","CONUS","2014-2024","2026-10-20"
+"npn_species_sites","full","CONUS","site and species typical dates","2026-10-20"
+"npn_species_spread","full","CONUS","plant-years","2026-10-20"
 "npn_variance","full","CONUS","plant-years","2026-10-18"
