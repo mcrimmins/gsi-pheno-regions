@@ -7,7 +7,9 @@
 # across sites).
 # Same relaxed set as 58: 02c usable plant-years, crops out, study years. Site groups (NEON /
 # other / managed) and series typical dates come from 58's record/series_typical.csv, so no site
-# names are read here.
+# names are read here. Fuel-relevant columns are added from data/npn_species_fire.csv (Fusco et al.
+# 2019), data/npn_species_traits.csv (58d, USDA PLANTS) and data/npn_site_fuelmodels.csv (59b, LANDFIRE)
+# when those exist.
 # Outputs
 #   <run_dir>/npn_study/record/species.csv     one row per species, all columns
 #   npn_study/report/tables/npn_species.csv     the same, for the page (no site ids or names)
@@ -64,6 +66,35 @@ S <- do.call(rbind, lapply(split(u, u$species_id), function(d) {
   out
 }))
 S <- S[order(S$pathway, -S$plant_years), ]
+
+# ---- fuel-relevant attributes (each optional: columns stay empty until its input exists) --------
+#   data/npn_species_fire.csv      invasive grasses shown to raise fire occurrence / frequency (Fusco et al. 2019)
+#   data/npn_species_traits.csv    USDA PLANTS mature height, growth form (58d)
+#   data/npn_site_fuelmodels.csv   LANDFIRE Scott & Burgan fuel model at each site (59b)
+ff <- npn_path("data", "npn_species_fire.csv")
+FI <- if (file.exists(ff)) utils::read.csv(ff, stringsAsFactors = FALSE) else data.frame(species_id = integer(), fire_invader = character(), fire_occurrence = character())
+S$fire_invader <- FI$fire_invader[match(S$species_id, FI$species_id)]
+S$fire_effect <- ifelse(is.na(S$fire_invader), "",
+  ifelse(FI$fire_occurrence[match(S$species_id, FI$species_id)] == "higher", "raises fire occurrence and frequency",
+         paste("fire occurrence", FI$fire_occurrence[match(S$species_id, FI$species_id)])))
+tf <- npn_path("data", "npn_species_traits.csv")
+TRt <- if (file.exists(tf)) utils::read.csv(tf, stringsAsFactors = FALSE) else NULL
+for (k in c("usda_symbol", "accepted_name", "height_ft", "growth_form", "growth_rate", "fire_tolerance"))
+  S[[k]] <- if (!is.null(TRt) && k %in% names(TRt)) TRt[[k]][match(S$species_id, TRt$species_id)] else NA
+fm_f <- npn_path("data", "npn_site_fuelmodels.csv")
+if (file.exists(fm_f)) {
+  FM <- utils::read.csv(fm_f, stringsAsFactors = FALSE)
+  FM$fbfm_use <- ifelse(!is.na(FM$fbfm_group) & FM$fbfm_group != "NB", FM$fbfm, FM$fbfm_3x3)   # point, else 90 m mode
+  site_fm <- stats::setNames(FM$fbfm_use, FM$site_id)
+  S$fuel_models <- vapply(S$species_id, function(id) {
+    f <- site_fm[as.character(unique(u$site_id[u$species_id == id]))]; f <- f[!is.na(f)]
+    if (!length(f)) return(""); tb <- sort(table(f), decreasing = TRUE); paste(sprintf("%s (%d)", names(tb), tb), collapse = ", ") }, "")
+  S$sites_grass_fm <- vapply(S$species_id, function(id) {
+    f <- site_fm[as.character(unique(u$site_id[u$species_id == id]))]; sum(substr(f, 1, 2) %in% c("GR", "GS"), na.rm = TRUE) }, 0L)
+} else { S$fuel_models <- ""; S$sites_grass_fm <- NA }
+log_msg(sprintf("fuel attributes: fire-promoting invaders %d, PLANTS height %d, growth form %d, fuel models %s",
+                sum(S$fire_invader %in% "yes"), sum(!is.na(S$height_ft)), sum(!is.na(S$growth_form) & nzchar(S$growth_form)),
+                if (file.exists(fm_f)) "yes" else "not yet (run 59b)"))
 utils::write.csv(S, file.path(rdir, "species.csv"), row.names = FALSE)
 tdir <- npn_path("report", "tables"); dir.create(tdir, showWarnings = FALSE, recursive = TRUE)
 utils::write.csv(S, file.path(tdir, "npn_species.csv"), row.names = FALSE)

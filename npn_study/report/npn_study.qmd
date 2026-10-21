@@ -138,6 +138,10 @@ weather- or satellite-based curing estimate can be checked against.
 - **Climate.** PRISM daily 4 km precipitation, minimum and maximum temperature and maximum
   vapour pressure deficit, 2001–2025, at every site; site normals over 2002–2025.
 - **Regions.** EPA / CEC Level II ecoregions (CEC 1997): the 130 sites fall in 17.
+- **Fuel attributes.** For each species: whether it is one of the invasive grasses shown to raise
+  fire occurrence and frequency across U.S. ecoregions (Fusco et al. 2019), and its mature height
+  and growth form from the USDA PLANTS database. For each site: the Scott & Burgan (2005) fire
+  behavior fuel model from LANDFIRE (FBFM40, 30 m).
 
 ### Methods
 
@@ -156,6 +160,11 @@ weather- or satellite-based curing estimate can be checked against.
   over all years.
 - **Regions.** EPA / Commission for Environmental Cooperation Level II ecoregions (CEC 1997),
   assigned to every site by its location; the 130 sites fall in 17 of them.
+- **Fuel model at a site.** The LANDFIRE fuel model at the site's point; where that cell is
+  nonburnable (a road, building or water) or missing, the most common burnable model within 90 m.
+  Fuel models describe the fuel bed, not the species, so they are a site attribute; no fuel rating
+  is assigned to a species. PLANTS "fire tolerance" rates how well a plant survives fire, not the
+  fuel it makes, and is listed for reference only.
 - **Weather.** Daily PRISM at each site, 2001–2025: growing degree-days, seasonal
   temperature, freeze dates, chilling, seasonal rain, vapour pressure deficit, rain events
   and dry spells, monsoon onset, and a moisture memory (a running average of daily
@@ -272,6 +281,44 @@ show_fig("npn_species_spread",
   weeks, and purple threeawn's plants differ even more than its years. For ground monitoring of curing, the steadier species
   give a clearer year signal per plant observed.
 
+### The species as fuels
+
+U.S. fire danger and fire behavior systems describe grass fuels by fuel bed (load, depth,
+climate), not by species, and the one species trait they use is the life cycle: annual grass
+cures fully and stays cured. The record can still be read against three fuel attributes: the
+life cycle, the invasive grasses known to change fire regimes, and the fuel model at each site.
+
+```{r fig-npn-fuelmodels}
+#| results: asis
+show_fig("npn_fuelmodels",
+  "Scott & Burgan (2005) fire behavior fuel models (LANDFIRE FBFM40) at the study sites. Left: sites per fuel model (dark: NEON) with their plant-years. Right: typical 50 % curing of each site and species, by fuel model and grass type.",
+  "Bar chart of sites per fuel model and a dot plot of typical curing dates by fuel model, cool-season in blue and warm-season in orange.")
+```
+
+- **The record is mostly low-load grass fuel.** 40 of the 130 sites sit in a grass fuel model
+  (GR), with 73 % of the plant-years; GR2 (low-load, dry-climate grass) alone has 21 sites and half
+  of all plant-years, and GR1–GR3 hold nearly all the rest. The tall, heavy grass models (GR5–GR8)
+  have 5 sites and 29 plant-years, so the record says little about tallgrass-type fuel beds. Grass-
+  shrub (GS, 20 sites), timber litter (TL, 24, grasses in forest understory), shrub (SH,
+  11) and timber-understory (TU, 4) make up most of the rest.
+- **31 sites are nonburnable at 30 m**, all of them volunteer or managed sites in towns, with 84
+  plant-years: their grasses are in yards, campuses and parks rather than in a wildland fuel bed.
+- **Curing does not sort by fuel model.** Warm-season grasses at grass-model sites reach 50 %
+  curing in late September, as they do at most other sites; cool-season grasses cure earliest at
+  shrub and grass-shrub sites (late June and late July) and latest under forest (mid-October). The fuel model describes the fuel bed, while the curing date follows
+  the grass type and the place.
+- **Mature height and growth form** come from USDA PLANTS for 42 of the 70 species; PLANTS has no
+  characteristics for the rest, including cheatgrass and Nepalese browntop.
+- **Three invaders that raise fire occurrence are in the record** (marked † in the figures, "yes"
+  in the table): cheatgrass (4 sites), buffelgrass (15 sites) and Nepalese browntop (3 sites, 279
+  plant-years). Their seasons differ: cheatgrass is fully cured by the end of May, buffelgrass
+  reaches 50 % curing in late September with the end of the monsoon, and Nepalese browntop in
+  mid-October. So their added fire risk falls in different parts of the year.
+- **Annual grasses cure early and completely.** All four annual cool-season grasses (cheatgrass,
+  ripgut and soft brome, sixweeks fescue) are cured by mid-June, months before the perennial
+  cool-season grasses (see the season by species above). That early, complete curing is why fire
+  danger systems treat annual herbaceous fuel separately.
+
 ```{r tbl-npn-species}
 #| results: asis
 sp_f <- "tables/npn_species.csv"
@@ -288,14 +335,18 @@ if (file.exists(sp_f)) {
     Readings = format(S$readings, big.mark = ","),
     Years = ifelse(S$first_year == S$last_year, S$first_year, sprintf("%d–%d", S$first_year, S$last_year)),
     `Ecoregions (Level II)` = S$ecoregions, States = S$states,
+    `Fire-promoting invader` = ifelse(S$fire_invader %in% "yes", "yes", ""),
+    `Mature height (ft)` = ifelse(is.na(S$height_ft), "", format(S$height_ft)),
+    `Growth form` = ifelse(is.na(S$growth_form), "", S$growth_form),
+    `Fuel models at sites` = ifelse(is.na(S$fuel_models), "", S$fuel_models),
     `Green-up` = dn(S$greenup_doy, S$greenup_series), `50 % curing` = dn(S$curing_doy, S$curing_series),
     Cured = dn(S$cured_doy, S$cured_series), `Year-to-year series` = S$series_yty,
     check.names = FALSE)
   cat('\n::: {.callout-note collapse="true" appearance="simple"}\n')
   cat(sprintf("## All %d species: where, how much record, typical dates (click to open)\n\n", nrow(T)))
-  cat("Sorted by grass type, then plant-years. Typical dates are circular medians over the species' site series, with the number of series in brackets. Ecoregion codes as in the dates figure. Year-to-year series: site series in the stricter set (≥ 12 readings, ≥ 3 years).\n\n")
+  cat("Sorted by grass type, then plant-years. Typical dates are circular medians over the species' site series, with the number of series in brackets. Ecoregion codes as in the dates figure. Year-to-year series: site series in the stricter set (≥ 12 readings, ≥ 3 years). Fire-promoting invader: raises fire occurrence and frequency across U.S. ecoregions (Fusco et al. 2019). Height and growth form: USDA PLANTS. Fuel models: Scott & Burgan (2005) model from LANDFIRE at the species' sites (number of sites).\n\n")
   cat("::: {.species-table}\n\n")
-  print(knitr::kable(T, format = "pipe", align = c("l", "l", "l", "l", "l", rep("r", 5), "l", "l", rep("r", 4))))
+  print(knitr::kable(T, format = "pipe", align = c("l", "l", "l", "l", "l", rep("r", 5), "l", "l", "l", "r", "l", "l", rep("r", 4))))
   cat("\n\n: Species in the NPN grass percent-green record (relaxed set) {.striped}\n\n:::\n\n:::\n\n")
 } else cat('\n::: {.callout-note appearance="simple"}\n## Table pending\nRun npn_study/scripts/58c_npn_species.R.\n:::\n\n')
 ```
@@ -619,6 +670,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-21 | Fuel attributes: fire-promoting invaders (Fusco et al. 2019), PLANTS height and growth form, LANDFIRE fuel model at each site |
 | 2026-10-20 | Species list, typical season by species, the same species across sites, and year-to-year versus plant-to-plant spread by species |
 | 2026-10-20 | Opening and conclusions rewritten for a standalone study |
 | 2026-10-20 | Cool- and warm-season overlap at sites with both; satellite agreement at regional scale; link to the fire study's forecast result |
@@ -642,6 +694,14 @@ PhenoCam comparison earns a place.
   <https://www.epa.gov/eco-research/ecoregions-north-america>.
 - PRISM Group, Oregon State University, <https://prism.oregonstate.edu>, daily 4 km data
   accessed October 2026.
+- Fusco, E. J., Finn, J. T., Balch, J. K., Nagy, R. C. and Bradley, B. A. (2019). Invasive grasses
+  increase fire occurrence and frequency across US ecoregions. *Proceedings of the National Academy
+  of Sciences* 116(47), 23594–23599, <https://doi.org/10.1073/pnas.1908253116>.
+- Scott, J. H. and Burgan, R. E. (2005). *Standard fire behavior fuel models: a comprehensive set
+  for use with Rothermel's surface fire spread model*. USDA Forest Service RMRS-GTR-153.
+- LANDFIRE. 40 Scott and Burgan fire behavior fuel models (FBFM40), U.S. Department of the
+  Interior, Geological Survey, and U.S. Department of Agriculture, <https://landfire.gov>.
+- USDA, NRCS. The PLANTS Database, National Plant Data Team, <https://plants.usda.gov>.
 - Bates, D., Mächler, M., Bolker, B. and Walker, S. (2015). Fitting linear mixed-effects
   models using lme4. *Journal of Statistical Software* 67(1).
 - Wright, M. N. and Ziegler, A. (2017). ranger: a fast implementation of random forests for

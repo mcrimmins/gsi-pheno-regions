@@ -22,6 +22,8 @@
 #                       and 50 % curing vs aridity, one point per site (58, 51 normals)
 #   npn_species_spread  per species: SD of the date between years vs between plants in the same
 #                       site and year (58c, report/tables/npn_species_spread.csv)
+#   npn_fuelmodels      Scott & Burgan fuel model (LANDFIRE FBFM40) at the sites: sites and plant-years per
+#                       model, and typical 50 % curing by model and grass type (59b, 58)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -31,7 +33,7 @@ npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study"
 source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
-              "npn_species_sites", "npn_species_spread")
+              "npn_species_sites", "npn_species_spread", "npn_fuelmodels")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -379,7 +381,8 @@ if (do("npn_species") && have(sp_csv)) {
     abline(v = as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, col = "#ecebe7")
     k <- sum(P$pathway == "C4"); if (k > 0 && k < n) abline(h = k + 0.5, col = ink2, lty = 3)
     mon_axis(1, 0.85)
-    lab <- sprintf("%s. %s (%d sites)%s", substr(P$genus, 1, 1), P$species, P$sites, ifelse(P$life_cycle == "annual", " *", ""))
+    inv <- if ("fire_invader" %in% names(P)) P$fire_invader %in% "yes" else rep(FALSE, n)
+    lab <- sprintf("%s. %s (%d sites)%s%s", substr(P$genus, 1, 1), P$species, P$sites, ifelse(P$life_cycle == "annual", " *", ""), ifelse(inv, " \u2020", ""))
     axis(2, at = P$y, labels = lab, tick = FALSE, cex.axis = 0.78, font.axis = 3)
     seg <- function(a, b, y, ...) {                                # season line, wrapping past Dec 31
       ok <- !is.na(a) & !is.na(b) & (b - a) %% 365.25 < 300     # medians out of order: no line
@@ -395,7 +398,7 @@ if (do("npn_species") && have(sp_csv)) {
     points(P$curing_doy, P$y, pch = 21, bg = col, col = bg, cex = 1.4)
     points(P$cured_doy, P$y, pch = 15, col = ink2, cex = 0.9)
     mtext("Typical season by species", side = 3, line = 2.2, adj = 0, cex = 1.05, font = 2, col = ink)
-    mtext("Species with 3 or more site series; median over sites. Thin line above: middle half of sites' curing dates. * annual",
+    mtext("Species with 3 or more site series; median over sites. Thin line above: middle half of sites' curing dates. * annual; \u2020 invader that raises fire occurrence (Fusco et al. 2019)",
           side = 3, line = 0.8, adj = 0, cex = 0.72, col = ink2)
     legend("bottom", inset = c(0, -0.1 * 30 / max(n, 30)), xpd = NA, horiz = TRUE, bty = "n", cex = 0.78, text.col = ink2,
            legend = c("green-up", "50 % curing (C4)", "50 % curing (C3)", "cured"), pch = c(21, 21, 21, 15),
@@ -445,7 +448,8 @@ if (do("npn_species_spread") && have(spr_csv)) {
   R <- utils::read.csv(spr_csv, stringsAsFactors = FALSE); R <- R[R$series_years >= 10, ]
   tgs <- intersect(c("greenup", "curing", "cured"), unique(R$target))
   ref <- R[R$target == "curing", ]; spp <- unique(c(ref$species_id[order(-ref$sd_year)], R$species_id))
-  lab <- function(id) { r <- R[R$species_id == id, ][1, ]; sprintf("%s. %s", substr(r$genus, 1, 1), r$species) }
+  inv_ids <- if (file.exists(sp_csv)) { Q <- utils::read.csv(sp_csv, stringsAsFactors = FALSE); if ("fire_invader" %in% names(Q)) Q$species_id[Q$fire_invader %in% "yes"] else integer() } else integer()
+  lab <- function(id) { r <- R[R$species_id == id, ][1, ]; sprintf("%s. %s%s", substr(r$genus, 1, 1), r$species, if (id %in% inv_ids) " \u2020" else "") }
   n <- length(spp)
   plot_png("npn_species_spread", "plant-years", 2500, 300 + 60 * n, function() {
     par(mfrow = c(1, length(tgs)), mar = c(4.4, 9.6, 3.6, 0.8), oma = c(2.2, 0, 0, 0))
@@ -468,6 +472,50 @@ if (do("npn_species_spread") && have(spr_csv)) {
     legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 1, pch = 21, pt.cex = c(1.5, 1.5, 1.2),
            pt.bg = c(pw_col[["C4"]], pw_col[["C3"]], bg), col = c(bg, bg, ink2),
            legend = c("between years, warm-season (C4)", "between years, cool-season (C3)", "between plants in the same site and year"))
+  })
+}
+
+# ---- NPN study: Scott & Burgan fuel models at the sites (59b, 58) -----------------------------
+fm_csv <- npn_path("data", "npn_site_fuelmodels.csv")
+if (do("npn_fuelmodels") && !is.null(TY) && have(fm_csv)) {
+  FM <- utils::read.csv(fm_csv, stringsAsFactors = FALSE)
+  FM$fm <- ifelse(!is.na(FM$fbfm_group) & FM$fbfm_group != "NB", FM$fbfm, FM$fbfm_3x3)    # point, else most common within 90 m
+  FM$fm[is.na(FM$fm)] <- "nonburnable"
+  X <- merge(TY, FM[, c("site_id", "fm")], by = "site_id")
+  ord <- function(f) { g <- substr(f, 1, 2); k <- match(g, c("GR", "GS", "SH", "TU", "TL", "SB", "no")); f[order(k, f)] }
+  lv <- ord(unique(X$fm)); X$fm <- factor(X$fm, lv)
+  gcol <- c(GR = "#c9a227", GS = "#8a9a3b", SH = "#6b8e6b", TU = "#3f6e5a", TL = "#2f4f4f", SB = "#7a5c3e", no = "#b8b7b2")
+  cmf <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
+  st <- do.call(rbind, lapply(split(X, X$fm), function(d) if (nrow(d)) data.frame(fm = d$fm[1], sites = length(unique(d$site_id)),
+          neon = length(unique(d$site_id[d$group == "NEON"])), py = sum(d$plant_years))))
+  st$fm <- factor(as.character(st$fm), lv); st <- st[order(st$fm), ]
+  n <- length(lv)
+  plot_png("npn_fuelmodels", "LANDFIRE FBFM40 at the sites", 2400, 320 + 62 * n, function() {
+    layout(matrix(1:2, 1), widths = c(1, 1.6)); par(mar = c(4.4, 7, 3.6, 1), oma = c(2, 0, 0, 0))
+    y <- rev(seq_len(n)); names(y) <- lv
+    plot(NA, xlim = c(0, max(st$sites) * 1.15), ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "sites", ylab = "", bty = "n", cex.axis = 0.85)
+    axis(2, at = y, labels = lv, tick = FALSE, las = 1, cex.axis = 0.85)
+    cl <- gcol[substr(as.character(st$fm), 1, 2)]
+    rect(0, y[as.character(st$fm)] - 0.35, st$sites, y[as.character(st$fm)] + 0.35, col = grDevices::adjustcolor(cl, 0.45), border = NA)
+    rect(0, y[as.character(st$fm)] - 0.35, st$neon, y[as.character(st$fm)] + 0.35, col = cl, border = NA)
+    text(st$sites, y[as.character(st$fm)], sprintf("  %s plant-yrs", format(st$py, big.mark = ",")), adj = 0, cex = 0.68, col = ink2, xpd = NA)
+    mtext("Fuel model at the study sites", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Scott & Burgan (2005), LANDFIRE; dark = NEON sites", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    plot(NA, xlim = c(1, 366), ylim = c(0.5, n + 0.5), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n")
+    abline(v = as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, col = "#ecebe7")
+    mon_axis(1, 0.85); axis(2, at = y, labels = lv, tick = FALSE, las = 1, cex.axis = 0.85)
+    for (f in lv) for (p in c("C3", "C4")) {
+      d <- X[X$fm == f & X$pathway == p & !is.na(X$curing), ]; if (!nrow(d)) next
+      yy <- y[[f]] + if (p == "C3") 0.17 else -0.17
+      points(d$curing, yy + stats::runif(nrow(d), -0.1, 0.1), pch = 16, cex = 0.8, col = grDevices::adjustcolor(pw_col[[p]], 0.55))
+      if (nrow(d) >= 3) segments(cmf(d$curing), yy - 0.15, cmf(d$curing), yy + 0.15, lwd = 3, col = pw_col[[p]])
+    }
+    mtext("Typical 50 % curing by fuel model", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("Points: one site and species; bar: median where 3 or more", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+    plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, pch = 16, col = c(pw_col[["C3"]], pw_col[["C4"]], gcol[c("GR", "GS", "SH", "TU", "TL")]),
+           legend = c("cool-season (C3)", "warm-season (C4)", "grass (GR)", "grass-shrub (GS)", "shrub (SH)", "timber-understory (TU)", "timber litter (TL)"))
   })
 }
 

@@ -46,6 +46,15 @@ default:
     l2_window_days: 60                # 52: L2 curing rule searches the typical date +/- this
     # Regions: EPA / CEC Level II ecoregions (CEC 1997), assigned to every site by
     # scripts/59_npn_ecoregions.R -> data/npn_site_ecoregions.csv.
+    # Fuel attributes (58c, 58d, 59b). PLANTS: species checklist and web service (58d, internet).
+    plants_list_url: "https://plants.sc.egov.usda.gov/DocumentLibrary/Txt/plantlst.txt"
+    plants_api: "https://plantsservices.sc.egov.usda.gov/api"
+    # LANDFIRE FBFM40 (Scott & Burgan 40 fuel models) CONUS GeoTIFF, or a folder holding it (59b).
+    # Download e.g. "LF2023 FBFM40 CONUS" from landfire.gov. null = <data_root>/landfire
+    landfire_fbfm40_url: "https://landfire.gov/data-downloads/CONUS_LF2023/LF2023_FBFM40_CONUS.zip"   # 59a (3.27 GB)
+    landfire_fbfm40:
+      windows: null
+      linux: null
     ecoregions_url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
     # Sensitivity runs of 52-54: `Rscript npn_study/scripts/5x_*.R full <name>`; outputs go to
     # <run_dir>/npn_study/sens/<name>/ (main results untouched).

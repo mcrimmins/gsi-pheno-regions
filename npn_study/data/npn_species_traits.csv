@@ -1,0 +1,73 @@
+"species_id","usda_symbol","accepted_name","symbol_match","growth_habit","plants_duration","status","height_ft","growth_form","growth_rate","active_growth","lifespan","fire_tolerance","fire_resistance","fall_conspicuous","source"
+795,"ARST5","Aristida stricta Michx.","accepted","Graminoid","Perennial","characteristics",3.9,"Bunch","Moderate","Spring","Short","High",NA,"No","USDA PLANTS"
+131,"BOGR2","Bouteloua gracilis (Willd. ex Kunth) Lag. ex Griffiths","accepted","Graminoid","Perennial","characteristics",0.5,"Bunch","Moderate","Summer","Moderate","High",NA,"No","USDA PLANTS"
+1641,"SCSC","Schizachyrium scoparium (Michx.) Nash","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Long","Medium",NA,"No","USDA PLANTS"
+971,"POPR","Poa pratensis L.","accepted","Graminoid","Perennial","characteristics",1,"Rhizomatous","Moderate","Spring and Fall","Long","High",NA,"No","USDA PLANTS"
+1441,"BRIN2","Bromus inermis Leyss.","accepted","Graminoid","Perennial","characteristics",2.5,"Rhizomatous","Moderate","Spring, Summer, Fall","Long","High",NA,"No","USDA PLANTS"
+1433,"ANVI2","Andropogon virginicus L.","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Slow","Summer","Moderate","High",NA,"No","USDA PLANTS"
+1357,"MIVI","Microstegium vimineum (Trin.) A. Camus","accepted","Graminoid","Annual","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1435,"ARPU9","Aristida purpurea Nutt.","accepted","Graminoid","Annual, Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+136,"HECO26","Hesperostipa comata (Trin. & Rupr.) Barkworth","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+129,"ANGE","Andropogon gerardii Vitman","accepted","Graminoid","Perennial","characteristics",6,"Bunch","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"
+1600,"BRDI3","Bromus diandrus Roth","accepted","Graminoid","Annual, Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1440,"BOER4","Bouteloua eriopoda (Torr.) Torr.","accepted","Graminoid","Perennial","characteristics",2,"Stoloniferous","Moderate","Spring and Fall","Moderate","High",NA,"No","USDA PLANTS"
+133,"BRTE","Bromus tectorum L.","accepted","Graminoid","Annual","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1695,"SONU2","Sorghastrum nutans (L.) Nash","accepted","Graminoid","Perennial","characteristics",4,"Bunch","Moderate","Summer","Long","High",NA,"No","USDA PLANTS"
+1722,"BOIS","Bothriochloa ischaemum (L.) Keng","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+130,"BOCU","Bouteloua curtipendula (Michx.) Torr.","accepted","Graminoid","Perennial","characteristics",3,"Rhizomatous","Moderate","Summer","Moderate","High",NA,"No","USDA PLANTS"
+139,"PECI","Pennisetum ciliare (L.) Link","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Rapid","Summer and Fall","Long","Medium",NA,"No","USDA PLANTS"
+1903,"ARGI","Arundinaria gigantea (Walter) Muhl.","accepted","Graminoid, Shrub, Subshrub","Perennial","characteristics",25,"Rhizomatous","Rapid","Spring","Long","High",NA,"Yes","USDA PLANTS"
+1502,"TRAE","Triticum aestivum L.","accepted","Graminoid","Annual","characteristics",3.3,"Bunch","Rapid","Fall, Winter and Spring",NA,"None",NA,"No","USDA PLANTS"
+138,"PASM","Pascopyrum smithii (Rydb.) Á. Löve","accepted","Graminoid","Perennial","characteristics",2,"Rhizomatous","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"
+2075,"SOSE5","Sorghastrum secundum (Elliott) Nash","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+134,"BODA2","Bouteloua dactyloides (Nutt.) J.T. Columbus","accepted","Graminoid","Perennial","characteristics",0.3,"Stoloniferous","Moderate","Summer","Long","High",NA,"No","USDA PLANTS"
+1476,"MUPO2","Muhlenbergia porteri Scribn. ex Beal","accepted","Graminoid","Perennial","characteristics",2.8,"Single Crown","Moderate","Spring, Summer, Fall","Long","High",NA,"No","USDA PLANTS"
+1960,"ELEL5","Elymus elymoides (Raf.) Swezey","accepted","Graminoid","Perennial","characteristics",1.5,"Bunch","Moderate","Spring","Long","Medium",NA,"No","USDA PLANTS"
+1930,"CHLA6","Chasmanthium laxum (L.) Yates","accepted","Graminoid","Perennial","characteristics",3.3,"Rhizomatous","Moderate","Spring","Moderate","None",NA,"No","USDA PLANTS"
+137,"PAVI2","Panicum virgatum L.","accepted","Graminoid","Perennial","characteristics",4,"Rhizomatous","Rapid","Summer","Long","High",NA,"No","USDA PLANTS"
+1972,"FESU3","Festuca subverticillata (Pers.) Alexeev","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Moderate","High",NA,"No","USDA PLANTS"
+1511,"ZEMA","Zea mays L.","accepted","Graminoid","Annual","characteristics",8,"Single Stem","Rapid","Summer",NA,"None",NA,"No","USDA PLANTS"
+2098,"VUOC","Vulpia octoflora (Walter) Rydb.","accepted","Graminoid","Annual","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+141,"PSSP6","Pseudoroegneria spicata (Pursh) Á. Löve","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1893,"ANGL2","Andropogon glomeratus (Walter) Britton, Sterns & Poggenb.","accepted","Graminoid","Perennial","characteristics",6.3,"Bunch","Moderate","Summer","Moderate","Medium",NA,"Yes","USDA PLANTS"
+1464,"PLJA","Pleuraphis jamesii Torr.","synonym HIJA","Graminoid","Perennial","characteristics",2,"Rhizomatous","Slow","Summer","Long","Medium",NA,"No","USDA PLANTS"
+2014,"ORAS","Oryzopsis asperifolia Michx.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1906,"AXFU","Axonopus furcatus (Flueggé) Hitchc.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1911,"BRHO2","Bromus hordeaceus L.","accepted","Graminoid","Annual","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2128,"DIAC2","Dichanthelium acuminatum (Sw.) Gould & C.A. Clark","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+869,"FEID","Festuca idahoensis Elmer","accepted","Graminoid","Perennial","characteristics",2,"Bunch","Moderate","Spring","Long","Medium",NA,"No","USDA PLANTS"
+1949,"DIOB3","Diarrhena obovata (Gleason) Brandenburg","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1884,"ACHY","Achnatherum hymenoides (Roem. & Schult.) Barkworth","accepted","Graminoid","Perennial","characteristics",2,"Bunch","Moderate","Spring, Summer, Fall","Short","High",NA,"No","USDA PLANTS"
+1858,"ELVI","Elymus villosus Muhl. ex Willd.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2090,"TRAM7","Triplasis americana P. Beauv.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1899,"ARPU8","Aristida purpurascens Poir.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+934,"MURI2","Muhlenbergia rigens (Benth.) Hitchc.","accepted","Graminoid","Perennial","characteristics",4.5,"Bunch","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"
+2077,"SPJU","Sporobolus junceus (P. Beauv.) Kunth","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2214,"ANBR2","Andropogon brachystachyus Chapm.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2091,"TRSP2","Trisetum spicatum (L.) K. Richt.","accepted","Graminoid","Perennial","characteristics",1.9,"Bunch","Moderate","Spring and Summer","Short","High",NA,"No","USDA PLANTS"
+2065,"SAGI","Saccharum giganteum (Walter) Pers.","accepted","Graminoid","Perennial","characteristics",9.8,"Bunch","Rapid","Summer","Moderate","None",NA,"Yes","USDA PLANTS"
+1932,"CIAR2","Cinna arundinacea L.","accepted","Graminoid","Perennial","characteristics",4.9,"Bunch","Moderate","Spring","Long","Low",NA,"No","USDA PLANTS"
+2246,"DIOL","Dichanthelium oligosanthes (Schult.) Gould","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2250,"ERPI5","Erioneuron pilosum (Buckley) Nash","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1497,"SPFL2","Sporobolus flexuosus (Thurb. ex Vasey) Rydb.","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"
+2190,"TRFL2","Tridens flavus (L.) Hitchc.","accepted","Graminoid","Perennial","characteristics",2.5,"Bunch","Moderate","Summer","Short","High",NA,"Yes","USDA PLANTS"
+2285,"SPCO16","Sporobolus compositus (Poir.) Merr.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2010,"NAVI4","Nassella viridula (Trin.) Barkworth","accepted","Graminoid","Perennial","characteristics",2,"Bunch","Rapid","Spring and Summer","Moderate","Medium",NA,"No","USDA PLANTS"
+2112,"BOLA2","Bothriochloa laguroides (DC.) Herter","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2268,"PASE5","Paspalum setaceum Michx.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+2105,"AGPE","Agrostis perennans (Walter) Tuck.","accepted","Graminoid","Perennial","characteristics",3.5,"Rhizomatous","Moderate","Spring, Summer, Fall","Short","High",NA,"No","USDA PLANTS"
+2170,"SELE6","Setaria leucopila (Scribn. & Merr.) K. Schum.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+140,"PHAU7","Phragmites australis (Cav.) Trin. ex Steud.","accepted","Graminoid, Shrub, Subshrub","Perennial","characteristics",13,"Rhizomatous","Rapid","Spring","Long","High",NA,"No","USDA PLANTS"
+910,"LEMO8","Leymus mollis (Trin.) Pilg.","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+960,"PHAR3","Phalaris arundinacea L.","accepted","Graminoid","Perennial","characteristics",5,"Rhizomatous","Rapid","Spring, Summer, Fall","Long","High",NA,"No","USDA PLANTS"
+1645,"SPAL","Spartina alterniflora Loisel.","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"
+1032,"SPAI","Sporobolus airoides (Torr.) Torr.","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Moderate","Medium",NA,"No","USDA PLANTS"
+936,"NAPU4","Nassella pulchra (Hitchc.) Barkworth","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Rapid","Spring and Summer","Short","High",NA,"No","USDA PLANTS"
+2313,"ELRE4","Elymus repens (L.) Gould","accepted","Graminoid","Perennial","characteristics",2.6,"Rhizomatous","Rapid","Spring and Summer","Moderate","High",NA,"No","USDA PLANTS"
+1811,"DICA8","Digitaria californica (Benth.) Henr.","accepted","Graminoid","Perennial","characteristics",4,"Bunch","Rapid","Spring and Summer","Short","Medium",NA,"No","USDA PLANTS"
+1718,"AGCR","Agropyron cristatum (L.) Gaertn.","accepted","Graminoid","Perennial","characteristics",2,"Bunch","Moderate","Spring and Fall","Long","High",NA,"No","USDA PLANTS"
+1677,"CYNL80","Cynodon nlemfuensis Vanderyst","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+1627,"PHAUA6","Phragmites australis (Cav.) Trin. ex Steud. ssp. americanus Saltonst., P.M. Peterson & Soreng","accepted","Graminoid","Perennial","no characteristics",NA,NA,NA,NA,NA,NA,NA,NA,NA
+811,"CACA4","Calamagrostis canadensis (Michx.) P. Beauv.","accepted","Graminoid","Perennial","characteristics",4.9,"Rhizomatous","Moderate","Spring","Long","Low",NA,"No","USDA PLANTS"
+2076,"SPCR","Sporobolus cryptandrus (Torr.) A. Gray","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring","Short","Medium",NA,"No","USDA PLANTS"
+135,"DECE","Deschampsia cespitosa (L.) P. Beauv.","accepted","Graminoid","Perennial","characteristics",3,"Bunch","Moderate","Spring and Summer","Long","High",NA,"No","USDA PLANTS"

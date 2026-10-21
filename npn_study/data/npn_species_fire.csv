@@ -1,0 +1,5 @@
+species_id,genus,species,fire_invader,fire_occurrence,fire_frequency,source,note
+133,Bromus,tectorum,yes,higher,higher,Fusco et al. 2019 PNAS,cheatgrass
+139,Pennisetum,ciliare,yes,higher,higher,Fusco et al. 2019 PNAS,buffelgrass (Cenchrus ciliaris)
+1357,Microstegium,vimineum,yes,higher,higher,Fusco et al. 2019 PNAS,Nepalese browntop / Japanese stiltgrass
+140,Phragmites,australis,no,lower,not tested,Fusco et al. 2019 PNAS,tested as an invader (introduced lineage); our record labels it native and cannot separate lineages
