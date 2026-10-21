@@ -854,6 +854,10 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   GSI_FIRE_REGIONS=3,10 restricts every spec (fair comparison with px, px_rt, px_rt4). Tested: mocked
   AppEEARS run (bit flags, fill, view zenith, snow / cloud days), synthetic shifted seasons (65c green
   weeks within ~1 week of truth at start, exact at end).
+  Oct 20 evening: AppEEARS lists VNP09GA I1 / I2 as float32 with ScaleFactor 1e-4, so vd_read() now
+  scales by value (99th pct |x| > 2 for reflectance, > 180 for zenith) instead of by data type; fixture
+  passes with int16 raw, float32 raw and float32 pre-scaled inputs. A stopped 05 resumes the same
+  AppEEARS task from viirs_daily[_test]/tasks.csv (task ids are saved on submit).
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.

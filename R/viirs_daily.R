@@ -82,13 +82,25 @@ vd_clear <- function(q, i1, rules) {
 }
 
 # Read a layer: label lon/lat with the grid CRS (as cutb_aggregate_year: no datum shift); set fill
-# to NA; apply the scale factor when the file holds raw integers.
-vd_read <- function(f, grid, fill = NULL, scale = 1) {
+# to NA; apply the scale factor when the values are still raw. AppEEARS lists VNP09GA reflectance as
+# float32 with ScaleFactor 1e-4, so the data type alone can't tell raw from scaled (Oct 20): with
+# max_phys given, values are scaled when their 99th percentile of |x| exceeds max_phys (reflectance 2,
+# zenith 180); without it, the cutb rule (float or GDAL scale -> already scaled).
+vd_read <- function(f, grid, fill = NULL, scale = 1, max_phys = NULL) {
   x <- terra::rast(f)
   if (terra::is.lonlat(x) && terra::is.lonlat(grid)) terra::crs(x) <- terra::crs(grid)
-  if (!is.null(fill) && !is.na(fill)) x <- terra::classify(x, cbind(as.numeric(fill), NA))
+  if (!is.null(fill) && !is.na(fill)) {
+    fv <- unique(c(as.numeric(fill), if (!is.na(scale) && scale != 1) as.numeric(fill) * scale))
+    x <- terra::classify(x, cbind(fv, NA))
+  }
+  if (is.na(scale) || scale == 1) return(x)
+  if (!is.null(max_phys)) {
+    v <- terra::values(x, mat = FALSE); v <- abs(v[is.finite(v)])
+    if (length(v) && stats::quantile(v, 0.99, names = FALSE) > max_phys) x <- x * scale
+    return(x)
+  }
   already <- grepl("FLT", terra::datatype(x)[1]) || terra::scoff(x)[1, 1] != 1
-  if (!already && scale != 1) x <- x * scale
+  if (!already) x <- x * scale
   x
 }
 
@@ -97,10 +109,11 @@ vd_read <- function(f, grid, fill = NULL, scale = 1) {
 # day (i1, i2, qf1, qf2 required; qf6, qf7, vza optional). meta: AppEEARS layer metadata by short name.
 vd_day <- function(files, meta, gridc, cidx, rules) {
   m <- function(nm, key) { x <- meta[[nm]][[key]]; if (is.null(x)) NA else as.numeric(x) }
-  i1 <- vd_read(files$i1, gridc, m("i1", "FillValue"), m("i1", "ScaleFactor"))
-  i2 <- vd_read(files$i2, gridc, m("i2", "FillValue"), m("i2", "ScaleFactor"))
+  i1 <- vd_read(files$i1, gridc, m("i1", "FillValue"), m("i1", "ScaleFactor"), max_phys = 2)
+  i2 <- vd_read(files$i2, gridc, m("i2", "FillValue"), m("i2", "ScaleFactor"), max_phys = 2)
   rq <- function(nm) if (is.null(files[[nm]])) NULL else vd_read(files[[nm]], gridc, m(nm, "FillValue"),
-                                                                   if (nm == "vza") m(nm, "ScaleFactor") else 1)
+                                                                   if (nm == "vza") m(nm, "ScaleFactor") else 1,
+                                                                   max_phys = if (nm == "vza") 180 else NULL)
   q <- list(qf1 = rq("qf1"), qf2 = rq("qf2"), qf6 = rq("qf6"), qf7 = rq("qf7"), vza = rq("vza"))
   if (!terra::compareGeom(i1, i2, stopOnError = FALSE)) i2 <- terra::resample(i2, i1, method = "near")
   cl <- vd_clear(q, i1, rules)
