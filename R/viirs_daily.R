@@ -64,7 +64,7 @@ vd_bits <- function(x, k, n = 1) (x %/% (2^k)) %% (2^n)
 # day (QF1 bit 4 = 0); cloud confidence QF1 bits 2-3 <= max_cloud_conf (0 confident clear,
 # 1 probably clear); land background (QF2 bits 0-2 in 0-1); no cloud shadow (QF2 bit 3), snow/ice
 # (QF2 bit 5; QF7 bit 0), thin cirrus (QF2 bits 6-7, if no_cirrus); not adjacent to cloud (QF7 bit 1,
-# if no_adjacent); I1 and I2 good quality (QF6 bits 3-4); sensor zenith <= max_vza degrees.
+# if no_adjacent); I1 and I2 good quality (QF6 bits 3-4, only if use_qf6); sensor zenith <= max_vza degrees.
 vd_clear <- function(q, i1, rules) {
   near <- function(x) if (is.null(x)) NULL else terra::resample(x, i1, method = "near")
   q1 <- near(q$qf1); q2 <- near(q$qf2); q6 <- near(q$qf6); q7 <- near(q$qf7); vz <- near(q$vza)
@@ -75,7 +75,9 @@ vd_clear <- function(q, i1, rules) {
     ok <- ok & vd_bits(q7, 0) == 0
     if (isTRUE(rules$no_adjacent %||% TRUE)) ok <- ok & vd_bits(q7, 1) == 0
   }
-  if (!is.null(q6)) ok <- ok & vd_bits(q6, 3, 2) == 0
+  # QF6 I1 / I2 "overall quality" is off by default (Oct 21 QA check: flags 71-89 % of clear-June land pixels in
+  # region 3 and keeps a greener, non-representative subset: median NDVI 0.33-0.42 vs 0.21-0.29)
+  if (!is.null(q6) && isTRUE(rules$use_qf6 %||% FALSE)) ok <- ok & vd_bits(q6, 3, 2) == 0
   if (!is.null(vz)) ok <- ok & vz <= as.numeric(rules$max_vza %||% 55)
   land <- vd_bits(q2, 0, 3) <= 1
   list(clear = ok, land = land)

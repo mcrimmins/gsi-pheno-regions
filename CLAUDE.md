@@ -858,6 +858,13 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   scales by value (99th pct |x| > 2 for reflectance, > 180 for zenith) instead of by data type; fixture
   passes with int16 raw, float32 raw and float32 pre-scaled inputs. A stopped 05 resumes the same
   AppEEARS task from viirs_daily[_test]/tasks.csv (task ids are saved on submit).
+  Smoke test Oct 21 (region 3, Jun 1-10 2023): AppEEARS queue ~11.5 h, then 463 MB / 110 files in 2.7 min,
+  reduced in 0.7 min; AppEEARS adds QF3-5 and land_water_mask on its own. Clear share only ~9 %: 05b
+  (scripts/05b_viirs_qa_check.R) showed QF6 I1/I2 quality flags 71-89 % of land pixels and keeps a greener
+  subset (median NDVI 0.33-0.42 vs 0.21-0.29). DECIDED Oct 21: clear = cloud conf <= 1 (probably clear),
+  no shadow / snow / reflective-or-emissive cirrus, no adjacency rule, zenith <= 65, QF6 off (use_qf6) ->
+  32-64 % clear, median NDVI moves <= 0.02 between these relaxations. Jobs: half-years, 8 queued at once.
+  S-NPP data delivery ends Nov 1 2026 (archive stays); operational successors VJ209GA (NOAA-21), VJ109GA.
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.

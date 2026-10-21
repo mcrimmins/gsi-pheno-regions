@@ -426,13 +426,16 @@ default:
       product: "VNP09GA.002"
       regions: [3, 10]
       years: {start: 2012, end: 2024}
-      chunks_per_year: 4            # one AppEEARS task per region x quarter
-      max_pending_tasks: 4
+      chunks_per_year: 2            # one AppEEARS task per region x half-year (Oct 21: queue waits ~12 h per task)
+      max_pending_tasks: 8
       poll_minutes: 5
       # short name: regex matched against the AppEEARS layer names (checked at run time)
       layers: {i1: "SurfReflect_I1", i2: "SurfReflect_I2", qf1: "SurfReflect_QF1", qf2: "SurfReflect_QF2",
                qf6: "SurfReflect_QF6", qf7: "SurfReflect_QF7", vza: "SensorZenith"}
-      clear: {max_cloud_conf: 0, no_cirrus: true, no_adjacent: true, max_vza: 55}
+      # Oct 21 QA check (05b, region 3, 10 June days): QF6 I1/I2 quality flags 71-89 % of land pixels and biases NDVI
+      # up (0.33-0.42 vs 0.21-0.29), so off; probably clear, no adjacency rule and zenith <= 65 change median NDVI
+      # by <= 0.02 and raise the clear share from ~10 % to 32-64 %
+      clear: {max_cloud_conf: 1, no_cirrus: true, no_adjacent: false, max_vza: 65, use_qf6: false}
       test_dates: ["2023-06-01", "2023-06-10"]   # GSI_VD_TEST=1 smoke test (first region only)
       composite_days: 8             # 65c: clear days in the window ending at the cut
       prev_offset_days: 16          # 65c: "rising" compares with the window ending 16 days earlier
