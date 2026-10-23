@@ -46,6 +46,10 @@ Rscript npn_study/scripts/53_npn_variance.R full         # variance partition (Q
 Rscript npn_study/scripts/54_npn_site_signal.R full      # shared site-year signal vs weather
 Rscript npn_study/scripts/55_npn_filter_inventory.R full # what each filter removes
 Rscript npn_study/scripts/58_npn_record_climatology.R full  # record, climatology, climate across space (Q1, Q2, Q4)
+Rscript npn_study/scripts/58e_npn_spatial_cv.R full       # climate across space, leaving out clusters of nearby sites (lme4, ~6 min)
+Rscript npn_study/scripts/58f_npn_date_sensitivity.R full # curve dates recomputed: thresholds, reading gaps, curing cycle
+Rscript npn_study/scripts/58g_npn_bootstrap.R full 200    # 95 % intervals, site clusters resampled (lme4, ~10 min)
+Rscript npn_study/scripts/58h_npn_power.R full            # monitoring design: reliability and years to detect a weather driver (after 53)
 # LTER cross-checks: download the two EDI package zips by hand into <data_root>/full/npn_study/lter/ (EDI refuses scripted public access)
 Rscript npn_study/scripts/55b_lter_fetch.R full           # unpack, structure report (logs/55b_lter_structure_full.txt)
 Rscript npn_study/scripts/55c_lter_prep.R full            # monthly grass tables (LTER and NPN), LTER site list (after 58d)

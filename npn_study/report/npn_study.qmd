@@ -88,8 +88,8 @@ weather- or satellite-based curing estimate can be checked against.
   plots; the other 94 sites add spatial coverage but few years each.
 - **Typical green-up follows site climate; typical curing much less.** Across sites,
   warm-season grasses green up earlier where spring is warmer and later where more of the
-  rain falls in summer, and site climate predicts their typical green-up at a new site
-  better than the ecoregion does. Cool-season curing follows the species and the site's
+  rain falls in summer, and site climate predicts their typical green-up at a new place
+  (about a third of the variation once nearby plots are held out together). Cool-season curing follows the species and the site's
   wetness; warm-season curing dates are not explained by species, region or climate.
 - **Place dominates.** Two-thirds to four-fifths of the variation in a grass's dates is
   where it grows and which species it is.
@@ -394,7 +394,10 @@ one with the ecoregion instead of climate, and one with both. Climate is a small
 chosen in advance: March–April mean temperature for green-up, July–August mean temperature
 for curing, and for both aridity (precipitation / potential evapotranspiration), the share
 of rain falling July–September and latitude. Each model is scored by refitting it with one
-site left out at a time and predicting that site.
+site left out at a time and predicting that site. Many NPN sites are plots a few kilometres apart
+(41 of the 130 have another site within 2 km), so the models are also scored by leaving out whole
+clusters of sites within 10 km and within 50 km of each other: a fairer test of predicting a new
+place.
 
 | Date | Grass type | Series (sites) | Species only | Ecoregion | Site climate | Ecoregion + climate |
 |---|---|---|---|---|---|---|
@@ -407,6 +410,19 @@ site left out at a time and predicting that site.
 
 : Share of the variation in typical dates predicted at a site left out (R², 0 = no better than the mean) {.striped}
 
+| Date | Grass type | Model | One site out | Sites within 10 km out | Within 50 km out |
+|---|---|---|---|---|---|
+| Green-up | warm-season (C4) | species only | 0.39 | 0.09 | −0.08 |
+| | | ecoregion | 0.40 | 0.23 | 0.29 |
+| | | site climate | 0.61 | **0.30** | 0.20 |
+| | | ecoregion + climate | 0.59 | **0.39** | 0.29 |
+| 50 % curing | cool-season (C3) | species only | 0.63 | 0.62 | 0.36 |
+| | | site climate | 0.63 | **0.61** | **0.48** |
+| Cured | cool-season (C3) | species only | 0.65 | 0.63 | 0.30 |
+| | | site climate | 0.64 | **0.60** | **0.42** |
+
+: The same models scored by leaving out clusters of nearby sites (R²; from npn_study/scripts/58e_npn_spatial_cv.R) {.striped}
+
 ```{r fig-npn-spatial}
 #| results: asis
 show_fig("npn_spatial",
@@ -414,10 +430,17 @@ show_fig("npn_spatial",
   "Three panels: dot chart of leave-one-site-out R-squared for four models, three dates and three grass groups; scatter of green-up date against spring temperature; scatter of curing date against aridity.")
 ```
 
-- **Warm-season green-up follows site climate,** better than the ecoregion does: about
-  38 days earlier per standard deviation of warmer March–April temperature, and 27 days
-  later per standard deviation more of the rain in summer (the monsoon sites green up with
-  the summer rains).
+- **Warm-season green-up follows site climate,** about 38 days earlier per standard deviation
+  of warmer March–April temperature, and 27 days later per standard deviation more of the rain
+  in summer (the monsoon sites green up with the summer rains).
+- **But nearby plots inflate the one-site-out score.** Holding out sites within 10 km together,
+  site climate predicts 30 % of the variation in warm-season typical green-up at a new place
+  (61 % with one site out), and ecoregion plus climate 39 %; within 50 km climate falls to 20 %
+  and the ecoregion does about as well (29 %). Species alone falls to almost nothing: a species'
+  typical date at one plot was mostly being learned from the plot next to it. In the stricter
+  year-to-year set the climate model holds up better (0.54, 0.49, 0.57).
+- **Cool-season curing holds up best.** Site climate still predicts 61 % of the variation in
+  typical 50 % curing with sites within 10 km held out, and 48 % within 50 km.
 - **Cool-season green-up tracks spring temperature too** (rank correlation about −0.8 to
   −0.9 depending on the series included), but with 25 sites the models do not hold up at a
   left-out site.
@@ -426,8 +449,8 @@ show_fig("npn_spatial",
   deviation; but which species grow where already carries most of that.
 - **Warm-season curing and cured dates are not explained across sites** by species, region
   or climate.
-- **Adding the ecoregion to the climate overfits.** With 17 ecoregions and a few dozen sites
-  per grass type, ecoregion plus climate does worse at a left-out site than climate alone.
+- **Adding the ecoregion to the climate overfits for cool-season grasses** (25–38 sites); for
+  warm-season green-up it helps once nearby plots are held out.
 - The same holds, more weakly, in the stricter year-to-year set.
 
 ## Can weather beat the typical date?
@@ -584,6 +607,85 @@ show_fig("npn_sensitivity",
 - The main results keep all years; this check is reported alongside until USA-NPN and NEON
   can say whether guidance or training for percent green changed around 2018.
 
+## Robustness of the curve dates
+
+Every result above rests on the 50 % crossings of each plant's percent-green curve. To check how
+much they depend on that choice, green-up and 50 % curing were recomputed for every usable
+plant-year from the readings, at 40 % and 60 % instead of 50 %, with a limit of 21 or 14 days on
+the gap between the two readings around the crossing, and with curing taken on the first fall
+below 50 % after green-up rather than the fall after the season's peak. Each version went through
+the same typical dates, variance partition and single-driver weather test as the main results.
+
+```{r tbl-npn-date-sens}
+#| results: asis
+sf <- "tables/npn_date_sensitivity.csv"
+if (file.exists(sf)) {
+  S <- utils::read.csv(sf, stringsAsFactors = FALSE)
+  vl <- c(reference = "As used (02c)", own50 = "Recomputed, 50 %", th40 = "40 % green", th60 = "60 % green", gap21 = "Readings <= 21 d apart",
+          gap14 = "Readings <= 14 d apart", firstcycle = "Curing on the first cycle")
+  pc <- function(z) ifelse(is.na(z), "", sprintf("%.0f %%", 100 * z))
+  T <- data.frame(Version = vl[S$variant], Date = c(greenup = "green-up", curing = "curing")[S$target], `Plant-years` = format(S$plant_years, big.mark = ","),
+                  `Median change (days)` = sprintf("%.1f", S$median_abs_diff), `Typical date shift (days)` = sprintf("%+.1f", S$typical_shift_median),
+                  `Place, % of all` = pc(S$place_share), `Shared, % of year-to-year` = pc(S$shared_share), `Single plant, % of year-to-year` = pc(S$plant_share),
+                  `Weather skill` = sprintf("%+.2f", S$weather_skill), check.names = FALSE)
+  T <- T[order(T$Date, match(S$variant, names(vl))), ]
+  print(knitr::kable(T, format = "pipe", row.names = FALSE, align = c("l", "l", rep("r", 7))))
+  cat("\n\n: The main results with the curve dates computed in other ways (from npn_study/scripts/58f_npn_date_sensitivity.R) {.striped}\n\n")
+}
+```
+
+- **The threshold barely matters.** Taking 40 % or 60 % instead of 50 % moves a plant's date by
+  about 2 days and the typical dates by about 2 days, with the variance shares and the weather
+  result unchanged. NPN's classes explain why: all three thresholds fall between the same two
+  classes (25–49 % and 50–74 %), so only the interpolation between the two readings changes.
+- **Requiring close readings drops dates but changes no conclusion.** Limiting the gap around the
+  crossing to 21 or 14 days removes 10–12 % of the green-ups recomputed without a limit and 5–7 %
+  of the curing dates; the shares move by a few points.
+- **The curing cycle matters for some plants.** Taking the first fall below 50 % instead of the
+  fall after the peak moves the typical curing date of some series by weeks (middle half of
+  shifts 12 days) and lowers the shared year signal from 30 % to 23 % of the year-to-year
+  variation; nothing beats the typical date either way.
+- **The recomputation matches the dates used.** At 50 % with no gap limit, the recomputed dates
+  equal those used throughout (median difference 0 days) wherever both exist; the recomputation
+  finds more green-ups because the dates used require more of a curve before green-up.
+
+### Uncertainty in the headline numbers
+
+```{r tbl-npn-boot}
+#| results: asis
+bf <- "tables/npn_bootstrap.csv"
+if (file.exists(bf)) {
+  Bt <- utils::read.csv(bf, stringsAsFactors = FALSE)
+  lab <- c(variance_place_greenup = "Green-up: place, share of all variation", variance_shared_greenup = "Green-up: shared by a site's grasses, share of year-to-year",
+           variance_plant_greenup = "Green-up: single plant, share of year-to-year", weather_skill_greenup = "Green-up: best single lead weather driver, skill",
+           variance_place_curing = "50 % curing: place, share of all variation", variance_shared_curing = "50 % curing: shared by a site's grasses, share of year-to-year",
+           variance_plant_curing = "50 % curing: single plant, share of year-to-year", weather_skill_curing = "50 % curing: best single lead weather driver, skill",
+           variance_place_cured = "Cured: place, share of all variation", variance_shared_cured = "Cured: shared by a site's grasses, share of year-to-year",
+           variance_plant_cured = "Cured: single plant, share of year-to-year", weather_skill_cured = "Cured: best single lead weather driver, skill",
+           climate_c4_greenup_days_per_sd_t_marapr = "Warm-season green-up: days per SD of March-April temperature",
+           c3c4_gap_prairie_days = "Prairies: C4 green-up minus C3 cured, days")
+  sh <- grepl("^variance", Bt$statistic); f <- function(z, s) ifelse(s, sprintf("%.0f %%", 100 * z), sprintf("%.2f", z))
+  f2 <- function(z, s, st) ifelse(s, sprintf("%.0f %%", 100 * z), ifelse(grepl("days", st), sprintf("%.0f", z), sprintf("%.2f", z)))
+  T <- data.frame(Quantity = lab[Bt$statistic], Estimate = f2(Bt$estimate, sh, Bt$statistic),
+                  `95 % interval` = sprintf("%s to %s", f2(Bt$lo, sh, Bt$statistic), f2(Bt$hi, sh, Bt$statistic)), check.names = FALSE)
+  print(knitr::kable(T, format = "pipe", row.names = FALSE, align = c("l", "r", "r")))
+  cat(sprintf("\n\n: Headline numbers with 95 %% intervals from %d bootstrap resamples of site clusters (sites within 10 km resampled together; from npn_study/scripts/58g_npn_bootstrap.R) {.striped}\n\n", Bt$B[1]))
+}
+```
+
+- **The weather result is the firmest.** For all three dates the 95 % interval of the best single
+  lead driver's skill tops out at +0.02 or below: resampling sites never makes weather beat the
+  typical date.
+- **The variance shares are less precise than single numbers suggest.** Place is 70–80 % of all
+  variation (intervals from about 40 % to 87 %); of the year-to-year part, the share shared by a
+  site's grasses is 28–39 % but could be anywhere from about a fifth to two-thirds, and the single
+  plant 39–52 % (about a fifth to three-fifths). A handful of NEON sites with many plants carry
+  these estimates, so which sites are in the sample matters.
+- **The across-space and C3 / C4 results hold.** Warm-season grasses green up 38 days earlier per
+  standard deviation of warmer March–April temperature (19 to 65 days); on the prairie ecoregions
+  warm-season grasses reach 50 % green about 150 days before the cool-season grasses beside them
+  have cured (147 to 198 days), never close to a gap.
+
 ## Independent checks with LTER records
 
 Two Long-Term Ecological Research (LTER) sites in New Mexico have kept their own monthly grass
@@ -704,6 +806,52 @@ show_fig("npn_scale",
   of that size could exist and still not be found; what it can say is that no single weather driver
   carries the year signal across U.S. grasslands.
 
+## How much monitoring would it take?
+
+The variance partition says how the year-to-year variation splits between a regional year signal,
+the site, the species at the site and the single plant. That is enough to ask what a monitoring
+design can measure. For a region with a given number of sites, species per site and plants per
+species, the regional mean departure in a year measures the true regional year signal with a known
+reliability (the share of its variance that is signal); and if a weather driver explains a given
+share of that signal, the number of years needed to detect it follows (two-sided 5 % test, 80 %
+power). The driver is assumed to act on the regional signal only; drivers that vary from site to
+site could also explain part of the site-year part.
+
+```{r fig-npn-power}
+#| results: asis
+show_fig("npn_power",
+  "Left and middle: reliability of the regional mean departure in a year, by number of sites and plants per species (two species per site), for 50 % curing and green-up. Right: years of monitoring needed to detect a weather driver that explains half (solid) or a quarter (dashed) of the regional year signal, with two species and five plants per site.",
+  "Three line charts: reliability rises steeply with the number of sites and only slightly with plants per species; the years needed fall from about 50-70 with one site to 15-20 with twenty, all above the 11 years of this record.")
+```
+
+```{r tbl-npn-power}
+#| results: asis
+pf <- "tables/npn_power_current.csv"
+if (file.exists(pf)) {
+  P <- utils::read.csv(pf, stringsAsFactors = FALSE)
+  T <- data.frame(Date = c(greenup = "green-up", curing = "50 % curing", cured = "cured")[P$target], `Sites in the region` = P$n_sites,
+                  Design = sprintf("2 species x %d plants", P$n_plants), Reliability = sprintf("%.2f", P$reliability),
+                  `Power in 11 years (driver explains half / a quarter)` = sprintf("%.0f %% / %.0f %%", 100 * P$power_11y_half, 100 * P$power_11y_quarter),
+                  `Years for 80 % power (half / a quarter)` = sprintf("%d / %d", P$years_80_half, P$years_80_quarter), check.names = FALSE)
+  print(knitr::kable(T, format = "pipe", row.names = FALSE, align = c("l", "r", "l", "r", "r", "r")))
+  cat("\n\n: What the record's design can detect (plants per species as in the year-to-year set; from npn_study/scripts/58h_npn_power.R) {.striped}\n\n")
+}
+```
+
+- **Sites, not plants.** For 50 % curing, going from one to twenty plants per species at a single
+  site raises the reliability of a year's mean from 0.22 to 0.35; going from one site to ten
+  (five plants per species) raises it from 0.32 to 0.82. The site-year and species-at-site parts
+  only average out across sites, and past three to five plants per species extra plants add
+  little.
+- **The null weather result was to be expected.** With the record's design (one to three sites in
+  a region, two species, three to five plants per species) and 11 years, a weather driver that
+  explained half of the regional year signal in curing would be detected only 22–40 % of the time;
+  for green-up 16–31 %, for the cured date 12–24 %. Detecting it reliably would take about 25–47
+  years for curing with that design, or about 17 years with ten sites in the region.
+- **For monitoring:** to track year-to-year curing on the ground, spread the effort over more sites
+  in a region, with a few plants of the main species at each, read through the end of the season
+  for many years; adding plants at existing sites buys little.
+
 ## What it means so far
 
 On the ground, the typical date is the baseline to beat, and so far nothing beats it. The typical date itself is
@@ -793,6 +941,9 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | Bootstrap intervals for the headline numbers (58g); monitoring design and power (58h) |
+| 2026-10-23 | Robustness of the curve dates: thresholds, reading gaps, curing cycle (58f) |
+| 2026-10-23 | Climate across space re-scored leaving out clusters of nearby sites (58e) |
 | 2026-10-23 | Year-to-year weather test repeated at site and ecoregion scale (55f) |
 | 2026-10-23 | Independent checks with the Jornada and Sevilleta LTER phenology records: C3 vs C4 timing, agreement with NPN, 2016–17, one-climate spread, protocol calibration |
 | 2026-10-21 | Fuel attributes: fire-promoting invaders (Fusco et al. 2019), PLANTS height and growth form, LANDFIRE fuel model at each site |

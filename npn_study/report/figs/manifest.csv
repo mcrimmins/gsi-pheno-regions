@@ -5,6 +5,7 @@
 "npn_lter_agree","full","CONUS","LTER and NPN","2026-10-23"
 "npn_lter_c3c4","full","CONUS","1992-2025","2026-10-23"
 "npn_lter_weather","full","CONUS","LTER site-years","2026-10-23"
+"npn_power","full","CONUS","variance components","2026-10-23"
 "npn_record","full","CONUS","plant-years","2026-10-18"
 "npn_scale","full","CONUS","series-years","2026-10-23"
 "npn_sensitivity","full","CONUS","plant-years","2026-10-18"

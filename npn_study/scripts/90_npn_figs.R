@@ -32,6 +32,8 @@
 #                       monsoon green-ups against Dec-May rain (55e with 55d)
 #   npn_scale           NPN year to year at three scales (series, site, ecoregion): shared signal and
 #                       leave-one-year-out skill of the best single lead driver (55f)
+#   npn_power           monitoring design: reliability of a regional year mean and years needed to
+#                       detect a weather driver, by sites and plants (58h)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -42,7 +44,7 @@ source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R",
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
-              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale")
+              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -647,6 +649,34 @@ if (do("npn_scale") && have(sk_csv)) {
     }
     par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
     legend("bottom", legend = sl, col = sc_col, pch = 16, horiz = TRUE, bty = "n", text.col = ink2, cex = 1)
+  })
+}
+
+pw_csv <- npn_path("report", "tables", "npn_power.csv")
+if (do("npn_power") && have(pw_csv)) {
+  P <- utils::read.csv(pw_csv, stringsAsFactors = FALSE)
+  plc <- c(`1` = "#d6d5d0", `3` = "#9c9b96", `5` = "#52514e", `20` = ink)
+  plot_png("npn_power", "variance components", 2500, 950, function() {
+    par(mfrow = c(1, 3), mar = c(4.4, 4.6, 3.8, 1), oma = c(2, 0, 0, 0))
+    for (tg in c("curing", "greenup")) {
+      g <- P[P$target == tg & P$n_species == 2 & P$f == 0.5, ]
+      plot(NA, xlim = c(1, 20), ylim = c(0, 1), log = "x", xlab = "sites in the region", ylab = "reliability of the regional year mean", bty = "n", cex.axis = 0.85, xaxt = "n")
+      axis(1, at = c(1, 2, 3, 5, 10, 20), cex.axis = 0.85)
+      for (k in names(plc)) { d <- g[g$n_plants == as.numeric(k), ]; d <- d[order(d$n_sites), ]; lines(d$n_sites, d$reliability, col = plc[[k]], lwd = 2.5); points(d$n_sites, d$reliability, pch = 16, col = plc[[k]]) }
+      legend("bottomright", legend = paste(names(plc), ifelse(names(plc) == "1", "plant", "plants"), "per species"), col = plc, lwd = 2.5, bty = "n", cex = 0.8, text.col = ink2)
+      mtext(sprintf("%s: how well is a year measured?", c(curing = "50 % curing", greenup = "Green-up")[[tg]]), side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+      mtext(sprintf("2 species per site; regional year signal SD %.0f days", g$signal_sd_days[1]), side = 3, line = 0.6, adj = 0, cex = 0.68, col = ink2)
+    }
+    g <- P[P$n_species == 2 & P$n_plants == 5, ]
+    plot(NA, xlim = c(1, 20), ylim = c(5, 150), log = "xy", xlab = "sites in the region", ylab = "years of monitoring for 80 % power", bty = "n", cex.axis = 0.85, xaxt = "n")
+    axis(1, at = c(1, 2, 3, 5, 10, 20), cex.axis = 0.85); abline(h = 11, col = "#d6d5d0", lty = 2); text(20, 11, "this record: 11 years", adj = c(1, -0.4), cex = 0.7, col = ink2)
+    tc <- c(curing = aqua_col, greenup = terra_col)
+    for (tg in names(tc)) for (f in c(0.5, 0.25)) { d <- g[g$target == tg & g$f == f, ]; d <- d[order(d$n_sites), ]
+      lines(d$n_sites, pmin(d$years_80, 150), col = tc[[tg]], lwd = 2.5, lty = if (f == 0.5) 1 else 2); points(d$n_sites, pmin(d$years_80, 150), pch = 16, col = tc[[tg]]) }
+    legend("topright", legend = c("curing, driver explains half", "curing, a quarter", "green-up, half", "green-up, a quarter"), col = tc[c("curing", "curing", "greenup", "greenup")],
+           lty = c(1, 2, 1, 2), lwd = 2.5, bty = "n", cex = 0.78, text.col = ink2)
+    mtext("How many years to detect a weather driver?", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("2 species x 5 plants per site; the driver acts on the regional year signal", side = 3, line = 0.6, adj = 0, cex = 0.68, col = ink2)
   })
 }
 
