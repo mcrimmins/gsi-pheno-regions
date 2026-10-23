@@ -51,6 +51,7 @@ Rscript npn_study/scripts/55b_lter_fetch.R full           # unpack, structure re
 Rscript npn_study/scripts/55c_lter_prep.R full            # monthly grass tables (LTER and NPN), LTER site list (after 58d)
 Rscript npn_study/scripts/55d_lter_prism.R full           # P720: daily PRISM at the LTER sites (copy lter_sites.csv there, lter_site_daily.rds back)
 Rscript npn_study/scripts/55e_lter_compare.R full         # C3 vs C4, agreement with NPN, 2016-17, one climate, calibration, weather
+Rscript npn_study/scripts/55f_npn_scale.R full            # NPN year-to-year weather test at series, site and ecoregion scale (add no1617 for the sensitivity)
 Rscript npn_study/scripts/58b_npn_c3c4_gap.R full         # C3 -> C4 gap by region (optional: region CSV + tag)
 Rscript npn_study/scripts/58d_npn_species_traits.R full    # USDA PLANTS height, growth form (internet) -> data/npn_species_traits.csv
 Rscript npn_study/scripts/59a_npn_landfire_download.R full # LANDFIRE FBFM40 CONUS GeoTIFF (3.27 GB zip, internet) -> <data_root>/landfire

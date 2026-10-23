@@ -677,6 +677,33 @@ show_fig("npn_lter_weather",
   satellite check did when it rose from r = 0.35 at single site-years to 0.66 at the regional
   scale; one plot in one year carries too much plot and observer noise to show it.
 
+**The NPN record at the same scale.** The model ladder scored single series-years. The same
+departures and site-year weather were therefore averaged to the site (mean over its species) and
+the ecoregion (mean over at least three series at two or more sites) in each year, and the same
+single-driver test was repeated at each scale, with the ladder's lead rule (only drivers whose
+window ends at least 14 days before the typical date).
+
+```{r fig-npn-scale}
+#| results: asis
+show_fig("npn_scale",
+  "NPN year-to-year departures at three scales: one series, the site mean and the ecoregion mean in a year. Left: variance of the averaged departures relative to what plant and series noise alone would give (above 1 = a shared year signal). Right: leave-one-year-out skill of the best single lead weather driver.",
+  "Two dot charts by date and grass type: the signal ratios at site and ecoregion scale are mostly between 1.5 and 4.5; the skills stay at or below zero at every scale.")
+```
+
+- **The shared year signal is there.** Averaged over a site's species or an ecoregion's series, the
+  departures vary 1.4–4.5 times more than plant and series noise alone would make them, for all
+  three dates, as the variance partition implies.
+- **Lead weather still does not predict it, even averaged.** At the ecoregion scale the best single
+  lead driver scores −0.34 to +0.06 against no departure (22–48 ecoregion-years per date and grass
+  type); at the site scale −0.22 to +0.01. Without 2016–17 the picture is the same. Drivers that
+  can see past the date do a little better for green-up (+0.13 to +0.15, from September–October
+  temperature), which reflects warm years rather than a cause, as in the ladder.
+- **Why the LTER records differ.** Their weather signal is the desert's switch between spring and
+  monsoon green-up, decided by winter–spring rain and seen over 20–24 years at one place. The NPN
+  record has 11 years, few desert series and few ecoregion-years with several series, so a signal
+  of that size could exist and still not be found; what it can say is that no single weather driver
+  carries the year signal across U.S. grasslands.
+
 ## What it means so far
 
 On the ground, the typical date is the baseline to beat, and so far nothing beats it. The typical date itself is
@@ -696,8 +723,10 @@ pulses: warm-season grasses are green through cool-season curing. Year-to-year d
 are better observed than forecast: weather adds little skill at a single site, while averaged over
 a region's sites the ground departures agree with satellite curing (r = 0.66). And single
 plants are noisy, so ground monitoring needs several plants and sites to give a regional
-signal. The LTER records add that the year signal is there when many plots are averaged: in
-the desert, winter–spring rain decides whether grasses green up in spring or wait for the monsoon.
+signal. A year signal shared by a site's or a region's grasses is there, but in the 11-year NPN
+record no single weather driver known beforehand predicts it, even averaged by ecoregion; the longer
+LTER records show one case where weather does decide it: in the desert, winter–spring rain sets
+whether grasses green up in spring or wait for the monsoon.
 
 ## Toward a paper
 
@@ -764,6 +793,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | Year-to-year weather test repeated at site and ecoregion scale (55f) |
 | 2026-10-23 | Independent checks with the Jornada and Sevilleta LTER phenology records: C3 vs C4 timing, agreement with NPN, 2016–17, one-climate spread, protocol calibration |
 | 2026-10-21 | Fuel attributes: fire-promoting invaders (Fusco et al. 2019), PLANTS height and growth form, LANDFIRE fuel model at each site |
 | 2026-10-20 | Species list, typical season by species, the same species across sites, and year-to-year versus plant-to-plant spread by species |

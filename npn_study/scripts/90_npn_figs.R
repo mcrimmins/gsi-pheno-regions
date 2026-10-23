@@ -30,6 +30,8 @@
 #                       and the 2016-17 check by year (55e)
 #   npn_lter_weather    LTER year to year: skill of the best single weather driver, and the share of
 #                       monsoon green-ups against Dec-May rain (55e with 55d)
+#   npn_scale           NPN year to year at three scales (series, site, ecoregion): shared signal and
+#                       leave-one-year-out skill of the best single lead driver (55f)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -40,7 +42,7 @@ source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R",
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
-              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather")
+              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -618,6 +620,33 @@ if (do("npn_lter_weather") && have(file.path(lc_dir, "weather_skill.csv"), file.
     legend("topright", legend = c("Jornada", "Sevilleta"), pch = 16, col = sc, bty = "n", cex = 0.8, text.col = ink2)
     mtext("Spring or monsoon green-up?", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
     mtext("one point per year; monsoon green-up = first above half the plants green after June 1", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+  })
+}
+
+sk_csv <- file.path(npn_dir, "scale", "skill.csv")
+if (do("npn_scale") && have(sk_csv)) {
+  K <- utils::read.csv(sk_csv, stringsAsFactors = FALSE); K <- K[K$drivers == "lead", ]
+  tl <- c(greenup = "Green-up", curing = "50 % curing", cured = "Cured"); sl <- c(series = "one series", site = "site mean", region = "ecoregion mean")
+  sc_col <- c(series = "#b8b7b2", site = "#52514e", region = ink)
+  plot_png("npn_scale", "series-years", 2400, 900, function() {
+    par(mfrow = c(1, 2), mar = c(4.4, 9.5, 3.8, 1), oma = c(2, 0, 0, 0))
+    rows <- expand.grid(pathway = c("C4", "C3", "all"), target = rev(names(tl)), stringsAsFactors = FALSE); rows$y <- seq_len(nrow(rows))
+    lab_r <- paste0(tl[rows$target], ", ", c(all = "all", C3 = "C3", C4 = "C4")[rows$pathway])
+    for (pan in c("signal_ratio", "skill")) {
+      xl <- if (pan == "skill") c(-0.5, 0.3) else c(0, max(5, max(K$signal_ratio, na.rm = TRUE)))
+      plot(NA, xlim = xl, ylim = c(0.5, nrow(rows) + 0.5), yaxt = "n", xlab = if (pan == "skill") "skill vs no departure (0 = no better)" else "variance of the means / noise alone",
+           ylab = "", bty = "n", cex.axis = 0.85)
+      abline(v = if (pan == "skill") 0 else 1, col = ink2); abline(h = c(3.5, 6.5), col = "#e4e3df")
+      axis(2, at = rows$y, labels = lab_r, las = 1, tick = FALSE, cex.axis = 0.8)
+      for (i in seq_len(nrow(rows))) for (k in seq_along(sc_col)) {
+        v <- K[[pan]][K$target == rows$target[i] & K$pathway == rows$pathway[i] & K$scale == names(sc_col)[k]]
+        if (length(v) && !is.na(v)) points(max(min(v, xl[2]), xl[1]), rows$y[i] + (k - 2) * 0.22, pch = 16, cex = 1.3, col = sc_col[[k]]) }
+      mtext(if (pan == "skill") "Best single lead weather driver, leave one year out" else "Is there a shared year signal?", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+      mtext(if (pan == "skill") "drivers ending >= 14 days before the typical date, chosen within the training years" else "> 1: the averaged departures vary more than plant and series noise alone would make them",
+            side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    }
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", legend = sl, col = sc_col, pch = 16, horiz = TRUE, bty = "n", text.col = ink2, cex = 1)
   })
 }
 
