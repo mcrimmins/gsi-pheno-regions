@@ -140,6 +140,7 @@ if (!any(active() | todo())) {
   token <- ae_login(cfg); t_login <- Sys.time(); log_msg("AppEEARS login ok")
   notify("05_viirs_daily started", sprintf("%d region-year-chunks to fetch", sum(active() | todo())), priority = 2, tags = "arrow_forward")
   t0 <- Sys.time(); n_fail <- 0L; failed_this_run <- character()
+  dl_fail <- list(); dl_max_rounds <- as.integer(vd$download_rounds %||% 4)   # failed download rounds per job before resubmitting
   repeat {
     if (difftime(Sys.time(), t_login, units = "hours") > 24) { token <- ae_login(cfg); t_login <- Sys.time() }
     while (sum(active()) < pending_max && any(todo())) {
@@ -160,9 +161,32 @@ if (!any(active() | todo())) {
         files <- files[grepl("\\.tif$", files$file_name), , drop = FALSE]
         if (!nrow(files)) { log_warn(st$key[i], ": no GeoTIFFs in the bundle; marked empty"); st$status[i] <- "empty"; save_state(); next }
         t1 <- Sys.time()
-        for (k in seq_len(nrow(files))) {
-          dest <- file.path(raw, files$file_name[k])
-          if (!file.exists(dest)) ae_download_file(cfg, token, st$task_id[i], files[k, ], dest)
+        # Oct 23: a 403 on one file (AppEEARS under load before the S-NPP cutoff) stopped the whole run. Now a
+        # failed download keeps the files already fetched, logs in again, and retries the job at the next poll;
+        # after dl_max_rounds failed rounds the job is resubmitted (fresh bundle), then marked failed.
+        dl <- tryCatch({
+          for (k in seq_len(nrow(files))) {
+            dest <- file.path(raw, files$file_name[k])
+            if (!file.exists(dest)) ae_download_file(cfg, token, st$task_id[i], files[k, ], dest)
+          }
+          TRUE
+        }, error = function(e) conditionMessage(e))
+        if (!isTRUE(dl)) {
+          k0 <- st$key[i]; dl_fail[[k0]] <- (dl_fail[[k0]] %||% 0L) + 1L
+          log_warn(sprintf("%s: download round %d failed (%s); %d of %d files on disk", k0, dl_fail[[k0]], dl,
+                           sum(file.exists(file.path(raw, files$file_name))), nrow(files)))
+          token <- tryCatch({ tk <- ae_login(cfg); t_login <- Sys.time(); tk }, error = function(e) token)
+          if (dl_fail[[k0]] >= dl_max_rounds) {
+            if (st$attempts[i] < 2) {
+              log_warn(k0, ": resubmitting the task after ", dl_fail[[k0]], " failed download rounds")
+              unlink(raw, recursive = TRUE); st$status[i] <- "retry"; dl_fail[[k0]] <- 0L
+            } else {
+              log_err(k0, ": downloads failed on two tasks (task ", st$task_id[i], "); marked failed")
+              st$status[i] <- "failed"; n_fail <- n_fail + 1L
+            }
+            save_state()
+          }
+          next
         }
         mb <- sum(files$file_size, na.rm = TRUE) / 1e6
         log_msg(sprintf("%s: downloaded %d files, %.0f MB, %.1f min", st$key[i], nrow(files), mb, as.numeric(difftime(Sys.time(), t1, units = "mins"))))

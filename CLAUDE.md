@@ -865,6 +865,9 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   no shadow / snow / reflective-or-emissive cirrus, no adjacency rule, zenith <= 65, QF6 off (use_qf6) ->
   32-64 % clear, median NDVI moves <= 0.02 between these relaxations. Jobs: half-years, 8 queued at once.
   S-NPP data delivery ends Nov 1 2026 (archive stays); operational successors VJ209GA (NOAA-21), VJ109GA.
+  Oct 22: full run stopped on HTTP 403 for one bundle file (r03_2015_c2). 05 now catches download errors:
+  files already fetched are kept, it logs in again and retries at the next poll; after download_rounds (4)
+  failed rounds the task is resubmitted once, then marked failed. Mocked test: 2 failed rounds, then OK.
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.
