@@ -50,10 +50,8 @@ for (p in pk) {
   if (length(zz)) { utils::unzip(zz[1], exdir = pdir); log_msg("  unzipped ", basename(zz[1])) }
   # metadata: from the zip (<pid>.xml) or from PASTA
   ef <- file.path(pdir, "eml.xml")
-  if (!file.exists(ef)) {
-    zx <- list.files(pdir, "\\.xml$", full.names = TRUE); zx <- zx[!grepl("report\\.xml$|^eml\\.xml$", basename(zx))]   # the EML, not EDI's quality report
-    if (length(zx)) file.copy(zx[1], ef) else get(sprintf("%s/metadata/eml/%s/%s/%s", pasta, p$scope, p$id, p$rev), ef)
-  }
+  zx <- list.files(pdir, "\\.xml$", full.names = TRUE); zx <- zx[!grepl("report\\.xml$|^eml\\.xml$", basename(zx))]   # the EML, not EDI's quality report
+  if (length(zx)) file.copy(zx[1], ef, overwrite = TRUE) else if (!file.exists(ef)) get(sprintf("%s/metadata/eml/%s/%s/%s", pasta, p$scope, p$id, p$rev), ef)
   if (!file.exists(ef)) {
     log_err(pid, ": no metadata. Download the package zip from https://portal.edirepository.org/nis/mapbrowse?scope=", p$scope,
             "&identifier=", p$id, " into ", root, " and run again")

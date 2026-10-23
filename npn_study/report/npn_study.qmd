@@ -663,8 +663,19 @@ show_fig("npn_lter_weather",
   "Dot chart of leave-one-year-out skill by site, grass type and date; scatter of the yearly share of monsoon green-ups against winter-spring rain.")
 ```
 
-- **Weather from year to year:** pending the PRISM extraction at the LTER sites (16–25 years per
-  series), the same drivers and single-driver test as the model ladder.
+- **Winter–spring rain decides whether desert grasses green up in spring or wait for the
+  monsoon.** With daily PRISM at the LTER sites and the same weather drivers as the model ladder,
+  the share of warm-season series that first pass half the plants green only after June 1 follows
+  December–May rain from year to year: r = −0.77 over 20 years at Jornada (monsoon green-up years
+  had 22 mm of December–May rain on average, spring green-up years 78 mm) and r = −0.45 over 24
+  years at Sevilleta (34 vs 65 mm).
+- **A single site's date stays hard to predict.** For one series in one year, the best single
+  driver (chosen within the training years, as the ladder's L1) does a little better than the
+  series mean at Jornada (skill +0.13 for green-up, from winter rain, r = −0.60; +0.12 for the
+  autumn fall, from autumn rain) and about as well as the mean at Sevilleta (−0.05 to +0.05).
+  The weather signal is real but shows up when many series are averaged within a year, as the
+  satellite check did when it rose from r = 0.35 at single site-years to 0.66 at the regional
+  scale; one plot in one year carries too much plot and observer noise to show it.
 
 ## What it means so far
 
@@ -682,10 +693,11 @@ greenness around each site's typical curing date would avoid those problems; it 
 For fire danger this points three ways. The typical date by place and grass type is the
 starting point, and on the Great Plains it has no gap between the cool- and warm-season
 pulses: warm-season grasses are green through cool-season curing. Year-to-year departures
-are better observed than forecast: weather adds no skill on the ground, while averaged over
+are better observed than forecast: weather adds little skill at a single site, while averaged over
 a region's sites the ground departures agree with satellite curing (r = 0.66). And single
 plants are noisy, so ground monitoring needs several plants and sites to give a regional
-signal.
+signal. The LTER records add that the year signal is there when many plots are averaged: in
+the desert, winter–spring rain decides whether grasses green up in spring or wait for the monsoon.
 
 ## Toward a paper
 

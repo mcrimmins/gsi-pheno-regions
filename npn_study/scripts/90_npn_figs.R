@@ -604,14 +604,14 @@ if (do("npn_lter_weather") && have(file.path(lc_dir, "weather_skill.csv"), file.
   YR <- utils::read.csv(file.path(lc_dir, "weather_monsoon_years.csv"), stringsAsFactors = FALSE)
   plot_png("npn_lter_weather", "LTER site-years", 2300, 950, function() {
     layout(matrix(1:2, 1), widths = c(1.2, 1)); par(mar = c(4.4, 13, 3.8, 1))
-    K <- K[order(K$source, K$pathway, K$var, K$date), ]; n <- nrow(K)
+    K <- K[K$n >= 100, ]; K <- K[order(K$source, K$pathway, K$var, K$date), ]; n <- nrow(K)   # rows on >= 100 site-years
     dl <- c(up1 = "green-up", down1 = "first fall", down_last = "fall"); vl <- c(green = "green", new = "new leaves")
     plot(NA, xlim = c(min(-0.4, min(K$skill)), max(0.4, max(K$skill))), ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "skill vs the series mean (0 = no better)", ylab = "", bty = "n", cex.axis = 0.8)
     abline(v = 0, col = ink2); abline(v = seq(-0.4, 0.4, 0.2), col = "#ecebe7")
     axis(2, at = seq_len(n), labels = sprintf("%s %s %s, %s", K$source, K$pathway, vl[K$var], dl[K$date]), las = 1, tick = FALSE, cex.axis = 0.72)
     points(K$skill, seq_len(n), pch = 16, cex = 1.3, col = pw_col[K$pathway])
     mtext("Best single weather driver, leave one year out", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
-    mtext("driver chosen within the training years, as the ladder's L1", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    mtext("driver chosen within the training years, as the ladder's L1; rows with >= 100 site-years", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
     par(mar = c(4.4, 4.4, 3.8, 1)); Y <- YR[YR$var == "green", ]; sc <- c(JRN = "#b05f3c", SEV = "#2f4f4f")
     plot(Y$p_dm_a, Y$monsoon, pch = 16, col = sc[Y$source], xlab = "Dec-May rain, departure from the site mean (mm)", ylab = "share of series with a monsoon green-up", bty = "n", cex.axis = 0.8, ylim = c(0, 1))
     for (s in names(sc)) { d <- Y[Y$source == s, ]; if (nrow(d) > 5) { f <- stats::lm(monsoon ~ p_dm_a, d); o <- order(d$p_dm_a); lines(d$p_dm_a[o], stats::fitted(f)[o], col = sc[[s]], lwd = 2) } }
