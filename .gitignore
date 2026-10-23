@@ -60,6 +60,7 @@ npn_study/data/*
 !npn_study/data/npn_species_traits.csv
 !npn_study/data/npn_species_traits_manual.csv
 !npn_study/data/npn_site_fuelmodels.csv
+!npn_study/data/lter_grass_pathway.csv
 npn_study/logs/
 npn_study/report/*.html
 npn_study/report/*_files/

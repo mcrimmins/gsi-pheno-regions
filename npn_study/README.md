@@ -18,7 +18,7 @@ inside that repo (`npn_study/`) or is the repository root.
 | `R/npn_setup.R` | paths, config loader, logger, PET / freeze / rain-onset helpers |
 | `R/npn.R` | study helpers (series-years, site-year metrics, normals, regions, sensitivity) |
 | `scripts/` | the analysis, in run order below |
-| `data/` | `npn_species_pathway.csv` (C3 / C4, life cycle, origin, crop), `npn_site_ecoregions.csv` (EPA Level II per site), `npn_species_fire.csv` (invasive grasses that raise fire occurrence, Fusco et al. 2019), `npn_species_traits.csv` (58d), `npn_site_fuelmodels.csv` (59b); `npn_site_names.csv` is local only (not in git) |
+| `data/` | `npn_species_pathway.csv` (C3 / C4, life cycle, origin, crop), `npn_site_ecoregions.csv` (EPA Level II per site), `npn_species_fire.csv` (invasive grasses that raise fire occurrence, Fusco et al. 2019), `npn_species_traits.csv` (58d), `npn_site_fuelmodels.csv` (59b), `lter_grass_pathway.csv` (C3 / C4 and life cycle for the LTER grasses, by genus with species exceptions); `npn_site_names.csv` is local only (not in git) |
 | `report/` | `npn_study.qmd` (study page), `figs/` (PNGs + `manifest.csv`) and `tables/` (`npn_species.csv`, from 58c) |
 | `logs/` | run logs (not in git) |
 
@@ -46,6 +46,11 @@ Rscript npn_study/scripts/53_npn_variance.R full         # variance partition (Q
 Rscript npn_study/scripts/54_npn_site_signal.R full      # shared site-year signal vs weather
 Rscript npn_study/scripts/55_npn_filter_inventory.R full # what each filter removes
 Rscript npn_study/scripts/58_npn_record_climatology.R full  # record, climatology, climate across space (Q1, Q2, Q4)
+# LTER cross-checks: download the two EDI package zips by hand into <data_root>/full/npn_study/lter/ (EDI refuses scripted public access)
+Rscript npn_study/scripts/55b_lter_fetch.R full           # unpack, structure report (logs/55b_lter_structure_full.txt)
+Rscript npn_study/scripts/55c_lter_prep.R full            # monthly grass tables (LTER and NPN), LTER site list (after 58d)
+Rscript npn_study/scripts/55d_lter_prism.R full           # P720: daily PRISM at the LTER sites (copy lter_sites.csv there, lter_site_daily.rds back)
+Rscript npn_study/scripts/55e_lter_compare.R full         # C3 vs C4, agreement with NPN, 2016-17, one climate, calibration, weather
 Rscript npn_study/scripts/58b_npn_c3c4_gap.R full         # C3 -> C4 gap by region (optional: region CSV + tag)
 Rscript npn_study/scripts/58d_npn_species_traits.R full    # USDA PLANTS height, growth form (internet) -> data/npn_species_traits.csv
 Rscript npn_study/scripts/59a_npn_landfire_download.R full # LANDFIRE FBFM40 CONUS GeoTIFF (3.27 GB zip, internet) -> <data_root>/landfire

@@ -2,6 +2,8 @@
 "npn_dates","full","CONUS","2014-2024","2026-10-18"
 "npn_fuelmodels","full","CONUS","LANDFIRE FBFM40 at the sites","2026-10-21"
 "npn_ladder","full","CONUS","series-years","2026-10-18"
+"npn_lter_agree","full","CONUS","LTER and NPN","2026-10-23"
+"npn_lter_c3c4","full","CONUS","1992-2025","2026-10-23"
 "npn_record","full","CONUS","plant-years","2026-10-18"
 "npn_sensitivity","full","CONUS","plant-years","2026-10-18"
 "npn_signal","full","CONUS","site-years","2026-10-18"

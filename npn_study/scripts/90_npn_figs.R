@@ -24,6 +24,12 @@
 #                       site and year (58c, report/tables/npn_species_spread.csv)
 #   npn_fuelmodels      Scott & Burgan fuel model (LANDFIRE FBFM40) at the sites: sites and plant-years per
 #                       model, and typical 50 % curing by model and grass type (59b, 58)
+#   npn_lter_c3c4       LTER cross-check: monthly share of plants green / with new leaves, C3 vs C4 at
+#                       Sevilleta and C4 by vegetation zone at Jornada (55e)
+#   npn_lter_agree      LTER vs NPN: same species (monthly shares), same place (Jornada black grama),
+#                       and the 2016-17 check by year (55e)
+#   npn_lter_weather    LTER year to year: skill of the best single weather driver, and the share of
+#                       monsoon green-ups against Dec-May rain (55e with 55d)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -33,7 +39,8 @@ npn_root <- if (dir.exists(here::here("npn_study", "R"))) here::here("npn_study"
 source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R", "npn.R"))
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
-              "npn_species_sites", "npn_species_spread", "npn_fuelmodels")
+              "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
+              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -516,6 +523,101 @@ if (do("npn_fuelmodels") && !is.null(TY) && have(fm_csv)) {
     plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
     legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, pch = 16, col = c(pw_col[["C3"]], pw_col[["C4"]], gcol[c("GR", "GS", "SH", "TU", "TL")]),
            legend = c("cool-season (C3)", "warm-season (C4)", "grass (GR)", "grass-shrub (GS)", "shrub (SH)", "timber-understory (TU)", "timber litter (TL)"))
+  })
+}
+
+# ---- NPN study: LTER cross-checks (55e) --------------------------------------------------------
+lc_dir <- file.path(npn_dir, "lter", "compare")
+mon_ax <- function(cex = 0.8) axis(1, at = 1:12, labels = substr(month.abb, 1, 1), cex.axis = cex, tick = FALSE)
+band <- function(x, lo, hi, col) polygon(c(x, rev(x)), c(lo, rev(hi)), col = grDevices::adjustcolor(col, 0.18), border = NA)
+if (do("npn_lter_c3c4") && have(file.path(lc_dir, "pathway_monthly.csv"), file.path(lc_dir, "c3c4_monthly.csv"))) {
+  PM <- utils::read.csv(file.path(lc_dir, "pathway_monthly.csv"), stringsAsFactors = FALSE)
+  W3 <- utils::read.csv(file.path(lc_dir, "c3c4_monthly.csv"), stringsAsFactors = FALSE)
+  qs <- function(d, v) { a <- stats::aggregate(d[[v]], list(month = d$month), function(z) c(stats::quantile(z, c(0.25, 0.5, 0.75), na.rm = TRUE), n = sum(!is.na(z))))
+    data.frame(month = a$month, lo = a$x[, 1], md = a$x[, 2], hi = a$x[, 3], n = a$x[, 4]) }
+  yrs <- range(PM$year)
+  plot_png("npn_lter_c3c4", paste(yrs, collapse = "-"), 2600, 900, function() {
+    par(mfrow = c(1, 3), mar = c(3.4, 4.2, 3.8, 1), oma = c(2, 0, 0, 0))
+    for (v in c("new", "green")) {
+      plot(NA, xlim = c(1, 12), ylim = c(0, 1), xaxt = "n", yaxt = "n", xlab = "", ylab = "share of plants", bty = "n")
+      axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.8); mon_ax(); abline(h = 0.5, col = "#d6d5d0", lty = 2)
+      for (pw in c("C4", "C3")) { d <- PM[PM$source == "SEV" & PM$site == "all" & PM$pathway == pw & !is.na(PM[[v]]), ]; if (!nrow(d)) next
+        q <- qs(d, v); band(q$month, q$lo, q$hi, pw_col[[pw]]); lines(q$month, q$md, lwd = 2.5, col = pw_col[[pw]]); points(q$month, q$md, pch = 16, col = pw_col[[pw]])
+        if (pw == "C3") text(q$month, 0.03, q$n, cex = 0.7, col = pw_col[["C3"]]) }
+      mtext(sprintf("Sevilleta: %s", if (v == "new") "new green leaves" else "any green leaves"), side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+      mtext("median over years, band middle half; blue numbers at the bottom: years with >= 10 C3 plants", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    }
+    plot(NA, xlim = c(1, 12), ylim = c(0, 1), xaxt = "n", yaxt = "n", xlab = "", ylab = "share of plants green", bty = "n")
+    axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.8); mon_ax(); abline(h = 0.5, col = "#d6d5d0", lty = 2)
+    jz <- PM[PM$source == "JRN" & PM$pathway == "C4", ]; jz$zone <- substr(jz$site, 1, 1)
+    zc <- c(G = "#c9a227", P = "#8a9a3b", T = "#6b8e6b", M = "#b05f3c", C = "#52514e"); zl <- c(G = "grassland", P = "playa", T = "tarbush", M = "mesquite", C = "creosote")
+    for (z in names(zc)) { d <- jz[jz$zone == z, ]; if (!nrow(d)) next; q <- qs(d, "green"); lines(q$month, q$md, lwd = 2, col = zc[[z]]) }
+    legend("center", legend = zl, col = zc, lwd = 2, bty = "n", cex = 0.8, text.col = ink2)
+    mtext("Jornada: warm-season grasses by vegetation zone", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("share of plants not dormant; median over years and sites", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", legend = c("cool-season (C3)", "warm-season (C4)"), col = pw_col[c("C3", "C4")], lwd = 2.5, pch = 16, horiz = TRUE, bty = "n", text.col = ink2, cex = 1)
+  })
+}
+if (do("npn_lter_agree") && have(file.path(lc_dir, "climatology_species.csv"), file.path(lc_dir, "years_1617.csv"))) {
+  CS <- utils::read.csv(file.path(lc_dir, "climatology_species.csv"), stringsAsFactors = FALSE)
+  NMm <- utils::read.csv(file.path(npn_dir, "lter", "npn_monthly.csv"), stringsAsFactors = FALSE)
+  STl <- utils::read.csv(file.path(npn_dir, "lter", "lter_sites.csv"), stringsAsFactors = FALSE)
+  Y5 <- utils::read.csv(file.path(lc_dir, "years_1617.csv"), stringsAsFactors = FALSE)
+  ov <- list.files(lc_dir, "^overlap_JRN_Bouteloua_eriopoda\\.csv$", full.names = TRUE)
+  plot_png("npn_lter_agree", "LTER and NPN", 2600, 900, function() {
+    par(mfrow = c(1, 3), mar = c(4.2, 4.4, 3.8, 1))
+    plot(NA, xlim = c(0, 1), ylim = c(0, 1), xlab = "LTER: share of plants green", ylab = "NPN: share of readings >= 5 % green", bty = "n", cex.axis = 0.8)
+    abline(0, 1, col = "#d6d5d0", lty = 2)
+    xy <- stats::aggregate(cbind(lat, lon) ~ source, STl, mean); cols <- c(JRN = "#b05f3c", SEV = "#2f4f4f"); rr <- c()
+    for (s in c("JRN", "SEV")) {
+      c0 <- xy[xy$source == s, ]; nm <- NMm[111.2 * sqrt((NMm$lat - c0$lat)^2 + ((NMm$lon - c0$lon) * cos(c0$lat * pi / 180))^2) <= 400 & NMm$n >= 3, ]
+      a <- stats::aggregate(green_mean ~ name + month, CS[CS$source == s, ], mean); b <- stats::aggregate(share_any ~ name + month, nm, mean)
+      x <- merge(a, b); if (!nrow(x)) next
+      points(x$green_mean, x$share_any, pch = 16, cex = 0.9, col = grDevices::adjustcolor(cols[[s]], 0.6)); rr[s] <- stats::cor(x$green_mean, x$share_any)
+    }
+    legend("topleft", legend = sprintf("%s (r = %.2f)", c(JRN = "Jornada", SEV = "Sevilleta")[names(rr)], rr), pch = 16, col = cols[names(rr)], bty = "n", cex = 0.8, text.col = ink2)
+    mtext("Same species, by month", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("species x month means; NPN sites within 400 km", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    if (length(ov)) {
+      O <- utils::read.csv(ov[1]); O$t <- O$year + (O$month - 0.5) / 12; O <- O[order(O$t), ]
+      plot(NA, xlim = range(O$t), ylim = c(0, 1), xlab = "", ylab = "share green", bty = "n", cex.axis = 0.8)
+      brk <- function(x, y) { g <- c(FALSE, diff(x) > 0.2); list(x = unlist(Map(function(a, b) if (b) c(NA, a) else a, x, g)), y = unlist(Map(function(a, b) if (b) c(NA, a) else a, y, g))) }
+      l1 <- brk(O$t, O$green); l2 <- brk(O$t, O$share_any)                 # no lines across months without data
+      lines(l1$x, l1$y, col = "#b05f3c", lwd = 2); lines(l2$x, l2$y, col = ink, lwd = 2); points(O$t, O$share_any, pch = 16, cex = 0.5, col = ink)
+      legend("bottomleft", legend = c("Jornada LTER (share of plants not dormant)", "NEON Jornada (share of readings >= 5 % green)"), col = c("#b05f3c", ink), lwd = 2, bty = "n", cex = 0.72, text.col = ink2)
+      mtext("Black grama at Jornada, same years", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+      mtext(sprintf("monthly; r = %.2f, anomalies r = %.2f", stats::cor(O$green, O$share_any), stats::cor(O$green - stats::ave(O$green, O$month), O$share_any - stats::ave(O$share_any, O$month))),
+            side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    } else { plot.new(); text(0.5, 0.5, "no overlap table", col = ink2) }
+    Y5 <- Y5[Y5$year >= 2010, ]; sc <- c(JRN = "#b05f3c", SEV = "#2f4f4f", `NPN NEON` = ink)
+    plot(NA, xlim = range(Y5$year), ylim = c(0, max(0.3, max(Y5$never_50, na.rm = TRUE))), xlab = "", ylab = "share of series", bty = "n", cex.axis = 0.8)
+    rect(2015.5, 0, 2017.5, 1, col = "#f1efe9", border = NA)
+    for (s in names(sc)) { d <- Y5[Y5$source == s, ]; d <- d[order(d$year), ]; lines(d$year, d$never_50, col = sc[[s]], lwd = 2); points(d$year, d$never_50, pch = 16, cex = 0.7, col = sc[[s]]) }
+    legend("topright", legend = c("Jornada LTER", "Sevilleta LTER", "NPN, NEON sites"), col = sc, lwd = 2, bty = "n", cex = 0.75, text.col = ink2)
+    mtext("Series that never pass 50 % green", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("LTER: half the plants green; NPN: half the readings >= 50 %; 2016-17 shaded", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+  })
+}
+if (do("npn_lter_weather") && have(file.path(lc_dir, "weather_skill.csv"), file.path(lc_dir, "weather_monsoon_years.csv"))) {
+  K <- utils::read.csv(file.path(lc_dir, "weather_skill.csv"), stringsAsFactors = FALSE)
+  YR <- utils::read.csv(file.path(lc_dir, "weather_monsoon_years.csv"), stringsAsFactors = FALSE)
+  plot_png("npn_lter_weather", "LTER site-years", 2300, 950, function() {
+    layout(matrix(1:2, 1), widths = c(1.2, 1)); par(mar = c(4.4, 13, 3.8, 1))
+    K <- K[order(K$source, K$pathway, K$var, K$date), ]; n <- nrow(K)
+    dl <- c(up1 = "green-up", down1 = "first fall", down_last = "fall"); vl <- c(green = "green", new = "new leaves")
+    plot(NA, xlim = c(min(-0.4, min(K$skill)), max(0.4, max(K$skill))), ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "skill vs the series mean (0 = no better)", ylab = "", bty = "n", cex.axis = 0.8)
+    abline(v = 0, col = ink2); abline(v = seq(-0.4, 0.4, 0.2), col = "#ecebe7")
+    axis(2, at = seq_len(n), labels = sprintf("%s %s %s, %s", K$source, K$pathway, vl[K$var], dl[K$date]), las = 1, tick = FALSE, cex.axis = 0.72)
+    points(K$skill, seq_len(n), pch = 16, cex = 1.3, col = pw_col[K$pathway])
+    mtext("Best single weather driver, leave one year out", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("driver chosen within the training years, as the ladder's L1", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+    par(mar = c(4.4, 4.4, 3.8, 1)); Y <- YR[YR$var == "green", ]; sc <- c(JRN = "#b05f3c", SEV = "#2f4f4f")
+    plot(Y$p_dm_a, Y$monsoon, pch = 16, col = sc[Y$source], xlab = "Dec-May rain, departure from the site mean (mm)", ylab = "share of series with a monsoon green-up", bty = "n", cex.axis = 0.8, ylim = c(0, 1))
+    for (s in names(sc)) { d <- Y[Y$source == s, ]; if (nrow(d) > 5) { f <- stats::lm(monsoon ~ p_dm_a, d); o <- order(d$p_dm_a); lines(d$p_dm_a[o], stats::fitted(f)[o], col = sc[[s]], lwd = 2) } }
+    legend("topright", legend = c("Jornada", "Sevilleta"), pch = 16, col = sc, bty = "n", cex = 0.8, text.col = ink2)
+    mtext("Spring or monsoon green-up?", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
+    mtext("one point per year; monsoon green-up = first above half the plants green after June 1", side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
   })
 }
 

@@ -584,6 +584,88 @@ show_fig("npn_sensitivity",
 - The main results keep all years; this check is reported alongside until USA-NPN and NEON
   can say whether guidance or training for percent green changed around 2018.
 
+## Independent checks with LTER records
+
+Two Long-Term Ecological Research (LTER) sites in New Mexico have kept their own monthly grass
+phenology records, with their own protocols and observers, for decades: the **Jornada** Basin LTER
+(15 net primary production sites in five vegetation zones, 1992–2021; each month every plant of
+the monitored species is tallied as dormant, non-reproductive, in bud, flowering or fruiting) and
+the **Sevilleta** LTER (core sites in black grama and blue grama grassland and creosote shrubland,
+2000–2025; each month the first 10 plants of each species on four transects are scored as new
+green leaves, old green leaves, brown or leafless). Both give the **share of plants that are
+green** each month, not the percent green of a plant; 50 % dates below are where that share
+crosses one half. Jornada monitors 21 grasses, all warm-season; Sevilleta 51 (9 cool-season).
+
+```{r fig-npn-lter-c3c4}
+#| results: asis
+show_fig("npn_lter_c3c4",
+  "Monthly share of grass plants with new green leaves (left) and any green leaves (middle) at Sevilleta, cool-season (C3) and warm-season (C4) grasses pooled over the core sites; right, warm-season grasses at Jornada by vegetation zone. Lines are medians over years, bands the middle half of years.",
+  "Three line charts by month: at Sevilleta the cool-season share with new leaves dips in June and July while the warm-season share stays high; at Jornada warm-season grasses are green from April to November in every zone.")
+```
+
+- **In the desert, cool- and warm-season grasses also overlap.** At Sevilleta warm-season grasses
+  are already putting on new leaves in March (87 % of plants), so the two types grow together
+  through spring. In early summer the cool-season grasses slow: the share with new leaves falls
+  from about 80 % in May to 54 % in June and 42 % in July and recovers after the monsoon. Both
+  types are below half with new leaves in July in a quarter of site-years and in late autumn; a
+  regular dry gap between the two pulses does not appear, as on the Plains. The cool-season
+  grasses are sparse at these sites (41 months over 11 years with at least 10 plants), so this
+  part rests on few years.
+- **Green-up in the desert has two modes.** Black grama and bush muhly usually green up in March or
+  April; in about a quarter of years they wait for the monsoon and green up in June–August.
+- **The two records agree on the seasonal shape.** For the 15 grasses both record, the monthly
+  share green at Jornada and Sevilleta tracks the NPN share of readings above 5 % green at NPN
+  sites within 400 km (r = 0.87 and 0.81 over species and months).
+- **They do not agree on the years.** For black grama at Jornada, the LTER plots and the NEON plots
+  agree month by month (r = 0.63, 2015–2021) but not on whether a given month was early or late
+  for the time of year (r = 0.11 on the departures). Year-to-year departures at one place depend
+  on the plots and observers, as the plant share in the variance partition implies.
+- **The 2016–17 low peaks are a NEON feature.** In 2016 and 2017, 15–23 % of NEON series never
+  passed 50 % green, against almost none in other years; at Jornada and Sevilleta the share of
+  series that never reached half the plants green stayed at 0–3 % in those years. The LTER
+  observers saw nothing unusual, which supports a change in how percent green was judged.
+- **Under one climate, place matters little.** The same species at the 15 Jornada sites, which
+  share one climate, differ by about 10 days in their typical dates (SD across sites), against
+  about 56 days from year to year. Nationally place dominates because climate differs; within one
+  climate the years dominate.
+
+```{r fig-npn-lter-agree}
+#| results: asis
+show_fig("npn_lter_agree",
+  "Left: monthly share green for the same species in the LTER records and at NPN sites within 400 km. Middle: black grama at Jornada, LTER plots and NEON plots, same months. Right: share of series that never pass 50 % green, by year (2016–17 shaded).",
+  "Scatter of LTER against NPN monthly shares close to the one-to-one line; two monthly time series that rise and fall together; three lines by year where only the NEON line rises in 2016 and 2017.")
+```
+
+**Translating between the protocols.** On the NPN record itself (weekly readings at NEON sites),
+reading only once a month moves the 50 % dates by about 17 days (green-up later, curing earlier;
+10–14 % of dates lost). A population date in the LTER style, "half the plants at least 50 % green",
+falls within a few days of the median plant's 50 % green-up and about 19 days after its 50 %
+curing; "half the plants with any green", which is what the LTER categories record, comes about a
+month earlier in spring and six weeks later in fall. LTER and NPN dates are therefore compared as
+seasonal shapes and departures, not as interchangeable dates.
+
+```{r tbl-npn-lter-cal}
+#| results: asis
+cf <- "tables/lter_calibration.csv"
+if (file.exists(cf)) {
+  C <- utils::read.csv(cf, stringsAsFactors = FALSE)
+  T <- data.frame(Comparison = C$test, `Plant-years / series` = C$n, `Bias (days)` = sprintf("%+.0f", C$bias), `Mean abs. difference (days)` = sprintf("%.0f", C$mae),
+                  `Dates lost` = ifelse(is.na(C$lost), "", sprintf("%.0f %%", 100 * C$lost)), check.names = FALSE)
+  print(knitr::kable(T, format = "pipe", align = c("l", "r", "r", "r", "r")))
+  cat("\n\n: Calibration of monthly and population dates on the NPN record {.striped}\n\n")
+}
+```
+
+```{r fig-npn-lter-weather}
+#| results: asis
+show_fig("npn_lter_weather",
+  "Year to year at the LTER sites: skill of the best single weather driver against each series' mean (left), and the share of series that green up with the monsoon rather than in spring against December–May rain (right, one point per year).",
+  "Dot chart of leave-one-year-out skill by site, grass type and date; scatter of the yearly share of monsoon green-ups against winter-spring rain.")
+```
+
+- **Weather from year to year:** pending the PRISM extraction at the LTER sites (16–25 years per
+  series), the same drivers and single-driver test as the model ladder.
+
 ## What it means so far
 
 On the ground, the typical date is the baseline to beat, and so far nothing beats it. The typical date itself is
@@ -670,6 +752,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | Independent checks with the Jornada and Sevilleta LTER phenology records: C3 vs C4 timing, agreement with NPN, 2016–17, one-climate spread, protocol calibration |
 | 2026-10-21 | Fuel attributes: fire-promoting invaders (Fusco et al. 2019), PLANTS height and growth form, LANDFIRE fuel model at each site |
 | 2026-10-20 | Species list, typical season by species, the same species across sites, and year-to-year versus plant-to-plant spread by species |
 | 2026-10-20 | Opening and conclusions rewritten for a standalone study |
@@ -694,6 +777,11 @@ PhenoCam comparison earns a place.
   <https://www.epa.gov/eco-research/ecoregions-north-america>.
 - PRISM Group, Oregon State University, <https://prism.oregonstate.edu>, daily 4 km data
   accessed October 2026.
+- Jornada Basin LTER. Plant phenology observations at 15 sites at Jornada Basin LTER, 1992–ongoing.
+  Environmental Data Initiative, knb-lter-jrn.210287001,
+  <https://doi.org/10.6073/pasta/2ce4791d429b1d1dc5b10f23bb0343fd>.
+- Sevilleta LTER. Core site phenology study from the Chihuahuan Desert grassland and shrubland at
+  the Sevilleta National Wildlife Refuge, New Mexico. Environmental Data Initiative, knb-lter-sev.137.
 - Fusco, E. J., Finn, J. T., Balch, J. K., Nagy, R. C. and Bradley, B. A. (2019). Invasive grasses
   increase fire occurrence and frequency across US ecoregions. *Proceedings of the National Academy
   of Sciences* 116(47), 23594–23599, <https://doi.org/10.1073/pnas.1908253116>.

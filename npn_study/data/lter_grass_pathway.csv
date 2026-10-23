@@ -1,0 +1,40 @@
+level,name,pathway,life_cycle,note
+genus,Achnatherum,C3,perennial,
+genus,Aristida,C4,perennial,
+genus,Avena,C3,annual,introduced
+genus,Bothriochloa,C4,perennial,
+genus,Bouteloua,C4,perennial,
+genus,Bromus,C3,annual,most species in the record are annual bromes
+genus,Dasyochloa,C4,perennial,
+genus,Digitaria,C4,perennial,
+genus,Elymus,C3,perennial,
+genus,Enneapogon,C4,perennial,
+genus,Eragrostis,C4,perennial,
+genus,Erioneuron,C4,perennial,
+genus,Festuca,C3,perennial,
+genus,Hesperostipa,C3,perennial,
+genus,Hilaria,C4,perennial,
+genus,Leptochloa,C4,perennial,
+genus,Lycurus,C4,perennial,
+genus,Melica,C3,perennial,
+genus,Muhlenbergia,C4,perennial,
+genus,Munroa,C4,annual,
+genus,Panicum,C4,perennial,
+genus,Pascopyrum,C3,perennial,
+genus,Piptatherum,C3,perennial,
+genus,Pleuraphis,C4,perennial,
+genus,Poa,C3,perennial,
+genus,Schizachyrium,C4,perennial,
+genus,Scleropogon,C4,perennial,
+genus,Setaria,C4,perennial,
+genus,Sporobolus,C4,perennial,
+genus,Tragus,C4,annual,
+genus,Tridens,C4,perennial,
+genus,Vulpia,C3,annual,
+species,Aristida adscensionis,C4,annual,sixweeks threeawn
+species,Bouteloua aristidoides,C4,annual,needle grama
+species,Bouteloua barbata,C4,annual,sixweeks grama
+species,Eragrostis cilianensis,C4,annual,stinkgrass; introduced
+species,Eragrostis lehmanniana,C4,perennial,Lehmann lovegrass; introduced
+species,Panicum hirticaule,C4,annual,
+species,Bromus inermis,C3,perennial,

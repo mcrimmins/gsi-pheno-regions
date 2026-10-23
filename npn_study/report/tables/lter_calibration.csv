@@ -1,0 +1,7 @@
+"test","n","bias","mae","lost"
+"monthly vs all readings: green-up",2808,12.6016092320503,16.6618626821257,0.138224901267928
+"monthly vs all readings: curing",4161,-13.667412682038,17.3847902465265,0.0970692163791312
+"half the plants >= 5 % green vs median plant 50 %: green-up",143,-30.3764377251763,35.5997310164191,NA
+"half the plants >= 5 % green vs median plant 50 %: curing",248,44.8050014850628,56.5078231741458,NA
+"half the plants >= 50 % green vs median plant 50 %: green-up",220,2.80634909846091,13.9487523329361,NA
+"half the plants >= 50 % green vs median plant 50 %: curing",415,18.8572940101034,26.2309815192444,NA

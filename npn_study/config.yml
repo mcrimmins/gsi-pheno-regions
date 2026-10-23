@@ -55,6 +55,12 @@ default:
     landfire_fbfm40:
       windows: null
       linux: null
+    # LTER cross-checks (55b fetch; later scripts compare): EDI packages, newest revision
+    lter_packages:
+      - {scope: "knb-lter-jrn", id: 210287001, rev: 60}       # Jornada 15 NPP sites plant phenology, 1992-
+      - {scope: "knb-lter-sev", id: 137, rev: 208261}         # Sevilleta core site phenology, 2000-2015
+    # revisions pinned (EDI refuses the public "list revisions" call, 23 Oct 2026); a newer revision
+    # can be set here by hand from the EDI portal page
     ecoregions_url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
     # Sensitivity runs of 52-54: `Rscript npn_study/scripts/5x_*.R full <name>`; outputs go to
     # <run_dir>/npn_study/sens/<name>/ (main results untouched).
