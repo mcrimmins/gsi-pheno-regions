@@ -34,6 +34,8 @@
 #                       leave-one-year-out skill of the best single lead driver (55f)
 #   npn_power           monitoring design: reliability of a regional year mean and years needed to
 #                       detect a weather driver, by sites and plants (58h)
+#   npn_repr            how the record covers U.S. grass fuels: LANDFIRE grass and grass-shrub fuel
+#                       models with the sites, and shares by ecoregion (59c)
 #
 # Usage: Rscript npn_study/scripts/90_npn_figs.R [profile] [figure ...]   (default: all)
 
@@ -44,7 +46,7 @@ source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R",
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
-              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power")
+              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power", "npn_repr")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -677,6 +679,37 @@ if (do("npn_power") && have(pw_csv)) {
            lty = c(1, 2, 1, 2), lwd = 2.5, bty = "n", cex = 0.78, text.col = ink2)
     mtext("How many years to detect a weather driver?", side = 3, line = 2, adj = 0, cex = 0.92, font = 2, col = ink)
     mtext("2 species x 5 plants per site; the driver acts on the regional year signal", side = 3, line = 0.6, adj = 0, cex = 0.68, col = ink2)
+  })
+}
+
+# ---- NPN study: representativeness against U.S. grass fuels (59c, 58) ---------------------------
+re_csv <- file.path(rec_dir, "representativeness_ecoregion.csv"); gs_csv <- file.path(rec_dir, "grass_fuel_sample.csv")
+if (do("npn_repr") && !is.null(TY) && have(re_csv, gs_csv)) {
+  RE <- utils::read.csv(re_csv, stringsAsFactors = FALSE, colClasses = c(region = "character"))
+  G <- utils::read.csv(gs_csv, stringsAsFactors = FALSE)
+  RE <- RE[RE$grass_fuel_area_share >= 0.01 | RE$plant_year_share >= 0.01, ]; RE <- RE[order(RE$grass_fuel_area_share), ]
+  st <- stats::aggregate(plant_years ~ site_id + lon + lat, TY, sum)
+  n <- nrow(RE)
+  plot_png("npn_repr", "LANDFIRE FBFM40 and the record", 2900, max(1150, 330 + 58 * n), function() {
+    layout(matrix(1:2, 1), widths = c(1.45, 1)); par(mar = c(3.4, 0.6, 3.8, 0.6), oma = c(2, 0, 0, 0))
+    st_map(sprintf("dots: a sample of grass (GR) and grass-shrub (GS) fuel cells; circles: %d sites sized by plant-years", nrow(st)),
+           "Where U.S. grass fuels are, and where the record is")
+    gcl <- ifelse(substr(G$fm, 1, 2) == "GR", "#c9a227", "#8a9a3b")
+    points(G$lon, G$lat, pch = 16, cex = 0.16, col = grDevices::adjustcolor(gcl, 0.4))
+    points(st$lon, st$lat, pch = 21, bg = grDevices::adjustcolor(aqua_col, 0.7), col = bg, lwd = 0.6, cex = 0.5 + 1.6 * sqrt(st$plant_years / max(st$plant_years)))
+    par(mar = c(4.4, 12, 3.8, 1.5))
+    y <- seq_len(n); xm <- max(c(RE$grass_fuel_area_share, RE$plant_year_share, RE$site_share)) * 100 * 1.08
+    plot(NA, xlim = c(0, xm), ylim = c(0.5, n + 0.5), yaxt = "n", xlab = "share (%)", ylab = "", bty = "n", cex.axis = 0.85)
+    axis(2, at = y, labels = reg_lab(RE$region, 30), tick = FALSE, las = 1, cex.axis = 0.62, line = -0.4)
+    rect(0, y - 0.38, 100 * RE$grass_fuel_area_share, y + 0.38, col = "#dedcd6", border = NA)
+    rect(0, y - 0.16, 100 * RE$plant_year_share, y + 0.16, col = aqua_col, border = NA)
+    points(100 * RE$site_share, y, pch = 21, bg = terra_col, col = bg, cex = 1.1)
+    mtext("Share of U.S. grass fuel area vs share of the record", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("EPA Level II ecoregions with 1 % or more of either", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, pch = c(16, 16, 21, 15, 15, 21), pt.cex = c(1, 1, 1.3, 1.8, 1.8, 1.3),
+           col = c("#c9a227", "#8a9a3b", bg, "#dedcd6", aqua_col, bg), pt.bg = c(NA, NA, aqua_col, NA, NA, terra_col),
+           legend = c("grass fuel (GR)", "grass-shrub fuel (GS)", "study site", "grass fuel area", "plant-years", "sites"))
   })
 }
 

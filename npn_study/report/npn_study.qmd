@@ -351,6 +351,63 @@ if (file.exists(sp_f)) {
 } else cat('\n::: {.callout-note appearance="simple"}\n## Table pending\nRun npn_study/scripts/58c_npn_species.R.\n:::\n\n')
 ```
 
+### How the record covers U.S. grass fuels
+
+Ground records come from where observers are, not from a design. To see how far the results
+reach, the record is set against where grass fuels are in the contiguous U.S.: the LANDFIRE fuel
+model map (FBFM40, 30 m), sampled on a regular grid of about 2 million cells, with the cells in a
+grass (GR1–GR9) or grass-shrub (GS1–GS4) fuel model taken as grass fuel. Each sampled cell is
+given its EPA Level II ecoregion, and each ecoregion's share of U.S. grass fuel area is compared
+with its share of the record's sites and plant-years. A coverage ratio near 1 means the record
+holds about as much of a region as its grass fuels would claim; well below 1 means
+under-sampled.
+
+```{r fig-npn-repr}
+#| results: asis
+show_fig("npn_repr",
+  "Left: a sample of LANDFIRE grass (GR) and grass-shrub (GS) fuel cells, with the study sites sized by plant-years. Right: each Level II ecoregion's share of U.S. grass fuel area (gray bar), of the record's plant-years (orange bar) and of its sites (blue point).",
+  "Map of grass fuel cells and study sites, and a bar chart comparing each ecoregion's share of grass fuel area with its share of the record.")
+```
+
+```{r repr-bullets}
+#| results: asis
+re_f <- "tables/npn_representativeness_ecoregion.csv"; rf_f <- "tables/npn_representativeness_fuelmodel.csv"
+if (file.exists(re_f) && file.exists(rf_f)) {
+  RE <- utils::read.csv(re_f, stringsAsFactors = FALSE, colClasses = c(region = "character"))
+  RF <- utils::read.csv(rf_f, stringsAsFactors = FALSE)
+  pc <- function(x) sprintf("%.0f %%", 100 * x)
+  lab <- function(d) paste0(d$name, " (", d$region, ")")
+  big <- RE[RE$grass_fuel_area_share >= 0.02, ]
+  top <- big[order(-big$grass_fuel_area_share), ][1:min(5, nrow(big)), ]
+  under <- big[big$coverage_plant_years < 0.25, ]; under <- under[order(-under$grass_fuel_area_share), ]
+  over <- RE[RE$coverage_plant_years >= 2 & RE$plant_year_share >= 0.05, ]; over <- over[order(-over$plant_year_share), ]
+  gr <- RF[substr(RF$fuel_model, 1, 2) == "GR", ]; gsx <- RF[substr(RF$fuel_model, 1, 2) == "GS", ]
+  heavy <- RF[RF$fuel_model %in% paste0("GR", 4:9), ]
+  cat(sprintf("- **Where the grass fuel is.** The five ecoregions with the most grass fuel area hold %s of it: %s. Grass-shrub models make up %s of the grass fuel area and grass models %s.\n",
+              pc(sum(top$grass_fuel_area_share)), paste(sprintf("%s %s", lab(top), pc(top$grass_fuel_area_share)), collapse = "; "),
+              pc(sum(gsx$grass_fuel_area_share)), pc(sum(gr$grass_fuel_area_share))))
+  cat(sprintf("- **Under-sampled.** %d of the %d ecoregions with at least 2 %% of U.S. grass fuel have less than a quarter of their share in plant-years%s.\n",
+              nrow(under), nrow(big), if (nrow(under)) paste0(", together ", pc(sum(under$grass_fuel_area_share)), " of the grass fuel area: ",
+              paste(sprintf("%s (%s of grass fuel, %s of plant-years, %d %s)", lab(under), pc(under$grass_fuel_area_share), pc(under$plant_year_share), under$sites, ifelse(under$sites == 1, "site", "sites")), collapse = "; ")) else ""))
+  if (nrow(over)) cat(sprintf("- **Over-sampled.** %s together hold %s of the plant-years.\n",
+              paste(sprintf("%s (%s of plant-years against %s of grass fuel)", lab(over), pc(over$plant_year_share), pc(over$grass_fuel_area_share)), collapse = "; "), pc(sum(over$plant_year_share))))
+  cat(sprintf("- **By fuel model.** The tall and heavy grass models GR4–GR9 cover %s of the grass fuel area and hold %s of the plant-years at grass-model sites; grass-shrub models cover %s and hold %s.\n\n",
+              pc(sum(heavy$grass_fuel_area_share)), pc(sum(heavy$plant_year_share)), pc(sum(gsx$grass_fuel_area_share)), pc(sum(gsx$plant_year_share))))
+  T <- data.frame(Ecoregion = lab(RE), `Grass fuel area` = pc(RE$grass_fuel_area_share), `Sites (NEON)` = sprintf("%d (%d)", RE$sites, RE$sites_neon),
+                  `Plant-years` = format(RE$plant_years, big.mark = ","), `Share of plant-years` = pc(RE$plant_year_share),
+                  Coverage = sprintf("%.2f", RE$coverage_plant_years), check.names = FALSE)
+  T <- T[RE$grass_fuel_area_share > 0 | RE$plant_years > 0, ]
+  cat('::: {.callout-note collapse="true" appearance="simple"}\n## Coverage by ecoregion and fuel model (click to open)\n\n')
+  cat("Grass fuel area: share of sampled LANDFIRE cells in a GR or GS fuel model. Coverage: share of plant-years divided by share of grass fuel area.\n\n")
+  print(knitr::kable(T, format = "pipe", row.names = FALSE, align = c("l", rep("r", 5))))
+  cat("\n\n: The record against U.S. grass fuel area, by EPA Level II ecoregion {.striped}\n\n")
+  U <- data.frame(`Fuel model` = RF$fuel_model, `Grass fuel area` = pc(RF$grass_fuel_area_share), Sites = RF$sites,
+                  `Plant-years` = format(RF$plant_years, big.mark = ","), `Share of plant-years at grass-model sites` = pc(RF$plant_year_share), check.names = FALSE)
+  print(knitr::kable(U, format = "pipe", row.names = FALSE, align = c("l", rep("r", 4))))
+  cat("\n\n: The record against U.S. grass fuel area, by Scott & Burgan grass and grass-shrub fuel model {.striped}\n\n:::\n\n")
+} else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/59c_npn_representativeness.R.\n:::\n\n')
+```
+
 ## When grasses green up and cure
 
 ```{r fig-npn-dates}
@@ -941,6 +998,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | How the record covers U.S. grass fuels: LANDFIRE grass fuel area by ecoregion and fuel model (59c) |
 | 2026-10-23 | Bootstrap intervals for the headline numbers (58g); monitoring design and power (58h) |
 | 2026-10-23 | Robustness of the curve dates: thresholds, reading gaps, curing cycle (58f) |
 | 2026-10-23 | Climate across space re-scored leaving out clusters of nearby sites (58e) |

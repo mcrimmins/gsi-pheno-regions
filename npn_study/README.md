@@ -30,7 +30,7 @@ inside that repo (`npn_study/`) or is the repository root.
 - Daily PRISM 4 km stacks `prism_<var>_<year>.tif` (ppt, tmin, tmax, vpdmax; config
   `prism_daily_dir`), read only by script 50.
 - EPA / CEC Level II ecoregions (downloaded by script 59).
-- USDA PLANTS checklist and web service (58d, internet); LANDFIRE FBFM40 CONUS GeoTIFF, downloaded by 59a from landfire.gov (read by 59b).
+- USDA PLANTS checklist and web service (58d, internet); LANDFIRE FBFM40 CONUS GeoTIFF, downloaded by 59a from landfire.gov (read by 59b and 59c).
 
 Outputs go to `<data_root>/full/npn_study/`.
 
@@ -60,6 +60,7 @@ Rscript npn_study/scripts/58b_npn_c3c4_gap.R full         # C3 -> C4 gap by regi
 Rscript npn_study/scripts/58d_npn_species_traits.R full    # USDA PLANTS height, growth form (internet) -> data/npn_species_traits.csv
 Rscript npn_study/scripts/59a_npn_landfire_download.R full # LANDFIRE FBFM40 CONUS GeoTIFF (3.27 GB zip, internet) -> <data_root>/landfire
 Rscript npn_study/scripts/59b_npn_fuelmodels.R full        # LANDFIRE fuel model per site (local FBFM40 GeoTIFF) -> data/npn_site_fuelmodels.csv
+Rscript npn_study/scripts/59c_npn_representativeness.R full  # the record against U.S. grass fuel area (LANDFIRE GR/GS cells by Level II ecoregion)
 Rscript npn_study/scripts/58c_npn_species.R full           # species list for the page (report/tables/npn_species.csv)
 Rscript npn_study/scripts/90_npn_figs.R full             # figures for the page
 ```
