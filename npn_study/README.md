@@ -43,6 +43,7 @@ Rscript npn_study/scripts/59_npn_ecoregions.R full       # EPA Level II ecoregio
 Rscript npn_study/scripts/51_npn_metrics.R full          # series-years, site-year metrics, normals
 Rscript npn_study/scripts/52_npn_ladder.R full           # model ladder L0-L4 (Q5, Q6)
 Rscript npn_study/scripts/53_npn_variance.R full         # variance partition (Q3)
+Rscript npn_study/scripts/53b_npn_variance_region.R full  # the same partition within each Level II ecoregion (after 59)
 Rscript npn_study/scripts/54_npn_site_signal.R full      # shared site-year signal vs weather
 Rscript npn_study/scripts/55_npn_filter_inventory.R full # what each filter removes
 Rscript npn_study/scripts/58_npn_record_climatology.R full  # record, climatology, climate across space (Q1, Q2, Q4)

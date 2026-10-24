@@ -34,6 +34,10 @@
 #                       leave-one-year-out skill of the best single lead driver (55f)
 #   npn_power           monitoring design: reliability of a regional year mean and years needed to
 #                       detect a weather driver, by sites and plants (58h)
+#   npn_regions      EPA Level II ecoregions (CEC polygons cached by 59; sf) with the study sites (58)
+#   npn_region_dates typical green-up and 50 % curing by ecoregion and grass type, as maps (58)
+#   npn_region_variance year-to-year variance shares fitted per ecoregion, maps and bars (53b)
+#   npn_region_c3c4  warm- minus cool-season typical green-up and curing by ecoregion, maps (58)
 #   npn_repr            how the record covers U.S. grass fuels: LANDFIRE grass and grass-shrub fuel
 #                       models with the sites, and shares by ecoregion (59c)
 #
@@ -46,7 +50,8 @@ source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R",
 
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
-              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power", "npn_repr")
+              "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power", "npn_repr",
+              "npn_regions", "npn_region_dates", "npn_region_variance", "npn_region_c3c4")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -682,6 +687,189 @@ if (do("npn_power") && have(pw_csv)) {
   })
 }
 
+# ---- EPA Level II ecoregion polygons for maps: clipped to the contiguous U.S., simplified, cached ----
+eco_cache <- NULL
+eco_l2 <- function() {
+  if (!is.null(eco_cache)) return(eco_cache)
+  if (!requireNamespace("sf", quietly = TRUE)) { log_msg("skip ecoregion layer: needs sf"); return(NULL) }
+  edir <- file.path(npn_dir, "ecoregions"); rds <- file.path(edir, "l2_conus_plot.rds")
+  if (file.exists(rds)) { eco_cache <<- readRDS(rds); return(eco_cache) }
+  shp <- list.files(edir, "\\.shp$", recursive = TRUE, full.names = TRUE)
+  shp <- shp[grepl("l2|level2", basename(shp), ignore.case = TRUE)][1] %||% shp[1]
+  if (!length(shp) || is.na(shp)) { log_msg("skip ecoregion layer: no shapefile in ", edir, " (run 59)"); return(NULL) }
+  log_msg("building the ecoregion map layer from ", basename(shp), " (once; cached as l2_conus_plot.rds)")
+  sf::sf_use_s2(FALSE)
+  E <- sf::st_read(shp, quiet = TRUE); gc <- attr(E, "sf_column"); names(E)[names(E) != gc] <- toupper(names(E)[names(E) != gc])
+  E <- E[!as.character(E$NA_L2CODE) %in% c("0.0", "0"), ]
+  E <- sf::st_simplify(sf::st_make_valid(sf::st_transform(E, 5070)), dTolerance = 1500, preserveTopology = TRUE)
+  us <- sf::st_as_sf(maps::map("usa", fill = TRUE, plot = FALSE))
+  us <- sf::st_union(sf::st_make_valid(sf::st_transform(us, 5070)))
+  E <- suppressWarnings(sf::st_intersection(sf::st_make_valid(E), us))
+  E <- E[!sf::st_is_empty(E), ]
+  cd <- as.character(E$NA_L2CODE); g <- sf::st_geometry(E)
+  G <- do.call(c, lapply(split(seq_along(cd), cd), function(i) sf::st_union(g[i])))
+  out <- sf::st_sf(code = names(split(seq_along(cd), cd)), geometry = G)
+  out <- sf::st_transform(out, 4326)
+  # label point: on the largest piece of each region
+  pcs <- suppressWarnings(sf::st_cast(sf::st_cast(out, "MULTIPOLYGON"), "POLYGON"))
+  pcs$a <- as.numeric(sf::st_area(sf::st_transform(pcs, 5070)))
+  big <- do.call(rbind, lapply(split(pcs, pcs$code), function(d) d[which.max(d$a), ]))
+  xy <- sf::st_coordinates(suppressWarnings(sf::st_point_on_surface(sf::st_transform(big, 5070))))
+  xy <- sf::st_coordinates(sf::st_transform(sf::st_sfc(lapply(seq_len(nrow(xy)), function(i) sf::st_point(xy[i, 1:2])), crs = 5070), 4326))
+  out$lab_x <- xy[match(out$code, big$code), 1]; out$lab_y <- xy[match(out$code, big$code), 2]
+  out$area_km2 <- as.numeric(sf::st_area(sf::st_transform(out, 5070))) / 1e6
+  saveRDS(out, rds); eco_cache <<- out; out
+}
+l1_col <- c(`5` = "#7f9cb5", `6` = "#5f8a6a", `7` = "#4f7f8f", `8` = "#8aa66a", `9` = "#c9a227", `10` = "#c98a4b",
+            `11` = "#b5776b", `12` = "#a3866b", `13` = "#8f7f9f", `15` = "#6b9f9a")
+eco_draw <- function(E, fill = NA, border = "#ffffff", lwd = 0.5) plot(sf::st_geometry(E), col = fill, border = border, lwd = lwd, add = TRUE)
+site_tab <- function() do.call(rbind, lapply(split(TY, TY$site_id), function(d) data.frame(
+  site_id = d$site_id[1], lon = d$lon[1], lat = d$lat[1], region = d$region[1], n = sum(d$plant_years), neon = any(d$group == "NEON"),
+  type = if (all(d$pathway == "C3")) "C3" else if (all(d$pathway == "C4")) "C4" else "both")))
+type_col <- c(C3 = terra_col, C4 = aqua_col, both = "#7b4fb3")
+
+# ---- NPN study: Level II ecoregions with the sites (59 polygons, 58) ------------------------------
+if (do("npn_regions") && !is.null(TY) && !is.null(E <- eco_l2())) {
+  st <- site_tab()
+  rs <- do.call(rbind, lapply(split(st, st$region), function(d) data.frame(region = d$region[1], sites = nrow(d), neon = sum(d$neon), py = sum(d$n))))
+  rs <- rs[rs$region != "none", ]; rs <- rs[order(as.numeric(rs$region)), ]
+  l1 <- sub("\\..*$", "", E$code); fc <- ifelse(is.na(l1_col[l1]), "#b8b7b2", l1_col[l1])
+  plot_png("npn_regions", "EPA Level II ecoregions", 2900, 1300, function() {
+    layout(matrix(1:2, 1), widths = c(1.75, 1)); par(mar = c(3.4, 0.6, 3.8, 0.6), oma = c(1.6, 0, 0, 0))
+    st_map(sprintf("%d Level II ecoregions in the contiguous U.S.; shaded strongly where the record has sites; %d sites, sized by plant-years", nrow(E), nrow(st)),
+           "EPA Level II ecoregions and the study sites")
+    eco_draw(E, mapply(grDevices::adjustcolor, fc, ifelse(E$code %in% rs$region, 0.55, 0.16), USE.NAMES = FALSE), "#ffffff", 0.8)
+    s <- maps::map("state", plot = FALSE); lines(s$x, s$y, col = grDevices::adjustcolor("#ffffff", 0.6), lwd = 0.4)
+    lab <- E$area_km2 > 2e4 | E$code %in% rs$region
+    text(E$lab_x[lab], E$lab_y[lab], E$code[lab], cex = 0.62, font = 2, col = grDevices::adjustcolor(ink, 0.75))
+    filled <- st$neon
+    points(st$lon, st$lat, pch = ifelse(filled, 21, 1), bg = grDevices::adjustcolor(type_col[st$type], 0.85),
+           col = ifelse(filled, "#ffffff", type_col[st$type]), cex = 0.5 + 1.5 * sqrt(st$n / max(st$n)), lwd = ifelse(filled, 0.6, 1.5))
+    par(mar = c(3.4, 0.5, 3.8, 1))
+    plot(NA, xlim = c(0, 1), ylim = c(nrow(rs) + 0.5, 0.3), axes = FALSE, xlab = "", ylab = "")
+    mtext("Ecoregions with study sites", side = 3, line = 1.9, adj = 0, cex = 1.0, font = 2, col = ink)
+    mtext("sites (NEON) and plant-years", side = 3, line = 0.6, adj = 0, cex = 0.8, col = ink2)
+    y <- seq_len(nrow(rs)); l1r <- sub("\\..*$", "", rs$region)
+    rect(0, y - 0.4, 0.035, y + 0.4, col = grDevices::adjustcolor(ifelse(is.na(l1_col[l1r]), "#b8b7b2", l1_col[l1r]), 0.7), border = NA)
+    nm <- if (length(rnm)) unname(rnm[rs$region]) else rep("", nrow(rs)); nm[is.na(nm)] <- ""
+    text(0.05, y, sprintf("%s  %s", rs$region, substr(nm, 1, 50)), adj = 0, cex = 0.68, col = ink)
+    text(1, y, sprintf("%d (%d)   %s", rs$sites, rs$neon, format(rs$py, big.mark = ",")), adj = 1, cex = 0.72, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.85, pch = c(21, 21, 21, 1), pt.bg = c(type_col, NA), col = c(rep("#ffffff", 3), ink2), pt.cex = 1.4,
+           legend = c("cool-season (C3) only", "warm-season (C4) only", "both", "open: other NPN site; filled: NEON"))
+  })
+}
+
+# ---- NPN study: typical dates by ecoregion, as maps (58) --------------------------------------------
+if (do("npn_region_dates") && !is.null(TY) && !is.null(E <- eco_l2())) {
+  cmn <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
+  pan <- list(c("C3", "greenup"), c("C3", "curing"), c("C4", "greenup"), c("C4", "curing"))
+  st <- site_tab()
+  dl <- function(d) format(as.Date("2001-01-01") + round(d %% 365.25) - 1, "%b %-d")
+  pal <- grDevices::hcl.colors(64, "Viridis")
+  plot_png("npn_region_dates", "site and species typical dates", 2900, 1900, function() {
+    par(mfrow = c(2, 2), mar = c(4.2, 0.6, 3.6, 0.6), oma = c(0, 0, 0, 0))
+    for (pp in pan) {
+      d <- TY[TY$pathway == pp[1] & !is.na(TY[[pp[2]]]) & TY$region != "none", ]
+      M <- do.call(rbind, lapply(split(d, d$region), function(z) data.frame(region = z$region[1], n = nrow(z), x = cmn(z[[pp[2]]]))))
+      M <- M[M$n >= 3, ]
+      ttl <- sprintf("%s grasses: %s", c(C3 = "Cool-season (C3)", C4 = "Warm-season (C4)")[[pp[1]]], c(greenup = "green-up (50 % green)", curing = "50 % curing")[[pp[2]]])
+      st_map(sprintf("region mean of site-and-species typical dates, where 3 or more (%d regions); gray: fewer", nrow(M)), ttl)
+      eco_draw(E, "#ecebe7", "#ffffff", 0.6)
+      if (nrow(M)) {
+        ctr <- cmn(M$x); off <- ((M$x - ctr + 182.625) %% 365.25) - 182.625
+        lo <- floor(min(off) / 10) * 10; hi <- ceiling(max(off) / 10) * 10; if (hi - lo < 20) { lo <- lo - 10; hi <- hi + 10 }
+        k <- pmax(1, pmin(64, 1 + round(63 * (off - lo) / (hi - lo))))
+        i <- match(M$region, E$code); eco_draw(E[i[!is.na(i)], ], pal[k[!is.na(i)]], "#ffffff", 0.6)
+        ii <- i[!is.na(i)]; text(E$lab_x[ii], E$lab_y[ii], dl(M$x[!is.na(i)]), cex = 0.6, font = 2, col = ifelse(k[!is.na(i)] > 40, ink, "#ffffff"))
+        # color bar
+        u <- par("usr"); x0 <- u[1] + 0.25 * diff(u[1:2]); x1 <- u[1] + 0.75 * diff(u[1:2]); yb <- u[3] - 0.05 * diff(u[3:4])
+        xs <- seq(x0, x1, length.out = 65)
+        rect(xs[-65], yb - 0.022 * diff(u[3:4]), xs[-1], yb, col = pal, border = NA, xpd = NA)
+        tk <- pretty(c(lo, hi), 5); tk <- tk[tk >= lo & tk <= hi]
+        text(x0 + (tk - lo) / (hi - lo) * (x1 - x0), yb - 0.05 * diff(u[3:4]), dl(ctr + tk), cex = 0.7, col = ink2, xpd = NA)
+      }
+      have_t <- st$type %in% c(pp[1], "both")
+      points(st$lon[have_t], st$lat[have_t], pch = 16, cex = 0.35, col = grDevices::adjustcolor(ink, 0.6))
+    }
+  })
+}
+
+# ---- NPN study: year-to-year variance shares by ecoregion (53b) ------------------------------------
+vr_csv <- file.path(npn_dir, "variance", "by_region.csv")
+if (do("npn_region_variance") && have(vr_csv) && !is.null(E <- eco_l2())) {
+  V <- utils::read.csv(vr_csv, stringsAsFactors = FALSE, colClasses = c(region = "character"))
+  pal <- grDevices::hcl.colors(64, "YlGnBu", rev = TRUE)
+  cc <- c(share_region_year = "#1f5f8b", share_site_year = "#6fa8c9", share_species_year = "#c9a227", share_plant = "#d6d5d0")
+  cl <- c("region-wide year signal", "one site's year signal", "one species at a site", "plant to plant")
+  tl <- c(greenup = "Green-up", curing = "50 % curing")
+  st <- if (!is.null(TY)) site_tab() else NULL
+  plot_png("npn_region_variance", "plant-years", 2900, 2000, function() {
+    layout(matrix(1:4, 2, byrow = TRUE), heights = c(1.15, 1)); par(oma = c(2.4, 0, 0, 0))
+    for (tg in names(tl)) {
+      d <- V[V$target == tg, ]
+      par(mar = c(3.4, 0.6, 3.8, 0.6))
+      st_map(sprintf("share of year-to-year variance shared across the ecoregion; fitted where %d+ plant-years and 4+ years (%d regions); gray: not fitted", 60, nrow(d)),
+             sprintf("%s: how much of a year's departure is region-wide?", tl[[tg]]))
+      eco_draw(E, "#ecebe7", "#ffffff", 0.6)
+      i <- match(d$region, E$code); ok <- !is.na(i)
+      k <- pmax(1, pmin(64, 1 + round(63 * pmin(d$share_region_year, 0.6) / 0.6)))
+      eco_draw(E[i[ok], ], pal[k[ok]], "#ffffff", 0.6)
+      text(E$lab_x[i[ok]], E$lab_y[i[ok]], sprintf("%.0f %%\nSD %.0f d", 100 * d$share_region_year[ok], d$sd_year_to_year[ok]), cex = 0.58, font = 2,
+           col = ifelse(k[ok] > 36, "#ffffff", ink))
+      if (!is.null(st)) points(st$lon, st$lat, pch = 16, cex = 0.3, col = grDevices::adjustcolor(ink, 0.5))
+      u <- par("usr"); x0 <- u[1] + 0.3 * diff(u[1:2]); x1 <- u[1] + 0.7 * diff(u[1:2]); yb <- u[3] - 0.04 * diff(u[3:4]); xs <- seq(x0, x1, length.out = 65)
+      rect(xs[-65], yb - 0.022 * diff(u[3:4]), xs[-1], yb, col = pal, border = NA, xpd = NA)
+      text(x0 + c(0, 0.25, 0.5, 0.75, 1) * (x1 - x0), yb - 0.05 * diff(u[3:4]), c("0 %", "15 %", "30 %", "45 %", "60 %+"), cex = 0.7, col = ink2, xpd = NA)
+    }
+    for (tg in names(tl)) {
+      d <- V[V$target == tg, ]; d <- d[order(-d$share_region_year), ]; n <- nrow(d)
+      par(mar = c(4.2, 13, 2.6, 1.5))
+      plot(NA, xlim = c(0, 1), ylim = c(n + 0.5, 0.5), xaxt = "n", yaxt = "n", xlab = "share of year-to-year variance", ylab = "", bty = "n")
+      axis(1, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.8)
+      axis(2, at = seq_len(n), labels = sprintf("%s (%d sites, %d yrs)", reg_lab(d$region, 34), d$sites, d$years), tick = FALSE, las = 1, cex.axis = 0.62)
+      left <- rep(0, n)
+      for (cn in names(cc)) { rect(left, seq_len(n) - 0.38, left + d[[cn]], seq_len(n) + 0.38, col = cc[[cn]], border = "#ffffff", lwd = 0.5); left <- left + d[[cn]] }
+      mtext(sprintf("%s: where the year-to-year variation sits, by ecoregion", tl[[tg]]), side = 3, line = 0.8, adj = 0, cex = 0.85, font = 2, col = ink)
+    }
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", legend = cl, fill = cc, border = NA, horiz = TRUE, bty = "n", text.col = ink2, cex = 0.95)
+  })
+}
+
+# ---- NPN study: warm- minus cool-season timing by ecoregion (58) ------------------------------------
+if (do("npn_region_c3c4") && !is.null(TY) && !is.null(E <- eco_l2())) {
+  cmn <- function(x) { x <- x[!is.na(x)]; if (!length(x)) return(NA); a <- 2 * pi * x / 365.25; (atan2(mean(sin(a)), mean(cos(a))) * 365.25 / (2 * pi)) %% 365.25 }
+  cdf <- function(a, b) { d <- (a - b) %% 365.25; ifelse(d > 182.625, d - 365.25, d) }
+  pal <- grDevices::hcl.colors(64, "Blue-Red 3")
+  st <- site_tab(); stb <- st[st$type == "both", ]
+  plot_png("npn_region_c3c4", "site and species typical dates", 2900, 1050, function() {
+    par(mfrow = c(1, 2), mar = c(4.2, 0.6, 3.8, 0.6))
+    for (tg in c("greenup", "curing")) {
+      M <- do.call(rbind, lapply(split(TY, TY$region), function(z) {
+        a <- z[[tg]][z$pathway == "C3"]; b <- z[[tg]][z$pathway == "C4"]; a <- a[!is.na(a)]; b <- b[!is.na(b)]
+        data.frame(region = z$region[1], n3 = length(a), n4 = length(b), d = if (length(a) >= 3 && length(b) >= 3) cdf(cmn(b), cmn(a)) else NA) }))
+      M <- M[!is.na(M$d) & M$region != "none", ]
+      st_map(sprintf("warm-season (C4) minus cool-season (C3) typical date, where each has 3+ site series (%d regions); gray: fewer", nrow(M)),
+             sprintf("%s: warm- minus cool-season", c(greenup = "Green-up (50 % green)", curing = "50 % curing")[[tg]]))
+      eco_draw(E, "#ecebe7", "#ffffff", 0.6)
+      if (nrow(M)) {
+        lim <- max(30, ceiling(max(abs(M$d)) / 30) * 30)
+        k <- pmax(1, pmin(64, 1 + round(63 * (M$d + lim) / (2 * lim))))
+        i <- match(M$region, E$code); ok <- !is.na(i)
+        eco_draw(E[i[ok], ], pal[k[ok]], "#ffffff", 0.6)
+        text(E$lab_x[i[ok]], E$lab_y[i[ok]], sprintf("%+.0f d", M$d[ok]), cex = 0.65, font = 2, col = ifelse(abs(k[ok] - 32.5) > 18, "#ffffff", ink))
+        u <- par("usr"); x0 <- u[1] + 0.25 * diff(u[1:2]); x1 <- u[1] + 0.75 * diff(u[1:2]); yb <- u[3] - 0.04 * diff(u[3:4]); xs <- seq(x0, x1, length.out = 65)
+        rect(xs[-65], yb - 0.025 * diff(u[3:4]), xs[-1], yb, col = pal, border = NA, xpd = NA)
+        tk <- pretty(c(-lim, lim), 6); tk <- tk[abs(tk) <= lim]
+        text(x0 + (tk + lim) / (2 * lim) * (x1 - x0), yb - 0.055 * diff(u[3:4]), sprintf("%+d d", tk), cex = 0.7, col = ink2, xpd = NA)
+        text((x0 + x1) / 2, yb - 0.1 * diff(u[3:4]), "C4 earlier  <->  C4 later", cex = 0.72, col = ink2, xpd = NA)
+      }
+      points(stb$lon, stb$lat, pch = 21, bg = type_col[["both"]], col = "#ffffff", cex = 0.8, lwd = 0.5)
+    }
+  })
+}
+
 # ---- NPN study: representativeness against U.S. grass fuels (59c, 58) ---------------------------
 re_csv <- file.path(rec_dir, "representativeness_ecoregion.csv"); gs_csv <- file.path(rec_dir, "grass_fuel_sample.csv")
 if (do("npn_repr") && !is.null(TY) && have(re_csv, gs_csv)) {
@@ -694,6 +882,7 @@ if (do("npn_repr") && !is.null(TY) && have(re_csv, gs_csv)) {
     layout(matrix(1:2, 1), widths = c(1.45, 1)); par(mar = c(3.4, 0.6, 3.8, 0.6), oma = c(2, 0, 0, 0))
     st_map(sprintf("dots: a sample of grass (GR) and grass-shrub (GS) fuel cells; circles: %d sites sized by plant-years", nrow(st)),
            "Where U.S. grass fuels are, and where the record is")
+    Eo <- eco_l2(); if (!is.null(Eo)) eco_draw(Eo, NA, "#b8b7b2", 0.5)
     gcl <- ifelse(substr(G$fm, 1, 2) == "GR", "#c9a227", "#8a9a3b")
     points(G$lon, G$lat, pch = 16, cex = 0.16, col = grDevices::adjustcolor(gcl, 0.4))
     points(st$lon, st$lat, pch = 21, bg = grDevices::adjustcolor(aqua_col, 0.7), col = bg, lwd = 0.6, cex = 0.5 + 1.6 * sqrt(st$plant_years / max(st$plant_years)))

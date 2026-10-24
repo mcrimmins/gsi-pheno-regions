@@ -205,6 +205,13 @@ show_fig("npn_sites",
   "Map of the contiguous U.S. with NPN grass study sites coloured by cool-season, warm-season or both grass types, sized by plant-years, filled for NEON sites.")
 ```
 
+```{r fig-npn-regions}
+#| results: asis
+show_fig("npn_regions",
+  "The EPA Level II ecoregions used to group results throughout this page, with the study sites. Ecoregions are shaded by their Level I family, strongly where the record has sites; the list gives each such ecoregion's sites (NEON in brackets) and plant-years.",
+  "Map of EPA Level II ecoregions in the contiguous U.S. with region codes and the study sites, and a list of ecoregions with their site and plant-year counts.")
+```
+
 ```{r fig-npn-record}
 #| results: asis
 show_fig("npn_record",
@@ -417,6 +424,20 @@ show_fig("npn_dates",
   "Three panels of dot plots: green-up, curing and cured dates by ecoregion, cool-season grasses in blue and warm-season in orange.")
 ```
 
+```{r fig-npn-region-dates}
+#| results: asis
+show_fig("npn_region_dates",
+  "The same typical dates as maps: the ecoregion mean of site-and-species typical green-up and 50 % curing dates for cool-season (top) and warm-season (bottom) grasses, where an ecoregion has three or more site series; gray where it has fewer. Dots are the sites observing that grass type. Each panel has its own colour scale.",
+  "Four maps of the contiguous U.S. with Level II ecoregions coloured by typical green-up and curing date for cool- and warm-season grasses.")
+```
+
+```{r fig-npn-region-c3c4}
+#| results: asis
+show_fig("npn_region_c3c4",
+  "Warm-season (C4) minus cool-season (C3) typical green-up and 50 % curing date in each ecoregion where both grass types have three or more site series (red: warm-season later; blue: earlier). Purple points are sites observing both types.",
+  "Two maps of ecoregions coloured by the difference in typical date between warm- and cool-season grasses, for green-up and curing.")
+```
+
 - **The season moves with ecoregion and grass type.** Warm-season grasses on the Mississippi
   Alluvial and Southeast USA Coastal Plains (8.5) green up in late February and cure around
   October 20; in the Warm Deserts (10.2) they green up with the summer rains in late June and cure
@@ -590,6 +611,44 @@ show_fig("npn_variance",
   r = 0.66 once both were averaged over a region's sites in a year (72 region-years; 0.74–0.84 on
   the Great Plains, southern Plains and in the monsoon Southwest, 0.20 in the upper Midwest), as
   expected if much of the scatter at a site is plant-to-plant noise rather than missed weather.
+
+### The partition region by region
+
+The same model fitted within each ecoregion (green-up and curing, all grasses; where a region
+has at least 60 plant-years and 4 years) shows whether the small region-wide share is the same
+everywhere or is concentrated in a few places.
+
+```{r fig-npn-region-variance}
+#| results: asis
+show_fig("npn_region_variance",
+  "Top: the share of year-to-year variation shared across each ecoregion (the year term of a model fitted within that region), with the year-to-year standard deviation; gray where the region has too little record to fit. Bottom: the full split by region, ordered by the region-wide share.",
+  "Two maps of ecoregions coloured by the region-wide share of year-to-year variation for green-up and curing, and two stacked bar charts of the variance shares by ecoregion.")
+```
+
+```{r region-variance-bullets}
+#| results: asis
+vr_f <- "tables/npn_variance_region.csv"
+if (file.exists(vr_f)) {
+  V <- utils::read.csv(vr_f, stringsAsFactors = FALSE, colClasses = c(region = "character"))
+  rn <- if (file.exists("../data/npn_site_ecoregions.csv")) { e <- unique(utils::read.csv("../data/npn_site_ecoregions.csv", stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))[, c("eco_l2_code", "eco_l2_name")])
+    stats::setNames(gsub("\\bUsa\\b", "USA", tools::toTitleCase(tolower(e$eco_l2_name))), e$eco_l2_code) } else character()
+  lab <- function(k) ifelse(k %in% names(rn), paste0(rn[k], " (", k, ")"), k)
+  pc <- function(x) sprintf("%.0f %%", 100 * x)
+  for (tg in c("curing", "greenup")) {
+    d <- V[V$target == tg & !V$one_site, ]; if (!nrow(d)) next
+    d <- d[order(-d$share_region_year), ]
+    hi <- d[d$share_region_year >= 0.25, ]; lo <- d[d$share_region_year < 0.10, ]
+    cat(sprintf("- **%s.** Fitted in %d ecoregions with more than one site. The region-wide share ranges from %s to %s (median %s). %s%s The year-to-year standard deviation runs from %.0f days (%s) to %.0f days (%s).\n",
+      c(curing = "50 % curing", greenup = "Green-up")[[tg]], nrow(d), pc(min(d$share_region_year)), pc(max(d$share_region_year)), pc(stats::median(d$share_region_year)),
+      if (nrow(hi)) paste0("A quarter or more is region-wide only in ", paste(sprintf("%s, %s", lab(hi$region), pc(hi$share_region_year)), collapse = "; "), ". ") else "No region has a quarter or more region-wide. ",
+      if (nrow(lo)) sprintf("In %d of them it is under 10 %%.", nrow(lo)) else "",
+      min(d$sd_year_to_year), lab(d$region[which.min(d$sd_year_to_year)]), max(d$sd_year_to_year), lab(d$region[which.max(d$sd_year_to_year)])))
+  }
+  one <- V[V$one_site, ]
+  if (nrow(one)) cat(sprintf("- **One-site regions** (%s) are shown, but there the year term is that one site's year signal, not a regional one.\n", paste(unique(lab(one$region)), collapse = ", ")))
+  cat("- **So a regional weather signal is the exception.** Where the record is deep enough to fit, most regions share little of a year's departure across their sites; the shared part sits at the site, the species or the plant.\n\n")
+} else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/53b_npn_variance_region.R.\n:::\n\n')
+```
 
 ## Does the shared signal follow local weather?
 
@@ -998,6 +1057,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-23 | Maps of the Level II ecoregions with the sites, typical dates, warm- minus cool-season timing and the year-to-year variance partition by ecoregion (53b); ecoregion outlines on the grass fuel map |
 | 2026-10-23 | How the record covers U.S. grass fuels: LANDFIRE grass fuel area by ecoregion and fuel model (59c) |
 | 2026-10-23 | Bootstrap intervals for the headline numbers (58g); monitoring design and power (58h) |
 | 2026-10-23 | Robustness of the curve dates: thresholds, reading gaps, curing cycle (58f) |
