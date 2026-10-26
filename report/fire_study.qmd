@@ -67,7 +67,14 @@ region, shared for review with the project partners. It is a companion to the
   and it beats 20 of 20 random reshufflings of the years.
 - **It is the observed fuel state that counts.** Curing dates forecast two weeks ahead from
   weather add nothing; a cured share built from the 16-day satellite composites available each
-  week does not carry the growth signal either. Monitoring would need faster data.
+  week does not carry the growth signal either, because those composites are about three weeks old.
+- **Daily satellite data can monitor it, in part.** The growth signal returns only when the
+  greenness data are about a week old or less. A cured share built each week from daily VIIRS
+  reflectance, using only days available by then, recovers the full growth signal in the Great
+  Plains, but not in the monsoon Southwest (October 26; two regions tested so far).
+- **Size of the effect.** A week with 10 percentage points more of the herbaceous fuel cured than
+  usual has about 17–35 % more fire growth and 6–22 % more human-caused fire starts, depending on
+  the region.
 - **The GSI and the satellite carry different information.** The NFDRS2016 GSI's value for fire is
   mostly its vapour-pressure-deficit term, strongest in the monsoon Southwest; the satellite adds
   fuel-curing information the GSI lacks in California and the Great Plains.
@@ -138,6 +145,9 @@ snowmelt as well as green-up.
 | Seasonal and year-to-year tests | Done (October 18) |
 | Checks: burned cells, shuffled years, dates, forecast and real-time curing, same-week weather, GSI, ground data | Done (October 19) |
 | C3/C4 gap | Done (October 20): satellite test here, ground timing from the NPN study: no gap |
+| Real-time monitoring: data-age test | Done (October 20) |
+| Real-time monitoring: daily VIIRS, monsoon Southwest and Great Plains | Done (October 26) |
+| Daily VIIRS in other regions | On hold (October 26) |
 | Partner review | Next |
 
 : Study status {.striped}
@@ -319,6 +329,31 @@ show_fig("fire_maps", "Where the pilot regions are and where phenology helps. To
 show_fig("fire_maps_gsi", "The satellite and the GSI add information in different places. Left: gain per year in held-out predictions of fire growth from adding the satellite cured share to a model that already has the NFDRS2016 GSI cured share. Right: the reverse. The satellite adds most in California and the Great Plains; the GSI, mostly through its vapour-pressure-deficit term, adds most in the monsoon Southwest. 2012–2024; upper Midwest not tested.", "Two maps of the pilot regions colored by gain: what the satellite adds to the GSI, and what the GSI adds to the satellite.")
 ```
 
+### How big is the effect?
+
+The held-out gains say whether the cured share helps predictions; the fitted models say how much
+fire changes with it. The table converts each region's phenology coefficient (models fitted to all
+years, 60-day water balance as the dryness baseline) into the change in fire for a week with 10
+percentage points more of the herbaceous fuel cured than usual, with 90 % intervals, and for a
+departure of typical size. "Typical departure" is the median size of the departure in the weeks
+when 10–90 % of the fuel is usually cured, the transition weeks when it matters.
+
+| Region | Fire growth, per 10 points | Typical departure | Fire growth, typical departure | Human + unknown starts, per 10 points | Starts, typical departure |
+|---|---|---|---|---|---|
+| 3 Monsoon Southwest | +35 % [+25, +47] | 16 points | +64 % | +14 % [+10, +18] | +23 % |
+| 6 Interior West | +17 % [+6, +29] | 5 points | +9 % | +14 % [+8, +21] | +7 % |
+| 12 Interior West | +17 % [+10, +25] | 11 points | +18 % | +6 % [+2, +11] | +7 % |
+| 11 California annual grasslands | +30 % [+21, +40] | 10 points | +31 % | +7 % [+3, +12] (all causes) | +7 % |
+| 10 Northern and central Great Plains | +27 % [+16, +40] | 12 points | +35 % | +22 % [+17, +27] | +28 % |
+| 13 Upper Midwest | not tested | 13 points | | +9 % [+5, +13] | +12 % |
+
+: Change in weekly fire for more cured fuel than usual (fire growth = VIIRS pixel-days, 2012–2024; starts = fires of 10 acres or more, 2001–2024). {.striped}
+
+For scale, 100 mm more 60-day rainfall minus evaporation than usual means 21–83 % less fire growth
+and 40–62 % fewer human-caused starts, so dryness remains the larger driver. These are
+associations in the fitted models; whether they improve predictions of new years is the
+held-out test above.
+
 ### Checks
 
 Each check changes one thing and asks whether phenology still improves held-out predictions. The
@@ -376,6 +411,57 @@ show_fig("fire_checks", "Phenology's gain in held-out prediction, per year, pool
   2002–2024: one year carries half of it. The fire-growth and human-cause results do not hinge on
   single years like that.
 
+### Monitoring in real time (October 20–26)
+
+The cured share in the main result comes from green-up and curing dates fitted to each season's
+whole satellite curve, so it is known only after the season. Two tests ask whether a manager could
+have had it in time.
+
+**How fresh do the data need to be?** The weekly cured share was rebuilt from the 16-day satellite
+composites with the data window moved closer to the week being judged, from where it really is
+(about 19 days back) to centred on the week (an oracle that uses data from after the week).
+
+| Data age (days back from the week) | Fire growth gain, five regions | Agreement with the after-the-fact cured share (r of departures) |
+|---|---|---|
+| 19 (16-day composites as available) | −13 | 0.28–0.51 |
+| 12 (about what a daily BRDF-corrected product would give) | −5 | 0.32–0.55 |
+| 4 (truly daily data) | +24 [−21, +68] | 0.35–0.60 |
+| 0 (oracle) | +38 [−26, +95] | 0.37–0.62 |
+
+: Held-out gain for fire growth (log score, pooled; the after-the-fact cured share scores +46) as the greenness data get fresher. {.striped}
+
+The growth signal comes back only when the data are about a week old or less. Fire starts did not
+follow the data age in any consistent way.
+
+**Daily VIIRS test.** Daily surface reflectance from the VIIRS instrument on S-NPP (500 m,
+2012–2024) was cut to the herbaceous cells of two regions with different fire regimes, the
+monsoon Southwest (3) and the northern and central Great Plains (10). Each week, the greenness of
+each cell was taken from the clear days of the 8 days ending 3 days before mid-week, scaled to that
+cell's usual range, and called green or cured with the same rule as before. Clouds, shadow, snow
+and steep viewing angles were screened out; about a third of land pixels were clear on a given
+day, and nearly every cell had clear days in nearly every week.
+
+| Cured share | Monsoon Southwest (3) | Great Plains (10) | Both |
+|---|---|---|---|
+| After the fact (whole-season dates) | +13.0 | +8.6 | +21.6 |
+| 16-day composites as available | −3.9 | −0.5 | −4.4 |
+| 16-day composites, 4 days old (what-if) | +4.1 | +11.0 | +15.1 |
+| **Daily VIIRS** | −1.3 | **+9.9 [+2, +17]** | +8.5 |
+
+: Held-out gain for fire growth (log score over 2012–2024) in the two regions tested, with the 90 % interval for the daily result in the Great Plains. {.striped}
+
+- In the **Great Plains** the daily cured share, available within a few days, recovers the whole
+  after-the-fact gain and improves predictions in about five years of six: a 10-point cured
+  departure means about 22 % more fire growth (90 % interval +13 to +32 %).
+- In the **monsoon Southwest** it adds nothing, although even the 4-day what-if was weak there; the
+  week-by-week green/cured call may misread its dry-spring, monsoon green-up and fall-curing cycle.
+- For **fire starts**, the daily cured share does not improve predictions in either region.
+- The Great Plains is this study's secondary region for satellite fire growth (two-thirds of its
+  detections do not match a reported fire), so the result needs confirming in a primary region.
+- S-NPP stops delivering new data on November 1, 2026 (its archive stays available). A
+  monitoring product would run on the NOAA-20 and NOAA-21 VIIRS instruments, which carry the same
+  daily product.
+
 These are first numbers from 13–24 seasons per region; they will change as the analysis is
 reviewed.
 
@@ -400,6 +486,10 @@ reviewed.
 | Oct 19 2026 | Checks before the write-up: leave out cells burned that year or the year before; give each year's phenology to other years at random; test forecast curing dates (weather adjustment in every region); test green-up and curing dates directly; C3/C4 gap test in two-pulse prairie | The phenology gain must not come from fires changing the satellite dates, and must hold for dates a manager could know in advance |
 | Oct 19 2026 | Same-week VPD check; GSI (NFDRS2016, FEMS with KBDI) cured share compared with the satellite's; NPN ground check at the regional scale | Rule out a hot spell driving both curing and fire; test the operational index; check the satellite against the ground |
 | Oct 19 2026 | Real-time cured share from the composites available each week, raw and smoothed to date | A test of whether curing could be monitored in time to use |
+| Oct 20 2026 | Test how fresh the greenness data must be before downloading daily data | A daily download is costly; the test shows whether data age is what removes the signal |
+| Oct 20 2026 | Daily VIIRS surface reflectance for the monsoon Southwest and Great Plains, 2012–2024; no Earth Engine | Two contrasting regions; the growth record covers the VIIRS years |
+| Oct 21 2026 | Clear-sky screen without the VIIRS band-quality flags; probably-clear pixels kept; viewing angle up to 65° | The quality flags marked most land pixels and kept a greener, unrepresentative subset; the other relaxations barely changed greenness |
+| Oct 26 2026 | Daily VIIRS in other regions on hold | Result recorded; next steps under review |
 | Oct 19 2026 | C3/C4 reported as a limitation of the satellite test; ground timing passed to the NPN study | The 4 km curves cannot separate the two pulses in northern mixed prairie |
 | Oct 18 2026 | A 60-day rainfall-minus-evaporation baseline alongside the 1000-hour fuel moisture | The 1000-hour equations are nonlinear and need humidity and rain duration that PRISM lacks; the simple measure is readable and shows whether the operational index adds anything |
 
@@ -420,6 +510,7 @@ reviewed.
 | 2026-10-18 | Decision: satellite fire growth 2012–2024, not in the upper Midwest |
 | 2026-10-18 | Monthly check of unmatched satellite detections; week numbering decided |
 | 2026-10-18 | Dryness-baseline step run; rain-duration rule set from the warm season (the upper Midwest is a humid climate) |
+| 2026-10-26 | Effect sizes in percent per 10 points of cured fuel; real-time monitoring section (data-age test, daily VIIRS test) |
 | 2026-10-20 | Maps: pilot regions, fire density, phenology gain by region; where the satellite and the GSI each add |
 | 2026-10-20 | C3/C4 answered from NPN ground data: the pulses overlap, no gap |
 | 2026-10-19 | Results consolidated: main findings, checks figure; same-week VPD, GSI, ground, real-time and smoothed real-time checks |

@@ -868,6 +868,22 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   Oct 22: full run stopped on HTTP 403 for one bundle file (r03_2015_c2). 05 now catches download errors:
   files already fetched are kept, it logs in again and retries at the next poll; after download_rounds (4)
   failed rounds the task is resubmitted once, then marked failed. Mocked test: 2 failed rounds, then OK.
+  Full pull done Oct 26 (52 / 52 half-year jobs, 68.8 h; last job 42 % clear cell-days). 65c + 66 (test/vd/,
+  GSI_FIRE_REGIONS=3,10): daily cured share tracks the hindsight share better than 16-day composites (departures
+  r 3 0.58, 10 0.62 vs 0.54 / 0.55; coverage 0.98 / 0.86). Growth gain over ppet60 (3 / 10 / pooled): hindsight px
+  +13.0 / +8.6 / +21.6 [-8, +48]; 16-day rt -3.9 / -0.5 / -4.4; delay test rt4 +4.1 / +11.0 / +15.1, rt0 +10.4 /
+  +13.3 / +23.6; daily vd -1.3 / +9.9 [+2, +17] / +8.5 (85 % of years), vdx -4.1 / +8.6 / +4.4. Starts (all,
+  human_unk): hindsight +22.8 / +39.9 pooled, daily -3 to -4 (region 10 coefs positive, z 2.4-3.9, but no
+  held-out gain). Reading: daily monitoring recovers the full growth signal in region 10 (a secondary VIIRS
+  region: 67 % of its detections unlinked) but not in region 3; no starts signal.
+  `scripts/66c_fire_effects.R [profile]` (laptop, seconds; Oct 26): cured_dep coefficients from test/coefs.csv
+  and test/<sub>/coefs.csv as % change per 10 points of cured share (exp(b) - 1; NB counts / Gaussian log1p
+  pixel-days), 90 % Wald intervals, typical departure (median |share - typ| in transition weeks, typ 0.1-0.9)
+  and % at that size, ppet60 % per 100 mm -> test/effects.csv. Hindsight M2: growth +35 % (3), +17 (6), +17
+  (12), +30 (11), +27 (10) per 10 pts; human + unknown starts +6 to +22 %; ppet60 -21 to -83 % per 100 mm.
+  Daily vd growth: 3 +15 % [+7, +23], 10 +22 % [+13, +32]. Page (Oct 26): "How big is the effect?" and
+  "Monitoring in real time" sections, status / decisions / changelog rows. Daily VIIRS for other regions on
+  hold (Mike, Oct 26).
   C3/C4 answered Oct 20 by the NPN study (58b_npn_c3c4_gap.R; project doc claude/gsi-npn-c3c4-result.md):
   C4 green-up (50 %) precedes C3 curing by 107-181 d in regions 10, 2, 13, 5, every site-year (no gap);
   fire page C3/C4 bullet and status updated.
