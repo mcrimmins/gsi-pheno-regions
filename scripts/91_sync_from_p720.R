@@ -9,8 +9,11 @@
 #   fire       fire study results: every <remote run dir>/fire_study/<step>/*.csv, plus the
 #              per-record tables (*.parquet / *.rds) of the steps in config `sync: fire_tables`
 #              (default fod), into <data_root>/full/fire_study/<step>/ on the laptop
+#   ecofuel    ecoregion x fuel type work (70-79): <remote run dir>/ecofuel/*.tif, *.csv and
+#              ecofuel/inventory/* into <data_root>/full/ecofuel/ on the laptop (rasters are 4 km, small)
 #   render     quarto render every page: report/index.qmd, npn_study/report/npn_study.qmd (NPN
-#              curing study, its own subfolder) and report/fire_study.qmd -> <page>.html next to its .qmd
+#              curing study, its own subfolder), report/fire_study.qmd and report/ecofuel.qmd
+#              -> <page>.html next to its .qmd
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
 #              invalidation). Never runs unless asked for ("publish" or "all").
 #   all        figs + render + publish
@@ -30,17 +33,17 @@
 #   GSI_AWS_PROFILE=name                  optional AWS CLI profile
 #   GSI_CF_DIST=E123ABC                   optional CloudFront distribution to invalidate
 #
-# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [fire] [render] [publish] [all]
+# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [fire] [ecofuel] [render] [publish] [all]
 #   RStudio: gsi_sync <- "all"; source("scripts/91_sync_from_p720.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 what <- if (length(args)) args else if (exists("gsi_sync", envir = globalenv())) {
   base::get("gsi_sync", envir = globalenv())
 } else c("figs", "render")
-what <- match.arg(what, c("figs", "summaries", "logs", "fire", "render", "publish", "all"),
+what <- match.arg(what, c("figs", "summaries", "logs", "fire", "ecofuel", "render", "publish", "all"),
                   several.ok = TRUE)
 if ("all" %in% what) what <- unique(c(setdiff(what, "all"), "figs", "render", "publish"))
-need_ssh <- any(c("figs", "summaries", "logs", "fire") %in% what)
+need_ssh <- any(c("figs", "summaries", "logs", "fire", "ecofuel") %in% what)
 
 source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
@@ -140,8 +143,18 @@ if ("fire" %in% what) {
   }
 }
 
+# ---- ecoregion x fuel type (70-79) ------------------------------------------------------------
+if ("ecofuel" %in% what) {
+  reco <- file.path(remote_run, "ecofuel"); leco <- file.path(cfg$run_dir, "ecofuel")
+  got <- c(scp_get(file.path(reco, "*.tif"), leco), scp_get(file.path(reco, "*.csv"), leco))
+  inv <- scp_get(file.path(reco, "inventory", "*"), file.path(leco, "inventory"))
+  if (any(got)) log_msg("ecofuel: ", paste(basename(list.files(leco, "\\.(tif|csv)$")), collapse = ", "))
+  if (inv) log_msg("ecofuel/inventory: ", paste(basename(list.files(file.path(leco, "inventory"))), collapse = ", "))
+  if (!any(got) && !inv) log_warn("no ecofuel results on the P720 (", reco, ")")
+}
+
 # ---- render -------------------------------------------------------------------------------
-pages <- c("index", "npn_study", "fire_study")                     # <page>.qmd -> <page>.html
+pages <- c("index", "npn_study", "fire_study", "ecofuel")          # <page>.qmd -> <page>.html
 # Folder of each page: report/, except the NPN study, which lives in npn_study/report/ (moved Oct 18
 # 2026 so it can become its own repo). All pages still publish to the same S3 folder.
 page_dir <- function(pg) if (pg == "npn_study") here::here("npn_study", "report") else here::here("report")

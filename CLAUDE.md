@@ -899,3 +899,36 @@ into <data_root>/full/fire_study/ on the laptop. Code still goes to the P720 by 
   fire_maps_gsi (satellite over GSI / GSI over satellite, growth, from loyo_scores *_both_nfdrs_none).
   Regions from fire_region_values (laptop has no rules/: falls back to region_display, needs
   clusters/a2_groups).
+
+## Fuel phenology by ecoregion x fuel type (started Oct 26 2026) — exploration
+Scope: project doc claude/gsi-ecofuel-climatology-handoff.md. Own chat thread and page
+report/ecofuel.qmd (-> ecofuel.html, rendered with the other pages by 91); code here as scripts 70-79,
+helpers R/ecofuel.R, config `ecofuel:`; data under <run_dir>/ecofuel/ (never in git). Separate from
+the NPN study: reads npn_study/data/ site tables (and its Level II polygons if present), never
+writes to npn_study/; reads fire_study/fod read-only. Open questions (product, fuel grouping,
+purity / minimum unit size, fire as a check, Level III, LF2024) are Mike's: ask before building
+climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel shares.
+- `scripts/70_ecofuel_shares.R [profile] [force]` (P720 for CONUS, workers_by_step ecofuel_shares 16;
+  laptop for dev; built Oct 26): LANDFIRE FBFM40 in bands of 60 x agg_factor (33) rows, one band per
+  worker -> ~1 km shares of all 45 FBFM40 codes + `mapped` (tiles in scratch), mosaic (vrt) ->
+  project average onto the grid -> ecofuel/fbfm_shares.tif (45 models, share of mapped pixels, +
+  mapped) and fuel_groups.tif (GR GS SH TU TL SB NB_ag NB_urban NB_barren NB_snow NB_water + mapped);
+  ecoregions (config ecofuel: ecoregions; cache <data_root>/_shared/raw/ecoregions/l<L>/, else the NPN
+  copy, else download) -> eco_l2.tif (eco = majority of 10 x 10 sub-cells, eco_purity, eco_nearest
+  for land cells outside every polygon; CEC water "0.0" dropped) + eco_l2_lookup.csv;
+  shares_summary.csv. Tested Oct 26 on a synthetic 300 m Albers fixture (agg 4): model shares vs an
+  independent pixel-centre tally mean |d| 0.0015 (max 0.09 where >= half mapped; near-unmapped cells
+  differ, hence 71's min_mapped), mapped share exact in count of cells < 0.5, ecoregions 100 %
+  right away from the boundary, nearest-polygon cells exactly the planted notch.
+- `scripts/71_ecofuel_inventory.R [profile]` (laptop or P720, < 1 min): ecoregion x group inventory
+  -> ecofuel/inventory/units.csv (land_km2, share_of_eco, cells_dom, cells_p50 / p75, herb_cells_dom,
+  npn_sites (59b rule: point if burnable, else 90 m mode), npn_sites_record (if the record's
+  series_typical.csv is there), fires_dom / fires_wt / per yr: FPA-FOD C+ no debris by the 4 km
+  cell's shares, not the 30 m point, because LF2023 maps post-fire fuels), ecoregions.csv, models.csv,
+  purity.csv, dominant.tif (+ dominant_groups.csv). Share of land = share / (1 - water) as 03; cells
+  < min_mapped (0.5) mapped count for area only. Fixture: fire and site counts reconcile.
+- `scripts/79_ecofuel_figs.R [profile] [figure ...]` (laptop): ecofuel_units (dominant group + purity
+  maps with ecoregion outlines), ecofuel_inventory (area by group per ecoregion + NPN GR/GS sites +
+  fires/yr); copies inventory CSVs to report/tables/ecofuel_<table>_<profile>.csv for the page.
+  Colours: categorical slots 1-5 (validated), nonburnable greys.
+- `91_sync_from_p720.R ecofuel` copies <remote run>/ecofuel/*.tif, *.csv and inventory/* to the laptop.

@@ -1,0 +1,41 @@
+"eco","code","name","group","land_km2","share_of_eco","cells_dom","cells_p50","cells_p75","herb_cells_dom","npn_sites","npn_sites_record","fires_dom","fires_wt","fires_wt_per_yr"
+1,"10.1","Cold Deserts","GR",38705,0.408691220190217,2736,1970,438,2589,4,NA,NA,NA,NA
+1,"10.1","Cold Deserts","GS",26400,0.278756985401733,1590,1126,321,1358,8,NA,NA,NA,NA
+1,"10.1","Cold Deserts","SH",12522,0.132222304613108,356,149,21,353,4,NA,NA,NA,NA
+1,"10.1","Cold Deserts","TU",87,0.000915043892921064,0,0,0,0,0,NA,NA,NA,NA
+1,"10.1","Cold Deserts","TL",1713,0.0180876774621646,69,26,2,19,1,NA,NA,NA,NA
+1,"10.1","Cold Deserts","SB",0,0,0,0,0,0,0,NA,NA,NA,NA
+1,"10.1","Cold Deserts","NB_ag",5,5.36198123833113e-05,0,0,0,0,0,NA,NA,NA,NA
+1,"10.1","Cold Deserts","NB_urban",564,0.00595305765991571,2,0,0,2,0,NA,NA,NA,NA
+1,"10.1","Cold Deserts","NB_barren",14710,0.155320090967557,706,440,53,697,0,NA,NA,NA,NA
+1,"10.1","Cold Deserts","NB_snow",0,0,0,0,0,0,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","GR",30320,0.228763984648608,1552,1284,627,1426,6,NA,NA,NA,NA
+2,"10.2","Warm Deserts","GS",52463,0.395827977532032,3331,2689,1391,3225,20,NA,NA,NA,NA
+2,"10.2","Warm Deserts","SH",15040,0.113471123134722,703,325,29,659,8,NA,NA,NA,NA
+2,"10.2","Warm Deserts","TU",127,0.000955190130861808,0,0,0,0,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","TL",183,0.00138383295380204,0,0,0,0,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","SB",0,6.34915112805778e-08,0,0,0,0,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","NB_ag",3362,0.0253629176805278,202,115,28,7,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","NB_urban",5879,0.0443581997158674,263,194,109,23,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","NB_barren",25166,0.189876710712068,1430,993,319,1300,0,NA,NA,NA,NA
+2,"10.2","Warm Deserts","NB_snow",0,0,0,0,0,0,0,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","GR",18251,0.445434297316601,1091,938,319,1034,6,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","GS",17122,0.417874184552188,1026,852,231,938,2,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","SH",3041,0.0742168065761518,102,50,2,94,1,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","TU",238,0.00581666225930049,1,0,0,0,1,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","TL",391,0.00953620876022014,1,0,0,0,1,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","SB",10,0.000243076423125417,0,0,0,0,0,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","NB_ag",506,0.0123441609702762,15,11,0,1,0,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","NB_urban",677,0.0165302664704648,8,5,1,1,0,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","NB_barren",738,0.018004336671672,14,14,7,5,0,NA,NA,NA,NA
+3,"12.1","Western Sierra Madre Piedmont","NB_snow",0,0,0,0,0,0,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","GR",20562,0.321437307742869,1124,800,159,690,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","GS",23463,0.366795609095077,1636,1227,291,978,3,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","SH",4883,0.0763403769962279,104,38,5,90,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","TU",1369,0.0213995174578842,47,34,2,0,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","TL",10890,0.170248142850139,678,436,100,13,1,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","SB",0,0,0,0,0,0,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","NB_ag",7,0.000110396068085634,0,0,0,0,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","NB_urban",1040,0.0162550371569651,19,8,0,0,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","NB_barren",1754,0.027413612632752,19,4,0,13,0,NA,NA,NA,NA
+4,"13.1","Upper Gila Mountains","NB_snow",0,0,0,0,0,0,0,NA,NA,NA,NA

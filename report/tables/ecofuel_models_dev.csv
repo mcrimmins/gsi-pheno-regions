@@ -1,0 +1,105 @@
+"eco","code","name","model","group","km2","npn_sites"
+1,"10.1","Cold Deserts","NB1","NB_urban",564,0
+1,"10.1","Cold Deserts","NB3","NB_ag",5,0
+1,"10.1","Cold Deserts","NB8","NB_water",182,0
+1,"10.1","Cold Deserts","NB9","NB_barren",14710,0
+1,"10.1","Cold Deserts","GR1","GR",27583,2
+1,"10.1","Cold Deserts","GR2","GR",11120,2
+1,"10.1","Cold Deserts","GR3","GR",2,0
+1,"10.1","Cold Deserts","GS1","GS",4345,0
+1,"10.1","Cold Deserts","GS2","GS",21829,8
+1,"10.1","Cold Deserts","GS3","GS",226,0
+1,"10.1","Cold Deserts","SH1","SH",9512,0
+1,"10.1","Cold Deserts","SH2","SH",2093,2
+1,"10.1","Cold Deserts","SH3","SH",2,0
+1,"10.1","Cold Deserts","SH4","SH",23,0
+1,"10.1","Cold Deserts","SH5","SH",406,2
+1,"10.1","Cold Deserts","SH7","SH",487,0
+1,"10.1","Cold Deserts","TU1","TU",39,0
+1,"10.1","Cold Deserts","TU2","TU",24,0
+1,"10.1","Cold Deserts","TU5","TU",24,0
+1,"10.1","Cold Deserts","TL1","TL",401,0
+1,"10.1","Cold Deserts","TL2","TL",5,0
+1,"10.1","Cold Deserts","TL3","TL",487,1
+1,"10.1","Cold Deserts","TL4","TL",7,0
+1,"10.1","Cold Deserts","TL5","TL",50,0
+1,"10.1","Cold Deserts","TL6","TL",23,0
+1,"10.1","Cold Deserts","TL7","TL",1,0
+1,"10.1","Cold Deserts","TL8","TL",739,0
+2,"10.2","Warm Deserts","NB1","NB_urban",5879,0
+2,"10.2","Warm Deserts","NB3","NB_ag",3362,0
+2,"10.2","Warm Deserts","NB8","NB_water",809,0
+2,"10.2","Warm Deserts","NB9","NB_barren",25166,0
+2,"10.2","Warm Deserts","GR1","GR",17116,5
+2,"10.2","Warm Deserts","GR2","GR",13183,1
+2,"10.2","Warm Deserts","GR3","GR",22,0
+2,"10.2","Warm Deserts","GS1","GS",16625,1
+2,"10.2","Warm Deserts","GS2","GS",35837,19
+2,"10.2","Warm Deserts","SH1","SH",13555,7
+2,"10.2","Warm Deserts","SH2","SH",546,0
+2,"10.2","Warm Deserts","SH3","SH",2,0
+2,"10.2","Warm Deserts","SH4","SH",21,0
+2,"10.2","Warm Deserts","SH5","SH",263,0
+2,"10.2","Warm Deserts","SH7","SH",653,1
+2,"10.2","Warm Deserts","TU1","TU",52,0
+2,"10.2","Warm Deserts","TU2","TU",73,0
+2,"10.2","Warm Deserts","TU5","TU",1,0
+2,"10.2","Warm Deserts","TL1","TL",26,0
+2,"10.2","Warm Deserts","TL2","TL",45,0
+2,"10.2","Warm Deserts","TL3","TL",66,0
+2,"10.2","Warm Deserts","TL5","TL",12,0
+2,"10.2","Warm Deserts","TL6","TL",28,0
+2,"10.2","Warm Deserts","TL8","TL",6,0
+3,"12.1","Western Sierra Madre Piedmont","NB1","NB_urban",677,0
+3,"12.1","Western Sierra Madre Piedmont","NB3","NB_ag",506,0
+3,"12.1","Western Sierra Madre Piedmont","NB8","NB_water",16,0
+3,"12.1","Western Sierra Madre Piedmont","NB9","NB_barren",738,0
+3,"12.1","Western Sierra Madre Piedmont","GR1","GR",7786,4
+3,"12.1","Western Sierra Madre Piedmont","GR2","GR",10457,2
+3,"12.1","Western Sierra Madre Piedmont","GR3","GR",8,0
+3,"12.1","Western Sierra Madre Piedmont","GS1","GS",6256,1
+3,"12.1","Western Sierra Madre Piedmont","GS2","GS",10866,1
+3,"12.1","Western Sierra Madre Piedmont","SH1","SH",1716,0
+3,"12.1","Western Sierra Madre Piedmont","SH2","SH",791,0
+3,"12.1","Western Sierra Madre Piedmont","SH3","SH",32,0
+3,"12.1","Western Sierra Madre Piedmont","SH4","SH",1,0
+3,"12.1","Western Sierra Madre Piedmont","SH5","SH",10,0
+3,"12.1","Western Sierra Madre Piedmont","SH7","SH",492,1
+3,"12.1","Western Sierra Madre Piedmont","TU1","TU",185,1
+3,"12.1","Western Sierra Madre Piedmont","TU2","TU",2,0
+3,"12.1","Western Sierra Madre Piedmont","TU5","TU",52,0
+3,"12.1","Western Sierra Madre Piedmont","TL1","TL",50,0
+3,"12.1","Western Sierra Madre Piedmont","TL2","TL",18,0
+3,"12.1","Western Sierra Madre Piedmont","TL3","TL",195,1
+3,"12.1","Western Sierra Madre Piedmont","TL4","TL",7,0
+3,"12.1","Western Sierra Madre Piedmont","TL5","TL",3,0
+3,"12.1","Western Sierra Madre Piedmont","TL6","TL",30,0
+3,"12.1","Western Sierra Madre Piedmont","TL7","TL",4,0
+3,"12.1","Western Sierra Madre Piedmont","TL8","TL",82,0
+3,"12.1","Western Sierra Madre Piedmont","SB2","SB",10,0
+4,"13.1","Upper Gila Mountains","NB1","NB_urban",1040,0
+4,"13.1","Upper Gila Mountains","NB3","NB_ag",7,0
+4,"13.1","Upper Gila Mountains","NB8","NB_water",192,0
+4,"13.1","Upper Gila Mountains","NB9","NB_barren",1754,0
+4,"13.1","Upper Gila Mountains","GR1","GR",7351,0
+4,"13.1","Upper Gila Mountains","GR2","GR",13180,0
+4,"13.1","Upper Gila Mountains","GR3","GR",31,0
+4,"13.1","Upper Gila Mountains","GS1","GS",4096,0
+4,"13.1","Upper Gila Mountains","GS2","GS",19367,3
+4,"13.1","Upper Gila Mountains","SH1","SH",928,0
+4,"13.1","Upper Gila Mountains","SH2","SH",1848,0
+4,"13.1","Upper Gila Mountains","SH3","SH",12,0
+4,"13.1","Upper Gila Mountains","SH4","SH",2,0
+4,"13.1","Upper Gila Mountains","SH5","SH",41,0
+4,"13.1","Upper Gila Mountains","SH7","SH",2052,0
+4,"13.1","Upper Gila Mountains","TU1","TU",335,0
+4,"13.1","Upper Gila Mountains","TU2","TU",253,0
+4,"13.1","Upper Gila Mountains","TU5","TU",780,0
+4,"13.1","Upper Gila Mountains","TL1","TL",364,0
+4,"13.1","Upper Gila Mountains","TL2","TL",19,0
+4,"13.1","Upper Gila Mountains","TL3","TL",3151,0
+4,"13.1","Upper Gila Mountains","TL4","TL",174,0
+4,"13.1","Upper Gila Mountains","TL5","TL",411,1
+4,"13.1","Upper Gila Mountains","TL6","TL",69,0
+4,"13.1","Upper Gila Mountains","TL7","TL",157,0
+4,"13.1","Upper Gila Mountains","TL8","TL",6546,0

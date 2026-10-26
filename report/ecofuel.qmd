@@ -1,0 +1,152 @@
+---
+title: "Fuel phenology by ecoregion and fuel type"
+subtitle: "Exploring climatologies of green-up and curing for EPA ecoregions × LANDFIRE fuel types"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Figures: scripts/79_ecofuel_figs.R (figs/<figure>_<profile>.png + manifest.csv). Tables: 79 copies
+# 71's inventory to tables/ecofuel_<table>_<profile>.csv. The CONUS ("full") version is shown when
+# it exists, otherwise the dev one.
+figs <- if (file.exists("figs/manifest.csv")) {
+  utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
+} else data.frame(figure = character(), profile = character())
+
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n', caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s · %s · figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+tab <- function(name) {
+  for (p in c("full", "dev")) {
+    f <- sprintf("tables/ecofuel_%s_%s.csv", name, p)
+    if (file.exists(f)) { x <- utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(code = "character")); attr(x, "profile") <- p; return(x) }
+  }
+  NULL
+}
+E <- tab("ecoregions"); U <- tab("units")
+have <- !is.null(E) && !is.null(U)
+prof_note <- if (have && attr(E, "profile") == "dev") " (Arizona test area only; CONUS run pending)" else ""
+burn <- c("GR", "GS", "SH", "TU", "TL")
+```
+
+::: {.callout-important appearance="simple"}
+## Exploration in progress, October 2026
+This page records a new piece of work: whether green-up and curing climatologies (and possibly
+models) can be built for units fire managers already use, **EPA Level II ecoregions × LANDFIRE fuel
+types**. It is a companion to the [fuel phenology regions page](index.html); it reads the
+[NPN curing study](npn_study.html)'s site tables and the [fire study](fire_study.html)'s fire
+records but changes neither. Nothing below is a decision yet: the first step is an inventory of
+the candidate units, to settle the open questions before any climatology is built.
+:::
+
+## Why ecoregions × fuel types
+
+- **Operational fit.** Fire danger rating grids are built on fuel models (Scott & Burgan 40,
+  mapped by LANDFIRE), and ecoregions are units managers already know. A table of
+  "ecoregion × fuel group → typical green-up, peak and curing dates, with their spread" can be
+  used directly.
+- **Evidence for climatologies.** The NPN curing study found that place explains most of the
+  variation in ground green-up and curing dates, and no weather model beat the typical date. The
+  regions work found the same at the ground almost everywhere except the monsoon Southwest and
+  California annual grasslands.
+- **Independent units.** Level II ecoregions and LANDFIRE are published layers, chosen without
+  any of the phenology data, so testing them against the ground dates is not circular.
+
+## How the units are built (steps 1–2)
+
+1. **Fuel models on the 4 km grid.** The LANDFIRE 2023 FBFM40 map (30 m) is summarised into the
+   share of each of the 40 fuel models, and of each nonburnable class (agriculture, urban, water,
+   barren, snow), in every 4 km cell of the analysis grid: first in about 1 km blocks, then
+   area-averaged onto the grid. Every model is kept, so fuel groups can be redrawn later without
+   redoing this step.
+2. **Ecoregions on the same grid.** Each cell takes the Level II ecoregion covering most of it;
+   the few land cells outside every polygon (coast, lake shores) take the nearest one.
+3. **Inventory of the units.** For every ecoregion × fuel group: land area, how many cells the
+   group dominates, how many are "pure" (one group holds at least half, or three quarters, of the
+   land), how many are in the strict herbaceous mask used for the satellite dates, how many NPN
+   grass sites fall in that ecoregion and fuel group, and how many wildfires of 10 acres or more
+   (2001–2024) burned there. Fires are attributed by the fuel shares of their 4 km cell, not by the
+   fuel model at the fire's point: LANDFIRE 2023 shows the fuels after a fire, and reported fire
+   locations are often approximate.
+
+Fuel groups: **GR** grass, **GS** grass-shrub, **SH** shrub, **TU** timber-understory, **TL**
+timber litter (SB slash-blowdown is rare). Cropland is nonburnable (NB3) in this fuel map, so it is
+reported as its own group rather than dropped.
+
+## First results: the units
+
+```{r inventory-fig, results="asis"}
+show_fig("ecofuel_inventory", "Land area of each Level II ecoregion by fuel group, with the number of NPN grass sites in grass or grass-shrub fuels and the yearly number of wildfires of 10 acres or more.")
+```
+
+```{r units-fig, results="asis"}
+show_fig("ecofuel_units", "Dominant fuel group in each 4 km cell, with Level II ecoregion outlines and codes (top), and the share of the cell's land held by that group (bottom). Mixed cells are the main source of error for any satellite climatology.")
+```
+
+```{r eco-table}
+#| tbl-cap: "Level II ecoregions: land area, burnable and agricultural shares, NPN grass sites and wildfires (>= 10 ac, 2001-2024)."
+if (have) {
+  x <- E[, c("code", "name", "land_km2", "share_burnable", "share_ag", "median_dom_share", "npn_sites", "fires")]
+  x$land_km2 <- format(round(x$land_km2 / 1000), big.mark = ","); x$share_burnable <- sprintf("%.0f %%", 100 * x$share_burnable)
+  x$share_ag <- sprintf("%.0f %%", 100 * x$share_ag); x$median_dom_share <- sprintf("%.2f", x$median_dom_share)
+  names(x) <- c("Code", "Ecoregion", "Land (1,000 km²)", "Burnable", "Agriculture", "Median purity", "NPN sites", "Fires")
+  knitr::kable(x, row.names = FALSE, align = "llrrrrrr")
+} else cat("Table pending (run 71 and 79).")
+```
+
+```{r unit-counts, results="asis"}
+if (have) {
+  ub <- U[U$group %in% burn, ]
+  n50 <- sum(ub$cells_p50 >= 50); n200 <- sum(ub$cells_p50 >= 200)
+  gg <- ub[ub$group %in% c("GR", "GS"), ]
+  cat(sprintf("\n**In numbers%s.** %d ecoregion × burnable-group units hold at least 50 cells where the group has half the land or more (%d at 200 cells). Of the grass and grass-shrub units, %d have at least one NPN grass site and %d have three or more.\n\n",
+              prof_note, n50, n200, sum(gg$npn_sites > 0, na.rm = TRUE), sum(gg$npn_sites >= 3, na.rm = TRUE)))
+}
+```
+
+## Open questions (to settle before building climatologies)
+
+1. **Product.** Climatology table and maps only, or also models? Grass and grass-shrub only, or
+   shrub and timber-understory too? (For shrub and timber groups the satellite mostly sees the
+   canopy, not the surface fuel; live fuel moisture is the only ground check there.)
+2. **Fuel grouping.** The five groups, or finer (e.g. low-load GR1–2 vs higher-load GR3+)? How to
+   treat agricultural cells, which cover much of the Plains and upper Midwest?
+3. **Purity and minimum unit size.** Share-weighted summaries, pure cells only, or both? What
+   minimum area makes a unit worth reporting?
+4. **Fire as a check.** Use fire activity by unit (seasonal curves, and the year-to-year test of the
+   fire study) to judge the units? Fires are counted here so the numbers are in hand.
+5. **Ecoregion level and LANDFIRE version.** Level II for now (as the NPN study); Level III as a
+   later sensitivity? LANDFIRE 2023 (as the NPN study) or 2024?
+
+## Status and changelog
+
+| Date | Change |
+|---|---|
+| Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory); tested on synthetic data; CONUS run pending. |

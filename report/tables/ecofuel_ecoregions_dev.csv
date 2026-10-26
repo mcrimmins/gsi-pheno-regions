@@ -1,0 +1,5 @@
+"eco","code","name","l1_name","cells","land_km2","share_burnable","share_ag","share_urban","top_group","burnable_mix","median_dom_share","npn_sites","npn_sites_nonburnable","fires"
+2,"10.2","Warm Deserts","North American Deserts",7481,132540,0.740402897238569,0.0253659272672401,0.0443564207031839,"GS","GR 23%, GS 40%, SH 11%, TU 0%, TL 0%, SB 0%",0.6371750831604,54,20,NA
+1,"10.1","Cold Deserts","North American Deserts",5459,94706,0.838669144510379,5.27949654720926e-05,0.00595527210525204,"GR","GR 41%, GS 28%, SH 13%, TU 0%, TL 2%, SB 0%",0.566938579082489,19,2,NA
+4,"13.1","Upper Gila Mountains","Temperate Sierras",3627,63968,0.95621248124062,0.000109429714857429,0.0162581290645323,"GS","GR 32%, GS 37%, SH 8%, TU 2%, TL 17%, SB 0%",0.57586544752121,4,0,NA
+3,"12.1","Western Sierra Madre Piedmont","Southern Semiarid Highlands",2258,40974,0.953116610533509,0.0123492946746717,0.0165226729145312,"GR","GR 45%, GS 42%, SH 7%, TU 1%, TL 1%, SB 0%",0.621138403699062,11,0,NA

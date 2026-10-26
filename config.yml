@@ -464,6 +464,33 @@ default:
     curing_metric: eos50
     greenup_metric: sos20
 
+  # Fuel phenology by ecoregion x fuel type (scripts 70-79, page report/ecofuel.qmd; scope in the
+  # project doc gsi-ecofuel-climatology-handoff.md). Started Oct 26 2026 as an exploration: 70-71
+  # build the units and an inventory; open questions (product, fuel grouping, purity, minimum unit
+  # size, fire) are settled with Mike before any climatology. Separate from the NPN study: reads its
+  # site tables, never writes to npn_study/.
+  ecofuel:
+    # LANDFIRE FBFM40 GeoTIFF: <data_root>/landfire unless landfire_fbfm40 (file or folder, per OS:
+    # {windows: ..., linux: ...}) is set here. LF2023 kept so tables match the NPN study's site fuel
+    # models (LF2024 exists; open item).
+    landfire_fbfm40: null
+    landfire_version: "LF2023"
+    agg_factor: 33              # 30 m -> ~1 km blocks in Albers before averaging onto the 4 km grid (as 03)
+    rows_per_band: 60           # bands of 60 x 33 LANDFIRE rows (~59 km) per worker job
+    keep_tiles: false           # keep the ~1 km band tiles in scratch after the mosaic
+    ecoregions:
+      level: 2                  # EPA / CEC Level II (as the NPN study); Level III = a later sensitivity
+      url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
+      code_field: NA_L2CODE
+      name_field: NA_L2NAME
+      parent_code_field: NA_L1CODE
+      parent_name_field: NA_L1NAME
+      drop_codes: ["0.0"]       # CEC "water" polygons: lake-shore cells take the nearest land region
+      sub_cells: 10             # 10 x 10 points per 4 km cell for the majority ecoregion and its purity
+    purity: [0.5, 0.75]         # 71: cells where one fuel group has >= this share of the land
+    min_mapped: 0.5             # 71: cells less mapped than this (border, coast) count for area, not purity
+    fire_years: {start: 2001, end: 2024}   # 71: FPA-FOD fires counted per unit (read from fire_study/fod)
+
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
   # dates and curves (all cells and strict herbaceous cells), ground-observation dates, and a
@@ -513,6 +540,40 @@ default:
       - {name: ndii_amp, label: "NDII7 amplitude", unit: ""}
     obs_sets: [grass_greenup, grass_curing, grass_cured, lfmc_herb_peak, lfmc_woody_peak, inat_flower]
     min_herb_cells: 200         # curves/metrics for the herbaceous cells shown when at least this many
+
+  # Candidate-region pages (scripts/95_region_page.R -> report/regions_<partition>_k<KK>.html):
+  # one page per candidate set from existing results (clusters, 30/31/33 scores), using the
+  # profile (32) and figure (90) code for that set only. The working regions are unchanged.
+  region_pages:
+    # Sets each candidate is compared with: crosswalk tables and the score table.
+    compare:
+      - {partition: A2_groups, k: 13}
+      - {partition: A2_groups, k: 7}
+    baseline: geo               # location-only regions at the same k (score table)
+    partition_labels:           # page titles: "<label>, <k> regions"
+      A1_groups: "Climate A1"
+      A2_groups: "Climate A2"
+      A2_herbw: "Climate A2, herbaceous-weighted"
+      A3_groups: "Climate A3"
+      B_raw: "Satellite curves (level + shape)"
+      B_shape: "Satellite curves (timing only)"
+    # Short names of the comparison regions (map numbers), used to describe what a candidate
+    # region contains. Must follow the map numbering (region_display(), reference A1 k10).
+    region_names:
+      A2_groups_k13:
+        "1": "Gulf and south Atlantic coastal plain"
+        "2": "Southern Plains"
+        "3": "Monsoon Southwest"
+        "4": "Low deserts"
+        "5": "Mid-South (incl. KS/OK tallgrass)"
+        "6": "Snake River Plain / N Great Basin"
+        "7": "Rockies"
+        "8": "Midwest and Northeast"
+        "9": "Pacific Northwest"
+        "10": "Northern and central Great Plains"
+        "11": "California annual grasslands"
+        "12": "S Great Basin / Colorado Plateau"
+        "13": "Upper Midwest"
 
   # Cut A feature blocks. Year label Y: water year Oct(Y-1)-Sep(Y) for precipitation,
   # temperature and aridity; calendar year Y for freeze dates and GDD (fall freezes fall
@@ -816,6 +877,7 @@ full:
     fire_realtime: 8          # 65b: one year of composites per worker
     viirs_daily: 8            # 05: days of one AppEEARS bundle reduced in parallel
     fire_dfm: 16              # row chunks, all PRISM years per chunk (~4 GB peak per worker at 2 rows)
+    ecofuel_shares: 16        # 70: bands of LANDFIRE rows (disk-bound reads of one 2.5 GB GeoTIFF)
   memfrac: 0.08
   report:
     # CONUS figures are written next to the data (<run_dir>/report_figs), not into the
