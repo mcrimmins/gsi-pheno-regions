@@ -1,0 +1,266 @@
+---
+title: "Candidate regions"
+subtitle: "A candidate set of fuel phenology regions, shown next to the working regions"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+params:
+  set_id: "A2_groups_k05"
+  label: "Climate A2, 5 regions"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Made by scripts/95_region_page.R (one page per candidate set, parameter set_id), from the
+# figures and tables it writes to figs/. CONUS ("full") files are used when present, else dev.
+id <- params$set_id
+k <- as.integer(sub(".*_k", "", id))
+label <- params$label
+figs <- if (file.exists("figs/manifest.csv")) utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE) else
+  data.frame(figure = character(), profile = character())
+pick_file <- function(pattern) {                 # pattern with one %s for the profile
+  for (pr in c("full", "dev")) { f <- sprintf(pattern, pr); if (file.exists(f)) return(f) }
+  NULL
+}
+read_fig_csv <- function(what) {
+  f <- pick_file(paste0("figs/regionpage_", id, "_", what, "_%s.csv"))
+  if (is.null(f)) NULL else utils::read.csv(f, stringsAsFactors = FALSE, check.names = FALSE)
+}
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n', caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s · %s · figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+kable <- function(x, caption, align = NULL) {
+  cat(knitr::kable(x, row.names = FALSE, caption = caption, align = align), sep = "\n"); cat("\n\n")
+}
+pct <- function(x) sprintf("%.0f%%", 100 * x)
+
+# crosswalks with the comparison sets
+xw_files <- list.files("figs", sprintf("^regionpage_%s_xw_.*_(full|dev)\\.csv$", id), full.names = TRUE)
+xw_files <- xw_files[order(!grepl("_full\\.csv$", xw_files))]
+xw <- list()
+for (f in xw_files) {
+  d <- utils::read.csv(f, stringsAsFactors = FALSE)
+  if (!nrow(d) || d$compare_set[1] %in% names(xw)) next
+  xw[[d$compare_set[1]]] <- d
+}
+set_lab <- function(sid) {
+  p <- sub("_k[0-9]+$", "", sid); kk <- as.integer(sub(".*_k", "", sid))
+  lab <- c(A1_groups = "Climate A1", A2_groups = "Climate A2", A2_herbw = "Climate A2 herb-weighted",
+           A3_groups = "Climate A3", B_raw = "Satellite (level + shape)", B_shape = "Satellite (timing)",
+           geo = "Location only")
+  sprintf("%s, %d regions", if (p %in% names(lab)) lab[[p]] else p, kk)
+}
+working <- "A2_groups_k13"
+```
+
+::: {.callout-important appearance="simple"}
+## A candidate set, not the working regions
+This page shows **`r label`** so it can be compared with the working regions.
+The working regions are still **climate A2 at 13 regions, nested in 7** (decided October 9).
+The phenology rules, the typical-date maps and the companion studies use those numbers.
+Everything here comes from the existing analysis: k-means was fitted to the same climate
+features for every number of regions from 4 to 30, and the tests were run for 4 to 20.
+Results are **preliminary**.
+The main project page has the methods and the full comparison:
+[Fuel phenology regions for herbaceous fuels](index.html).
+:::
+
+## How these regions were made
+
+The regions group 4 km grid cells across the contiguous US by their climate. The climate
+comes from daily PRISM data (2001–2025), summarized for each year and then across years:
+
+- seasonal temperature, precipitation, aridity and freeze dates (Block 1)
+- the timing and variability of rain events, dry spells and the warm-season rain onset
+  (Block 2, used by the A2 sets)
+
+Cells are clustered with k-means, here into `r k` groups. The satellite seasonal curves
+(MODIS NDVI and NDII7) and the ground observations play no part in drawing the regions.
+They are used only to describe and test them.
+
+Region numbers are matched to the project-page maps, so a number covers roughly the same
+area wherever it appears. Numbers run roughly south to north, but they do not match the
+working regions' numbers. The tables below give the crosswalk.
+
+## Map and what each region contains
+
+```{r map}
+#| results: asis
+show_fig(paste0("prof_map_", id), paste0(label, "."), sprintf("Map of the contiguous US with %d numbered regions.", k))
+```
+
+```{r composition}
+#| results: asis
+if (!is.null(xw[[working]])) {
+  d <- xw[[working]]
+  rows <- lapply(sort(unique(d$region)), function(j) {
+    e <- d[d$region == j & d$share_of_region >= 0.05, ]
+    e <- e[order(-e$share_of_region), ]
+    part <- ifelse(e$share_of_compare < 0.8, sprintf(", %s of it", pct(e$share_of_compare)), "")
+    data.frame(Region = j,
+               `Working regions it contains (share of this region)` =
+                 paste(sprintf("%d %s (%s%s)", e$compare_region, e$compare_name, pct(e$share_of_region), part),
+                       collapse = "; "),
+               check.names = FALSE)
+  })
+  kable(do.call(rbind, rows),
+        sprintf("What each of the %d regions contains, in terms of the 13 working regions (parts holding at least 5 %% of a region's cells; \"x %% of it\" = only part of that working region falls here)", k))
+}
+for (sid in setdiff(names(xw), working)) {
+  d <- xw[[sid]]
+  rows <- lapply(sort(unique(d$region)), function(j) {
+    e <- d[d$region == j & d$share_of_region >= 0.05, ]; e <- e[order(-e$share_of_region), ]
+    data.frame(Region = j, Contains = paste(sprintf("%d (%s)", e$compare_region, pct(e$share_of_region)), collapse = ", "))
+  })
+  out <- do.call(rbind, rows); names(out)[2] <- sprintf("%s: regions it contains (share of this region)", set_lab(sid))
+  kable(out, sprintf("The same comparison with %s (region numbers as on the project page)", set_lab(sid)))
+}
+```
+
+```{r splits}
+#| results: asis
+if (!is.null(xw[[working]])) {
+  d <- xw[[working]]
+  sp <- do.call(rbind, lapply(split(d, d$compare_region), function(e) {
+    e <- e[e$share_of_compare >= 0.05, ]; e <- e[order(-e$share_of_compare), ]
+    data.frame(`Working region` = sprintf("%d %s", e$compare_region[1], e$compare_name[1]),
+               `Goes to (share of the working region)` = paste(sprintf("%d (%s)", e$region, pct(e$share_of_compare)), collapse = ", "),
+               split = e$share_of_compare[1] < 0.8, check.names = FALSE)
+  }))
+  n_split <- sum(sp$split)
+  cat(sprintf("Of the %d working regions, **%d fall mostly (80 %% of their cells or more) in one of the %d regions** and **%d are split** between two or more.\n\n",
+              nrow(sp), nrow(sp) - n_split, k, n_split))
+  sp$split <- NULL
+  kable(sp, sprintf("Where each working region goes in the %d regions", k))
+}
+```
+
+## Climate and satellite season by region
+
+The table gives region medians across cells. Season dates come from the satellite record
+(MODIS 2001–2025). Where a region has at least 200 strict herbaceous cells, the dates use
+those cells; otherwise they use all of the region's cells, which mostly describe forest,
+cropland or mixed cover.
+
+```{r profile-table}
+#| results: asis
+f <- pick_file(paste0("figs/prof_table_", id, "_%s.csv"))
+if (!is.null(f)) {
+  t <- utils::read.csv(f, stringsAsFactors = FALSE, check.names = FALSE)
+  kable(t, sprintf("%s: median climate and satellite season by region", label), c("r", rep("r", ncol(t) - 2), "l"))
+} else cat("\n*Table pending (run scripts/95_region_page.R).*\n\n")
+```
+
+```{r heat}
+#| results: asis
+show_fig(paste0("prof_heat_", id),
+         "Region medians of the climate features and satellite season metrics (all cells), coloured by how far each region is above (orange) or below (blue) the average across regions.",
+         "Heatmap of climate features and season metrics by region, with median values.")
+```
+
+## Satellite seasonal curves
+
+```{r curves}
+#| results: asis
+show_fig(paste0("prof_curves_", id),
+         "Median NDVI (greenness) and NDII7 (canopy water, a curing signal) seasonal curves per region, with the middle half of the cells shaded. Herbaceous cells where a region has enough of them; the dotted line is NDVI for all of the region's cells.",
+         sprintf("%d small charts of seasonal NDVI and NDII7 curves, one per region.", k))
+```
+
+A region with a wide shaded band holds cells whose seasons differ. That is the cost of
+using fewer regions. Compare the bands with the 13-region curves on the project page.
+
+## Ground observations by region
+
+```{r obs}
+#| results: asis
+show_fig(paste0("prof_obs_", id),
+         "Ground observation dates by region: each dot is one site (its median date across years); the bar is the region median and the number is the count of sites.",
+         "Dot plots of observed phenology dates by region.")
+ob <- read_fig_csv("obs")
+if (!is.null(ob) && nrow(ob)) {
+  olab <- c(grass_greenup = "NPN grasses: green-up", grass_curing = "NPN grasses: curing",
+            grass_cured = "NPN grasses: cured", lfmc_herb_peak = "LFM herbaceous: peak",
+            lfmc_woody_peak = "LFM woody: peak", inat_flower = "iNaturalist flowering")
+  ob <- ob[ob$set %in% names(olab), ]
+  st <- intersect(names(olab), unique(ob$set))
+  w <- data.frame(`Data set` = unname(olab[st]), check.names = FALSE)
+  for (j in seq_len(k)) w[[paste("Region", j)]] <- vapply(st, function(s) {
+    n <- ob$n_sites[ob$set == s & ob$region == j]; if (length(n)) as.integer(n[1]) else 0L }, 0L)
+  kable(w, "Number of ground sites per region")
+}
+```
+
+## How this number of regions scores
+
+These are the tests used to choose the working regions, read at `r k` regions and set next
+to the working sets. Two things to keep in mind:
+
+- **More regions always explain more.** A fair comparison is with the location-only
+  baseline at the same number of regions: k-means on map position alone, with no climate.
+- **The ground scores use few sites,** so differences of a few hundredths are within noise.
+
+```{r scores}
+#| results: asis
+sc <- read_fig_csv("scores")
+if (!is.null(sc) && nrow(sc)) {
+  sc$col <- vapply(seq_len(nrow(sc)), function(i) set_lab(sprintf("%s_k%02d", sc$partition[i], sc$k[i])), "")
+  # columns: this k first, then the comparison k's; at each k the climate set, then location only
+  ks_ord <- unique(c(k, sort(unique(sc$k))))
+  ord <- unlist(lapply(ks_ord, function(kk) {
+    e <- unique(sc[sc$k == kk, c("partition", "col")])
+    e$col[order(e$partition == "geo", e$col)]
+  }))
+  tl <- c(satellite = "Satellite season (share of variance explained by region)",
+          ground = "Ground dates (adjusted R², site dates ~ region)",
+          synchrony = "Year-to-year synchrony, herbaceous cells (share of yearly anomalies shared within a region)",
+          stability = "Stability of the regions")
+  for (tt in intersect(names(tl), unique(sc$test))) {
+    d <- sc[sc$test == tt, ]
+    ms <- unique(d$measure)
+    out <- data.frame(Measure = ms, check.names = FALSE)
+    for (cc in ord) out[[cc]] <- vapply(ms, function(m) {
+      v <- d$value[d$measure == m & d$col == cc]
+      if (!length(v) || is.na(v[1])) "" else if (grepl("Smallest", m)) format(round(v[1]), big.mark = ",") else sprintf("%.2f", v[1])
+    }, "")
+    out <- out[, c(TRUE, colSums(out[, -1, drop = FALSE] != "") > 0), drop = FALSE]
+    kable(out, tl[[tt]], c("l", rep("r", ncol(out) - 1)))
+  }
+} else cat("\n*Scores pending (run scripts/95_region_page.R).*\n\n")
+```
+
+## Notes
+
+- The regions are drawn from climate alone. Fuels, vegetation type and soils are not
+  inputs. A comparison with LANDFIRE fuel models is planned separately.
+- k-means regions need not be contiguous: a region can include outlying patches with a
+  similar climate elsewhere, mostly in mountains.
+- Satellite dates are for 4 km cells, which often mix cover types. Ground sites are
+  points, and several regions have few of them.
+- This page is generated, so every set of regions gets the same layout:
+  `Rscript scripts/95_region_page.R full <partition> <k>`.

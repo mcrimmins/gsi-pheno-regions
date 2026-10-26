@@ -1,0 +1,6 @@
+"Region","Share of land","Herbaceous cells","Mean temp. (C)","Precip. (mm)","Aridity (P/PET)","Jul-Sep share","Freeze-free (days)","Rain onset","Precip. CV","Green-up","NDVI peak","Curing","NDVI amplitude","Season from"
+1,"13%","46,188","15.1","392","0.28","0.41","204","May 28","0.29","Apr 27","Aug 25","Oct 27","0.13","herbaceous cells"
+2,"6%","21,414","16.7","173","0.12","0.12","287","Oct  1","0.44","Feb  2","Apr  3","May 17","0.07","herbaceous cells"
+3,"28%"," 5,337","16","1,289","1.06","0.26","225","May  4","0.18","Mar 18","Jun  2","Oct 13","0.32","herbaceous cells"
+4,"19%","45,817","7.69","425","0.42","0.11","128","May 21","0.21","Apr  1","Jun  2","Jun 19","0.14","herbaceous cells"
+5,"33%","36,671","7.69","721","0.79","0.31","152","May  5","0.20","Apr 10","Jun 18","Aug  8","0.30","herbaceous cells"

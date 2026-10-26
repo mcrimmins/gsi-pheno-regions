@@ -31,6 +31,28 @@ load_cfg <- function(profile = NULL) {
     if (!all(need %in% names(b))) stop("bbox needs ", paste(need, collapse = ", "))
     cfg$bbox <- b[need]
   }
+  region_sets_override(cfg)
+}
+
+# One-run override of `region_profiles: sets` (used by scripts/95_region_page.R to run 32 and
+# 90 for a single candidate set without editing config.yml). GSI_REGION_SETS =
+# "A2_groups:5" or "A2_groups:5,A1_groups:8". A set already in the config keeps its label;
+# others get "<region_pages: partition_labels>, <k> regions". Unset: config as written.
+region_sets_override <- function(cfg) {
+  s <- Sys.getenv("GSI_REGION_SETS", "")
+  if (!nzchar(s) || is.null(cfg$region_profiles)) return(cfg)
+  old <- cfg$region_profiles$sets
+  if (is.null(old)) old <- list()
+  plab <- cfg$region_pages$partition_labels
+  if (is.null(plab)) plab <- list()
+  cfg$region_profiles$sets <- lapply(strsplit(trimws(strsplit(s, ",")[[1]]), ":"), function(p) {
+    k <- as.integer(p[2])
+    if (length(p) != 2 || is.na(k)) stop("GSI_REGION_SETS: use partition:k, e.g. A2_groups:5")
+    hit <- Filter(function(o) identical(o$partition, p[1]) && as.integer(o$k) == k, old)
+    lab <- if (length(hit) && !is.null(hit[[1]]$label)) hit[[1]]$label else
+      sprintf("%s, %d regions", if (is.null(plab[[p[1]]])) p[1] else plab[[p[1]]], k)
+    list(partition = p[1], k = k, label = lab)
+  })
   cfg
 }
 

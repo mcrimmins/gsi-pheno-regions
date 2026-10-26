@@ -1,0 +1,91 @@
+"test","measure","partition","k","value"
+"satellite","Timing of the satellite season, herbaceous cells","A2_groups",5,0.434308393325803
+"satellite","Timing of the satellite season, herbaceous cells","A2_groups",7,0.485230656043271
+"satellite","Timing of the satellite season, herbaceous cells","A2_groups",13,0.553291395968604
+"satellite","Timing of the satellite season, herbaceous cells","geo",5,0.264530112949386
+"satellite","Timing of the satellite season, herbaceous cells","geo",7,0.362002827399457
+"satellite","Timing of the satellite season, herbaceous cells","geo",13,0.473910850984705
+"satellite","Timing of the satellite season, all cells","A2_groups",5,0.405156621077568
+"satellite","Timing of the satellite season, all cells","A2_groups",7,0.460806428344619
+"satellite","Timing of the satellite season, all cells","A2_groups",13,0.53316040125494
+"satellite","Timing of the satellite season, all cells","geo",5,0.328669155672662
+"satellite","Timing of the satellite season, all cells","geo",7,0.382898214065296
+"satellite","Timing of the satellite season, all cells","geo",13,0.464952094965402
+"satellite","Satellite curves as observed, herbaceous cells","A2_groups",5,0.201976430112839
+"satellite","Satellite curves as observed, herbaceous cells","A2_groups",7,0.292184717381346
+"satellite","Satellite curves as observed, herbaceous cells","A2_groups",13,0.498199697167299
+"satellite","Satellite curves as observed, herbaceous cells","geo",5,0.246223293499825
+"satellite","Satellite curves as observed, herbaceous cells","geo",7,0.170739336012933
+"satellite","Satellite curves as observed, herbaceous cells","geo",13,0.243318305604455
+"satellite","Satellite curves as observed, all cells","A2_groups",5,0.369398787621615
+"satellite","Satellite curves as observed, all cells","A2_groups",7,0.534599860604424
+"satellite","Satellite curves as observed, all cells","A2_groups",13,0.651646204697629
+"satellite","Satellite curves as observed, all cells","geo",5,0.412395260542331
+"satellite","Satellite curves as observed, all cells","geo",7,0.436942232188516
+"satellite","Satellite curves as observed, all cells","geo",13,0.5046513783886
+"ground","NPN grasses: green-up","A2_groups",5,0.269382277992175
+"ground","NPN grasses: green-up","A2_groups",7,0.418278161851425
+"ground","NPN grasses: green-up","A2_groups",13,0.554924164945175
+"ground","NPN grasses: green-up","geo",5,0.315827059845901
+"ground","NPN grasses: green-up","geo",7,0.420498377877402
+"ground","NPN grasses: green-up","geo",13,0.418902723161824
+"ground","NPN grasses: curing","A2_groups",5,0.1641336781962
+"ground","NPN grasses: curing","A2_groups",7,0.168077711913152
+"ground","NPN grasses: curing","A2_groups",13,0.223811342644666
+"ground","NPN grasses: curing","geo",5,0.201703776200831
+"ground","NPN grasses: curing","geo",7,0.0801634124093796
+"ground","NPN grasses: curing","geo",13,0.243480520310905
+"ground","NPN grasses: cured","A2_groups",5,0.326133576567374
+"ground","NPN grasses: cured","A2_groups",7,0.322676829008839
+"ground","NPN grasses: cured","A2_groups",13,0.405729830053903
+"ground","NPN grasses: cured","geo",5,0.345631953399296
+"ground","NPN grasses: cured","geo",7,0.0481133795038218
+"ground","NPN grasses: cured","geo",13,0.4160930999106
+"ground","Live fuel moisture, herbaceous: peak","A2_groups",5,2.2506370565778e-05
+"ground","Live fuel moisture, herbaceous: peak","A2_groups",7,0.0335476072741673
+"ground","Live fuel moisture, herbaceous: peak","A2_groups",13,0.165452094173982
+"ground","Live fuel moisture, herbaceous: peak","geo",5,0.0460277621973649
+"ground","Live fuel moisture, herbaceous: peak","geo",7,0.00715579756952089
+"ground","Live fuel moisture, herbaceous: peak","geo",13,0.0573760419342682
+"ground","Live fuel moisture, woody: peak","A2_groups",5,0.239016782349044
+"ground","Live fuel moisture, woody: peak","A2_groups",7,0.268981453949467
+"ground","Live fuel moisture, woody: peak","A2_groups",13,0.305011490818454
+"ground","Live fuel moisture, woody: peak","geo",5,0.047852757021419
+"ground","Live fuel moisture, woody: peak","geo",7,0.0634443576997754
+"ground","Live fuel moisture, woody: peak","geo",13,0.179615394837085
+"ground","iNaturalist: flowering onset","A2_groups",5,0.0762098603054928
+"ground","iNaturalist: flowering onset","A2_groups",7,0.0898385696868759
+"ground","iNaturalist: flowering onset","A2_groups",13,0.109204397998023
+"ground","iNaturalist: flowering onset","geo",5,0.0230706596480604
+"ground","iNaturalist: flowering onset","geo",7,0.0348370797651608
+"ground","iNaturalist: flowering onset","geo",13,0.0626243132122624
+"synchrony","Green-up","A2_groups",5,0.212121233766536
+"synchrony","Green-up","A2_groups",7,0.210962763877731
+"synchrony","Green-up","A2_groups",13,0.239500596318554
+"synchrony","Green-up","geo",5,0.175088579930793
+"synchrony","Green-up","geo",7,0.19462852644508
+"synchrony","Green-up","geo",13,0.220413879063468
+"synchrony","NDVI peak","A2_groups",5,0.159540933574262
+"synchrony","NDVI peak","A2_groups",7,0.16805336605474
+"synchrony","NDVI peak","A2_groups",13,0.202584122572618
+"synchrony","NDVI peak","geo",5,0.103349953575548
+"synchrony","NDVI peak","geo",7,0.122247575114433
+"synchrony","NDVI peak","geo",13,0.160299593020278
+"synchrony","End of season","A2_groups",5,0.157629841877771
+"synchrony","End of season","A2_groups",7,0.158094081010002
+"synchrony","End of season","A2_groups",13,0.17725666211726
+"synchrony","End of season","geo",5,0.130071757922225
+"synchrony","End of season","geo",7,0.141175860074246
+"synchrony","End of season","geo",13,0.175773164430357
+"synchrony","Curing (NDII7)","A2_groups",5,0.115553657818643
+"synchrony","Curing (NDII7)","A2_groups",7,0.124568715853154
+"synchrony","Curing (NDII7)","A2_groups",13,0.143529835440009
+"synchrony","Curing (NDII7)","geo",5,0.0837646073410577
+"synchrony","Curing (NDII7)","geo",7,0.0800882231082668
+"synchrony","Curing (NDII7)","geo",13,0.115261346001899
+"stability","Stability (ARI between spatial half-samples)","A2_groups",5,0.632803562971286
+"stability","Stability (ARI between spatial half-samples)","A2_groups",7,0.82602625398561
+"stability","Stability (ARI between spatial half-samples)","A2_groups",13,0.650640830079462
+"stability","Smallest region (cells in the fit sample)","A2_groups",5,30319
+"stability","Smallest region (cells in the fit sample)","A2_groups",7,23752
+"stability","Smallest region (cells in the fit sample)","A2_groups",13,11280

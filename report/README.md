@@ -71,6 +71,26 @@ GSI_CF_DIST=E1234567890                 # optional: CloudFront distribution to i
 
 The page is uploaded as `index.html` (text/html, 5-minute cache).
 
+## Candidate-region pages
+
+A stand-alone page for one candidate set of regions (any partition and number of regions
+that was clustered), with the same map, profile table, heatmap, satellite curves and ground
+dates as the profile tabs on `index.qmd`, plus crosswalks to the working 13 and 7 regions
+and the evaluation scores at that number of regions. Laptop, full profile:
+
+```bash
+Rscript scripts/95_region_page.R full A2_groups 5           # -> report/regions_A2_groups_k05.html
+Rscript scripts/95_region_page.R full A2_groups 5 tables render   # rebuild tables + page only
+Rscript scripts/95_region_page.R full A2_groups 5 publish         # upload to the pages' S3 folder
+```
+
+`publish` runs only when named and uses the same `~/.Renviron` settings as 91
+(`GSI_S3_DEST`, optional `GSI_AWS_PROFILE`, `GSI_CF_DIST`). The page goes next to
+`index.html` as `regions_<partition>_k<KK>.html`; it is not linked from `index.qmd`.
+
+The template is `regions.qmd` (parameters `set_id`, `label`); comparison sets and region
+names are in config `region_pages:`. The working regions are not changed.
+
 ## When something changes
 
 - New results: rerun the figure script, render, copy the HTML.
