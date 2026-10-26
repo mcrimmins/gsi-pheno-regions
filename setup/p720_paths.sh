@@ -45,6 +45,7 @@ gsi_manifest() {
 1	DATA	_shared/raw/fire/firms	62_fire_firms.R	NASA FIRMS VIIRS S-NPP / NOAA-20 pieces (rate-limited API; pieces never re-fetched)
 1	DATA	$R/npn_study	50-59, 90 (npn_study/)	NPN curing study outputs, sens/ runs, ecoregions, plants list, and LTER packages downloaded by hand (lter/)
 1	STUDY	data/derived	GrowingSeasonIndex/study	NPN / Globe-LFMC / iNaturalist tables (lfmc_us_all.rds, npn_curing_metrics.rds ...) read by 31, 36, 39, 50-59
+1	DATA	obs	GSI_OBS_DIR copy (39, 51)	NPN curing tables copied from the laptop's GrowingSeasonIndex study (npn_curing_metrics.rds ...)
 2	DATA	$R/static	02_static.R, 03_herb_mask.R, 12_gsi.R	grid_mask, elev, lat/lon, NLCD shares, herb_share/mask, kbdi_map
 2	DATA	$R/features	10, 11, 12_gsi.R	Per-year Block 1 / Block 2 / GSI-variant feature rasters
 2	DATA	$R/summaries	10, 11, 12, 06	Across-year medians / IQR / variability rasters
@@ -57,6 +58,8 @@ gsi_manifest() {
 2	REPO	npn_study/logs	npn_study scripts	NPN study run logs (git-ignored)
 2	OBS	.	GSI_OBS_DIR	npn_curing_metrics.rds folder, if set separately
 3	DATA	_shared/raw/PRISM_us_dem_4km_bil.zip	02_static.R	PRISM 4 km DEM zip (elev.tif source)
+3	DATA	_shared/raw/PRISM_us_dem_4km	02_static.R	Unzipped PRISM DEM
+3	DATA	$R/viirs_daily_test	05 (GSI_VD_TEST=1)	VIIRS daily smoke test, Oct 21
 3	DATA	_shared/raw/nlcd	03_herb_mask.R	Annual NLCD C1.2 land cover zips, 2001 / 2012 / 2024
 3	DATA	_shared/raw/fire/fpa_fod	60_fire_fod.R	FPA-FOD 7th edition GeoPackage
 3	DATA	_shared/raw/fire/mtbs	61_fire_mtbs.R	MTBS perimeters v12
