@@ -7,6 +7,9 @@
 #   th40, th60  40 % and 60 % instead of 50 %
 #   gap21, gap14  50 %, crossing only if the readings around it are <= 21 / 14 days apart
 #   firstcycle  50 %; curing = first fall below 50 % after green-up, not the fall after the peak
+#   sustained   50 %; curing = first fall below 50 % after the peak that does not recover: no later
+#             reading at or above 50 % within npn_study: sustained_days (default 21) of the crossing.
+#             A dry-spell dip that crosses 50 % and greens up again is skipped (added 25 Oct)
 # The 02c dates (reference) and each variant go through the same steps:
 #   agreement  plant-year dates vs the reference: n, share lost, median and mean absolute difference
 #   typical    shift of the series typical dates (circular medians) vs the reference
@@ -44,6 +47,7 @@ go <- go[!is.na(go$pct_green), ]; go$py <- paste(go$individual_id, go$year); go 
 go <- go[order(go$py, go$doy), ]
 
 # ---- recompute dates -------------------------------------------------------------------------------
+sustained_days <- as.numeric(ns$sustained_days %||% 21)
 cross <- function(d, p, th, maxgap, mode) {
   n <- length(p); up <- NA_real_; dn <- NA_real_
   if (n < 2) return(c(up, dn))
@@ -51,11 +55,16 @@ cross <- function(d, p, th, maxgap, mode) {
   if (length(iu)) { i <- iu[1]; up <- d[i] + (th - p[i]) / (p[i + 1] - p[i]) * (d[i + 1] - d[i]) }
   start <- if (mode == "firstcycle") { if (length(iu)) iu[1] + 1 else 1 } else which.max(p)
   idn <- which(p[-n] >= th & p[-1] < th & diff(d) <= maxgap); idn <- idn[idn >= start]
+  if (mode == "sustained" && length(idn)) {             # keep crossings with no recovery to >= th within sustained_days
+    keep <- vapply(idn, function(i) { x <- d[i] + (p[i] - th) / (p[i] - p[i + 1]) * (d[i + 1] - d[i])
+      j <- which(d > x & d <= x + sustained_days); !any(p[j] >= th) }, TRUE)
+    idn <- idn[keep] }
   if (length(idn)) { i <- idn[1]; dn <- d[i] + (p[i] - th) / (p[i] - p[i + 1]) * (d[i + 1] - d[i]) }
   c(up, dn)
 }
 variants <- list(own50 = list(th = 50, gap = Inf, mode = "peak"), th40 = list(th = 40, gap = Inf, mode = "peak"), th60 = list(th = 60, gap = Inf, mode = "peak"),
-                 gap21 = list(th = 50, gap = 21, mode = "peak"), gap14 = list(th = 50, gap = 14, mode = "peak"), firstcycle = list(th = 50, gap = Inf, mode = "firstcycle"))
+                 gap21 = list(th = 50, gap = 21, mode = "peak"), gap14 = list(th = 50, gap = 14, mode = "peak"), firstcycle = list(th = 50, gap = Inf, mode = "firstcycle"),
+                 sustained = list(th = 50, gap = Inf, mode = "sustained"))
 idx <- split(seq_len(nrow(go)), go$py)
 V <- list(reference = data.frame(py = u$py, greenup = u$g50_up_doy, curing = u$g50_down_doy))
 for (vn in names(variants)) {

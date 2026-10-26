@@ -62,6 +62,12 @@ default:
     # revisions pinned (EDI refuses the public "list revisions" call, 23 Oct 2026); a newer revision
     # can be set here by hand from the EDI portal page
     ecoregions_url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
+    # In-season status (58i) and the sustained curing date (58f variant, 58i): curing = first fall
+    # below 50 % after the peak with no reading back at >= 50 % within sustained_days
+    sustained_days: 21
+    inseason: {dip_depth: 25, dip_recover_days: 42, boot: 200, clim_years: [2001, 2024]}
+    # NPN vs herbaceous live fuel moisture (59d; Globe-LFMC 2.0 U.S. records from the GSI study tables)
+    lfmc: {max_km: 10, max_days: 7}
     # Sensitivity runs of 52-54: `Rscript npn_study/scripts/5x_*.R full <name>`; outputs go to
     # <run_dir>/npn_study/sens/<name>/ (main results untouched).
     sensitivity:

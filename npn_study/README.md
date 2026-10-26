@@ -48,7 +48,7 @@ Rscript npn_study/scripts/54_npn_site_signal.R full      # shared site-year sign
 Rscript npn_study/scripts/55_npn_filter_inventory.R full # what each filter removes
 Rscript npn_study/scripts/58_npn_record_climatology.R full  # record, climatology, climate across space (Q1, Q2, Q4)
 Rscript npn_study/scripts/58e_npn_spatial_cv.R full       # climate across space, leaving out clusters of nearby sites (lme4, ~6 min)
-Rscript npn_study/scripts/58f_npn_date_sensitivity.R full # curve dates recomputed: thresholds, reading gaps, curing cycle
+Rscript npn_study/scripts/58f_npn_date_sensitivity.R full # curve dates recomputed: thresholds, reading gaps, curing cycle, sustained curing
 Rscript npn_study/scripts/58g_npn_bootstrap.R full 200    # 95 % intervals, site clusters resampled (lme4, ~10 min)
 Rscript npn_study/scripts/58h_npn_power.R full            # monitoring design: reliability and years to detect a weather driver (after 53)
 # LTER cross-checks: download the two EDI package zips by hand into <data_root>/full/npn_study/lter/ (EDI refuses scripted public access)
@@ -62,6 +62,8 @@ Rscript npn_study/scripts/58d_npn_species_traits.R full    # USDA PLANTS height,
 Rscript npn_study/scripts/59a_npn_landfire_download.R full # LANDFIRE FBFM40 CONUS GeoTIFF (3.27 GB zip, internet) -> <data_root>/landfire
 Rscript npn_study/scripts/59b_npn_fuelmodels.R full        # LANDFIRE fuel model per site (local FBFM40 GeoTIFF) -> data/npn_site_fuelmodels.csv
 Rscript npn_study/scripts/59c_npn_representativeness.R full  # the record against U.S. grass fuel area (LANDFIRE GR/GS cells by Level II ecoregion)
+Rscript npn_study/scripts/59d_npn_lfmc.R full                # NPN vs measured herbaceous fuel moisture (Globe-LFMC 2.0 from the GSI study tables)
+Rscript npn_study/scripts/58i_npn_inseason.R full             # in-season status: reversible dips, weekly greenness change vs VPD / rain (after 50)
 Rscript npn_study/scripts/58c_npn_species.R full           # species list for the page (report/tables/npn_species.csv)
 Rscript npn_study/scripts/90_npn_figs.R full             # figures for the page
 ```

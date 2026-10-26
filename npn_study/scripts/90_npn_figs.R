@@ -38,6 +38,10 @@
 #   npn_region_dates typical green-up and 50 % curing by ecoregion and grass type, as maps (58)
 #   npn_region_variance year-to-year variance shares fitted per ecoregion, maps and bars (53b)
 #   npn_region_c3c4  warm- minus cool-season typical green-up and curing by ecoregion, maps (58)
+#   npn_inseason     in-season status: reversible dips by month and grass type, and weekly greenness
+#                    change against VPD and rain anomalies (58i)
+#   npn_lfmc         NPN study sites and herbaceous live fuel moisture sites (Globe-LFMC 2.0), distance to
+#                    the nearest one, and paired readings where they meet (59d)
 #   npn_repr            how the record covers U.S. grass fuels: LANDFIRE grass and grass-shrub fuel
 #                       models with the sites, and shares by ecoregion (59c)
 #
@@ -51,7 +55,8 @@ source(file.path(npn_root, "R", "npn_setup.R")); source(file.path(npn_root, "R",
 all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signal", "npn_record", "npn_spatial", "npn_sensitivity", "npn_species",
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
               "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power", "npn_repr",
-              "npn_regions", "npn_region_dates", "npn_region_variance", "npn_region_c3c4")
+              "npn_regions", "npn_region_dates", "npn_region_variance", "npn_region_c3c4",
+              "npn_inseason", "npn_lfmc")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -866,6 +871,91 @@ if (do("npn_region_c3c4") && !is.null(TY) && !is.null(E <- eco_l2())) {
         text((x0 + x1) / 2, yb - 0.1 * diff(u[3:4]), "C4 earlier  <->  C4 later", cex = 0.72, col = ink2, xpd = NA)
       }
       points(stb$lon, stb$lat, pch = 21, bg = type_col[["both"]], col = "#ffffff", cex = 0.8, lwd = 0.5)
+    }
+  })
+}
+
+# ---- NPN study: in-season status (58i) -----------------------------------------------------------------
+dp_csv <- file.path(npn_dir, "inseason", "dips.csv"); ft_csv <- file.path(npn_dir, "inseason", "pairs_fit.csv")
+if (do("npn_inseason") && have(dp_csv, ft_csv)) {
+  DP <- utils::read.csv(dp_csv, stringsAsFactors = FALSE); FT <- utils::read.csv(ft_csv, stringsAsFactors = FALSE)
+  plot_png("npn_inseason", "plant-years", 2700, 950, function() {
+    layout(matrix(1:3, 1), widths = c(1.15, 1, 1.1)); par(mar = c(4.4, 4.6, 3.8, 1), oma = c(1.6, 0, 0, 0))
+    # A: dips by month of the low, C3 / C4; dark = dips that cross 50 %
+    cnt <- function(pw, x) tabulate(DP$month[DP$pathway == pw & x], 12)
+    a3 <- cnt("C3", TRUE); a4 <- cnt("C4", TRUE); c3 <- cnt("C3", DP$crosses50); c4 <- cnt("C4", DP$crosses50)
+    ym <- max(a3, a4) * 1.12
+    plot(NA, xlim = c(0.5, 12.5), ylim = c(0, ym), xaxt = "n", xlab = "", ylab = "dips (plant-years)", bty = "n", cex.axis = 0.85)
+    axis(1, at = 1:12, labels = substr(month.abb, 1, 1), cex.axis = 0.85, tick = FALSE)
+    rect(1:12 - 0.4, 0, 1:12, a3, col = grDevices::adjustcolor(terra_col, 0.35), border = NA); rect(1:12 - 0.4, 0, 1:12, c3, col = terra_col, border = NA)
+    rect(1:12, 0, 1:12 + 0.4, a4, col = grDevices::adjustcolor(aqua_col, 0.35), border = NA); rect(1:12, 0, 1:12 + 0.4, c4, col = aqua_col, border = NA)
+    mtext("Reversible dips in percent green", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("a fall of 25+ points and back up; by month of the low; dark: crossed 50 %", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    # B: share of plant-years with a dip, by ecoregion (>= 30 plant-years)
+    sm_csv <- file.path(npn_dir, "inseason", "dips_summary.csv")
+    SM <- if (file.exists(sm_csv)) utils::read.csv(sm_csv, stringsAsFactors = FALSE) else NULL
+    R <- if (!is.null(SM)) SM[SM$by == "region" & SM$plant_years >= 30, ] else NULL
+    if (!is.null(R) && nrow(R)) {
+      R <- R[order(R$share_with_dip), ]; n <- nrow(R)
+      par(mar = c(4.4, 11.5, 3.8, 1))
+      plot(NA, xlim = c(0, 1), ylim = c(0.5, n + 0.5), yaxt = "n", xaxt = "n", xlab = "share of plant-years with a dip", ylab = "", bty = "n")
+      axis(1, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.8)
+      axis(2, at = seq_len(n), labels = reg_lab(R$value, 30), las = 1, tick = FALSE, cex.axis = 0.6)
+      rect(0, seq_len(n) - 0.36, R$share_with_dip, seq_len(n) + 0.36, col = grDevices::adjustcolor("#7b4fb3", 0.55), border = NA)
+      text(R$share_with_dip, seq_len(n), sprintf("  %d", R$plant_years), adj = 0, cex = 0.6, col = ink2)
+      mtext("Where dips happen", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+      mtext(sprintf("ecoregions with 30+ plant-years (number shown); %.0f %% of all dips rest on one low reading", 100 * mean(DP$low_readings <= 1, na.rm = TRUE)), side = 3, line = 0.6, adj = 0, cex = 0.66, col = ink2)
+      par(mar = c(4.4, 4.6, 3.8, 1))
+    } else plot.new()
+    # C: weather slopes with 95 % intervals, series-week scale
+    f <- FT[FT$scale == "series_week" & FT$stat %in% c("b_vpd", "b_rain"), ]
+    f$lab <- sprintf("%s, %s", ifelse(f$pathway == "all", "all grasses", f$pathway), c(all = "whole season", early = "first 60 days", late = "later")[f$half])
+    labs <- unique(f$lab); y <- rev(seq_along(labs)); names(y) <- labs
+    xl <- range(c(f$lo, f$hi, -0.1, 0.1), na.rm = TRUE)
+    par(mar = c(4.4, 10.5, 3.8, 1))
+    plot(NA, xlim = xl, ylim = c(0.5, length(labs) + 0.5), yaxt = "n", xlab = "standardized slope (95 % interval over sites)", ylab = "", bty = "n", cex.axis = 0.85)
+    axis(2, at = y, labels = labs, las = 1, tick = FALSE, cex.axis = 0.75); abline(v = 0, col = "#d6d5d0")
+    sc <- c(b_vpd = "#7b4fb3", b_rain = "#2f7f6f"); off <- c(b_vpd = 0.15, b_rain = -0.15)
+    for (k in names(sc)) { g <- f[f$stat == k, ]; yy <- y[g$lab] + off[[k]]
+      segments(g$lo, yy, g$hi, yy, col = sc[[k]], lwd = 2); points(g$estimate, yy, pch = 16, col = sc[[k]]) }
+    mtext("Weekly greenness change vs weather", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("series-week anomalies; 0 = no response", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, pch = c(15, 15, 16, 16), col = c(terra_col, aqua_col, sc),
+           legend = c("cool-season (C3)", "warm-season (C4)", "VPD anomaly (7 d before to the reading)", "21-day rain anomaly"))
+  })
+}
+
+# ---- NPN study: NPN sites and herbaceous live fuel moisture (59d) ------------------------------------------
+ls_csv <- file.path(npn_dir, "lfmc", "lfmc_sites.csv"); co_csv <- file.path(npn_dir, "lfmc", "colocation.csv")
+if (do("npn_lfmc") && !is.null(TY) && have(ls_csv, co_csv)) {
+  LS <- utils::read.csv(ls_csv, stringsAsFactors = FALSE); CO <- utils::read.csv(co_csv, stringsAsFactors = FALSE)
+  pa_csv <- file.path(npn_dir, "lfmc", "pairs.csv"); PA <- if (file.exists(pa_csv)) utils::read.csv(pa_csv, stringsAsFactors = FALSE) else NULL
+  st <- site_tab()
+  np <- if (!is.null(PA) && nrow(PA) >= 10) 3 else 2
+  plot_png("npn_lfmc", "NPN and Globe-LFMC 2.0", 2900, 1150, function() {
+    layout(matrix(seq_len(np), 1), widths = c(1.7, 1, 1)[seq_len(np)]); par(mar = c(3.4, 0.6, 3.8, 0.6), oma = c(1.6, 0, 0, 0))
+    st_map(sprintf("circles: %d NPN study sites; squares: %d herbaceous LFMC sites (Globe-LFMC 2.0), sized by samples", nrow(st), nrow(LS)),
+           "Where grass greenness and herbaceous fuel moisture are measured")
+    Eo <- eco_l2(); if (!is.null(Eo)) eco_draw(Eo, NA, "#cfcdc7", 0.4)
+    points(LS$lon, LS$lat, pch = 22, bg = grDevices::adjustcolor("#2f7f6f", 0.6), col = "#ffffff", lwd = 0.4, cex = 0.5 + 1.4 * sqrt(LS$samples / max(LS$samples)))
+    points(st$lon, st$lat, pch = 21, bg = grDevices::adjustcolor(aqua_col, 0.7), col = "#ffffff", lwd = 0.4, cex = 0.5 + 1.4 * sqrt(st$n / max(st$n)))
+    par(mar = c(4.4, 4.6, 3.8, 1))
+    ks <- c(1, 5, 10, 25, 50, 100, 250); cs <- vapply(ks, function(k) sum(CO$nearest_km <= k), 0); cy <- vapply(ks, function(k) sum(CO$nearest_km <= k & CO$years_in_common > 0), 0)
+    plot(NA, xlim = c(0.5, length(ks) + 0.5), ylim = c(0, nrow(CO)), xaxt = "n", xlab = "distance to the nearest herbaceous LFMC site (km)", ylab = "NPN study sites", bty = "n", cex.axis = 0.85)
+    axis(1, at = seq_along(ks), labels = paste0("<= ", ks), cex.axis = 0.8)
+    rect(seq_along(ks) - 0.38, 0, seq_along(ks) + 0.38, cs, col = grDevices::adjustcolor("#2f7f6f", 0.35), border = NA)
+    rect(seq_along(ks) - 0.38, 0, seq_along(ks) + 0.38, cy, col = "#2f7f6f", border = NA)
+    text(seq_along(ks), cs, cs, pos = 3, cex = 0.75, col = ink2, xpd = NA)
+    mtext("How close are they?", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("dark: with sampling years in common", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    if (np == 3) {
+      plot(PA$pct_green, PA$lfmc, pch = 16, cex = 0.8, col = grDevices::adjustcolor(ifelse(PA$same_species, aqua_col, "#9c9b96"), 0.7),
+           xlab = "NPN percent green (species mean, nearest reading)", ylab = "herbaceous LFMC (%)", bty = "n", cex.axis = 0.85, xlim = c(0, 100))
+      abline(h = c(30, 120), col = "#d6d5d0", lty = 2)
+      r <- suppressWarnings(stats::cor(PA$pct_green, PA$lfmc, method = "spearman"))
+      mtext("Where they meet", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+      mtext(sprintf("%d pairs at %d site(s), +/- 7 days; Spearman r %.2f; orange: same species", nrow(PA), length(unique(PA$site_id)), r), side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
     }
   })
 }

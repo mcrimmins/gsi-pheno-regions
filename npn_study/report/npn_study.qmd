@@ -415,6 +415,44 @@ if (file.exists(re_f) && file.exists(rf_f)) {
 } else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/59c_npn_representativeness.R.\n:::\n\n')
 ```
 
+### NPN and measured herbaceous fuel moisture
+
+Fire danger systems use live fuel moisture (LFMC: water as a percentage of dry weight); the
+NFDRS herbaceous model treats grass as curing from 120 % down to fully cured at 30 %. The one
+national compilation of measured LFMC is Globe-LFMC 2.0, which carries the U.S. National Fuel
+Moisture Database. Its herbaceous records (grasses and forbs, after the database's range and
+outlier flags) are set here against the NPN record: where each is measured, how close the two
+networks come, and what the paired readings show where they meet (within 10 km and 7 days).
+
+```{r fig-npn-lfmc}
+#| results: asis
+show_fig("npn_lfmc",
+  "Left: NPN grass curing study sites (orange) and herbaceous live fuel moisture sites in Globe-LFMC 2.0 (green squares, sized by samples), with Level II ecoregion outlines. Middle: how many NPN sites have a herbaceous LFMC site within each distance (dark: with sampling years in common). Right, where there are pairs: NPN percent green against herbaceous LFMC within 10 km and 7 days.",
+  "Map of NPN and herbaceous fuel moisture sites, a bar chart of NPN sites by distance to the nearest fuel moisture site, and a scatter of paired readings.")
+```
+
+```{r lfmc-bullets}
+#| results: asis
+lc_f <- "tables/npn_lfmc_colocation.csv"; lp_f <- "tables/npn_lfmc_pairs.csv"; li_f <- "tables/npn_lfmc_inventory.csv"
+if (file.exists(lc_f) && file.exists(lp_f)) {
+  LC <- utils::read.csv(lc_f); LP <- utils::read.csv(lp_f, stringsAsFactors = FALSE); pv <- function(k) { v <- LP$value[LP$stat == k]; if (length(v)) v else NA }
+  c10 <- LC[LC$within_km == 10, ]; c50 <- LC[LC$within_km == 50, ]
+  cat(sprintf("- **Herbaceous fuel moisture is rarely measured.** Globe-LFMC 2.0 holds %s herbaceous samples in the U.S. (%s of them grasses) at %d sites, a small fraction of its records, which are mostly woody.\n",
+    format(pv("lfmc_herb_samples"), big.mark = ","), format(pv("lfmc_grass_samples"), big.mark = ","), pv("lfmc_herb_sites")))
+  cat(sprintf("- **The two networks barely meet.** %d of the %d NPN study sites have a herbaceous LFMC site within 10 km, %d of them with sampling years in common; within 50 km, %d sites (%d with years in common).\n",
+    c10$npn_sites, pv("npn_sites"), c10$npn_sites_years_in_common, c50$npn_sites, c50$npn_sites_years_in_common))
+  if (!is.na(pv("pairs")) && pv("pairs") > 0) cat(sprintf("- **Where they do meet, the evidence is thin.** %d paired readings (%d fuel moisture samples at %d NPN site%s) give a Spearman correlation of %.2f between percent green and herbaceous LFMC. That is one example, not a calibration.\n",
+    pv("pairs"), pv("lfmc_samples_paired"), pv("pair_sites"), ifelse(pv("pair_sites") == 1, "", "s"), pv("spearman_all")))
+  if (file.exists(li_f)) { LI <- utils::read.csv(li_f, stringsAsFactors = FALSE, colClasses = c(region = "character"))
+    top <- LI[!is.na(LI$grass_fuel_area_share), ]; top <- top[order(-top$grass_fuel_area_share), ][1:min(5, nrow(top)), ]
+    ml <- LI[which.max(LI$lfmc_sample_share), ]; mn <- LI[which.max(LI$npn_plant_year_share), ]
+    cat(sprintf("- **The two networks sample different places.**%s %.0f %% of herbaceous LFMC samples come from the %s, which holds %.0f %% of NPN plant-years; %.0f %% of NPN plant-years come from the %s, which holds %.0f %% of the LFMC samples. In the five ecoregions with the most U.S. grass fuel, herbaceous LFMC samples are %s and NPN plant-years %s.\n\n",
+      "", 100 * ml$lfmc_sample_share, ml$name, 100 * ml$npn_plant_year_share, 100 * mn$npn_plant_year_share, mn$name, 100 * mn$lfmc_sample_share,
+      paste(sprintf("%s %s", top$name, sprintf("%.0f %%", 100 * top$lfmc_sample_share)), collapse = ", "),
+      paste(sprintf("%.0f %%", 100 * top$npn_plant_year_share), collapse = ", "))) }
+} else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/59d_npn_lfmc.R.\n:::\n\n')
+```
+
 ## When grasses green up and cure
 
 ```{r fig-npn-dates}
@@ -685,6 +723,61 @@ show_fig("npn_signal",
   which years were warm overall rather than a cause, and they do not carry over to a
   left-out year either.
 
+## Does percent green track in-season fuel status?
+
+Fire managers monitor live fuel moisture as a status that rises and falls through the season,
+not only as two dates. The dates above use only where each plant's curve crosses 50 %. This
+section asks what the rest of the curve shows: do grasses brown down in dry spells and green up
+again, and does the week-to-week change in percent green follow the weather?
+
+**Reversible dips.** Within the green season (from the first reading at 50 % or more to the
+sustained curing date: the first fall below 50 % after the peak with no reading back at 50 % or
+more within 21 days), a dip is a fall of at least 25 points from the season's high so far,
+followed by a rise of at least 25 points from the low within 42 days. The same rule is applied
+to each plant and to each series curve (the mean of two or more plants of a species at a site on
+the same date), so a dip seen by one plant or one reading can be told from one the plants share.
+
+**Weekly change.** Consecutive readings of a plant 5–14 days apart in the green season give a
+rate of change in percent green per week. Its anomaly is the rate minus the same series' mean
+rate in that week of the year in its other years. The weather for the pair is the anomaly of
+daily VPD from 7 days before the first reading to the second, and of rain over the 21 days to
+the second reading, both against the site's 2001–2024 daily climatology. Fitted on plant pairs
+and on series-week means, by grass type and part of the season, with 95 % intervals from a
+bootstrap over sites.
+
+```{r fig-npn-inseason}
+#| results: asis
+show_fig("npn_inseason",
+  "Left: reversible dips in percent green by month of the low, cool-season (blue) and warm-season (orange); dark bars are dips that crossed 50 %. Middle: depth and length of each dip. Right: how the weekly change in percent green (series-week anomalies) responds to VPD and rain anomalies, standardized, with 95 % intervals over sites.",
+  "Bar chart of dips by month and grass type, scatter of dip depth against length, and a dot-and-interval chart of weather slopes near zero.")
+```
+
+```{r inseason-bullets}
+#| results: asis
+di_f <- "tables/npn_inseason_dips.csv"; fi_f <- "tables/npn_inseason_fit.csv"
+if (file.exists(di_f) && file.exists(fi_f)) {
+  DI <- utils::read.csv(di_f, stringsAsFactors = FALSE); FI <- utils::read.csv(fi_f, stringsAsFactors = FALSE)
+  g <- function(by, v, k) DI[[k]][DI$by == by & DI$value == v][1]
+  pc <- function(x) sprintf("%.0f %%", 100 * x)
+  cat(sprintf("- **Dips are common on single plants.** %s of plant-years have at least one reversible dip (cool-season %s, warm-season %s), a median %0.f points deep and %0.f days from the high to the recovery. But %s of them rest on a single low reading.\n",
+    pc(g("all", "all", "share_with_dip")), pc(g("pathway", "C3", "share_with_dip")), pc(g("pathway", "C4", "share_with_dip")), g("all", "all", "median_depth"), g("all", "all", "median_days"), pc(g("all", "all", "single_reading_share"))))
+  if (any(DI$by == "series_curve")) cat(sprintf("- **Fewer are shared by the plants.** On series curves, %s of series-years have a dip (cool-season %s, warm-season %s), and %s of those rest on a single reading. A dip the plants of a species share is the signal a fuel monitor would want; a dip on one plant is mostly the plant-to-plant and observer scatter seen in the variance partition.\n",
+    pc(g("series_curve", "all", "share_with_dip")), pc(g("series_curve", "C3", "share_with_dip")), pc(g("series_curve", "C4", "share_with_dip")), pc(g("series_curve", "all", "single_reading_share"))))
+  cat(sprintf("- **Dips move the curing date.** %s plant dips crossed 50 %% after the season's peak; each of those sets the curing date used above at the dip instead of the final brown-down. The sustained curing date (in the robustness table below) skips them.\n",
+    format(g("all", "all", "cross50_after_peak"), big.mark = ",")))
+  w <- FI[FI$scale == "series_week" & FI$pathway == "all" & FI$half == "all", ]; wv <- function(k, c) w[[c]][w$stat == k]
+  sl <- FI[FI$stat %in% c("b_vpd", "b_rain"), ]; sg <- sl[sl$lo > 0 | sl$hi < 0, ]
+  main_sig <- any(w$stat %in% c("b_vpd", "b_rain") & (w$lo > 0 | w$hi < 0))
+  cat(sprintf("- **Week to week, %s** Across %s series-weeks at %d sites, a one-SD VPD anomaly changes the greenness anomaly by %+.2f SD (95 %%: %+.2f to %+.2f) and a one-SD rain anomaly by %+.2f SD (%+.2f to %+.2f); together they explain %.1f %% of it. %s\n\n",
+    if (main_sig) "percent green responds to the weather, weakly." else "percent green does not follow the weather.",
+    format(w$n[1], big.mark = ","), w$sites[1], wv("b_vpd", "estimate"), wv("b_vpd", "lo"), wv("b_vpd", "hi"), wv("b_rain", "estimate"), wv("b_rain", "lo"), wv("b_rain", "hi"), 100 * wv("r2", "estimate"),
+    if (!nrow(sg)) "No subset (grass type, early or late season, plant pairs or series-weeks) has an interval that excludes zero."
+    else sprintf("Of the %d subset slopes (grass type, early or late season, plant pairs or series-weeks), %d exclude zero: %d for VPD (all %s) and %d for rain. Higher VPD goes with faster browning, as expected, but the effect is small: %s explain at most %.1f %% of the weekly change.",
+      nrow(sl), nrow(sg), sum(sg$stat == "b_vpd"), if (all(sg$estimate[sg$stat == "b_vpd"] < 0)) "negative" else "mixed in sign", sum(sg$stat == "b_rain"),
+      "VPD and rain together", 100 * max(FI$estimate[FI$stat == "r2"], na.rm = TRUE))))
+} else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/58i_npn_inseason.R.\n:::\n\n')
+```
+
 ## A check: 2016 and 2017
 
 In most years about 1 % of NEON plant-years never pass 50 % green. In 2016 it was 16 % and
@@ -729,7 +822,9 @@ Every result above rests on the 50 % crossings of each plant's percent-green cur
 much they depend on that choice, green-up and 50 % curing were recomputed for every usable
 plant-year from the readings, at 40 % and 60 % instead of 50 %, with a limit of 21 or 14 days on
 the gap between the two readings around the crossing, and with curing taken on the first fall
-below 50 % after green-up rather than the fall after the season's peak. Each version went through
+below 50 % after green-up rather than the fall after the season's peak, and with curing taken
+as the first fall below 50 % after the peak that is not followed by a reading back at 50 % or
+more within 21 days (the sustained curing date; see the in-season section). Each version went through
 the same typical dates, variance partition and single-driver weather test as the main results.
 
 ```{r tbl-npn-date-sens}
@@ -738,7 +833,7 @@ sf <- "tables/npn_date_sensitivity.csv"
 if (file.exists(sf)) {
   S <- utils::read.csv(sf, stringsAsFactors = FALSE)
   vl <- c(reference = "As used (02c)", own50 = "Recomputed, 50 %", th40 = "40 % green", th60 = "60 % green", gap21 = "Readings <= 21 d apart",
-          gap14 = "Readings <= 14 d apart", firstcycle = "Curing on the first cycle")
+          gap14 = "Readings <= 14 d apart", firstcycle = "Curing on the first cycle", sustained = "Sustained curing (no recovery in 21 d)")
   pc <- function(z) ifelse(is.na(z), "", sprintf("%.0f %%", 100 * z))
   T <- data.frame(Version = vl[S$variant], Date = c(greenup = "green-up", curing = "curing")[S$target], `Plant-years` = format(S$plant_years, big.mark = ","),
                   `Median change (days)` = sprintf("%.1f", S$median_abs_diff), `Typical date shift (days)` = sprintf("%+.1f", S$typical_shift_median),
@@ -764,6 +859,18 @@ if (file.exists(sf)) {
 - **The recomputation matches the dates used.** At 50 % with no gap limit, the recomputed dates
   equal those used throughout (median difference 0 days) wherever both exist; the recomputation
   finds more green-ups because the dates used require more of a curve before green-up.
+
+```{r sustained-bullet}
+#| results: asis
+if (file.exists(sf)) {
+  S <- utils::read.csv(sf, stringsAsFactors = FALSE)
+  a <- S[S$variant == "reference" & S$target == "curing", ]; b <- S[S$variant == "sustained" & S$target == "curing", ]
+  if (nrow(a) && nrow(b)) cat(sprintf("- **%s** With the sustained curing date, the shared year signal rises from %.0f %% to %.0f %% of the year-to-year variation and the single-plant share falls from %.0f %% to %.0f %% (year-to-year SD %.0f → %.0f days); typical dates move by a median %+.1f days (middle half of shifts %.0f days). The best single weather driver still scores %+.2f against the typical date.\n\n",
+    if (b$shared_share > a$shared_share && !is.na(b$weather_skill) && b$weather_skill <= 0.02) "Skipping temporary dips sharpens the curing date but adds no weather skill."
+    else "The sustained curing date.",
+    100 * a$shared_share, 100 * b$shared_share, 100 * a$plant_share, 100 * b$plant_share, a$sd_year_to_year, b$sd_year_to_year, b$typical_shift_median, b$typical_shift_iqr, b$weather_skill))
+}
+```
 
 ### Uncertainty in the headline numbers
 
@@ -994,43 +1101,39 @@ whether grasses green up in spring or wait for the monsoon.
 
 ## Toward a paper
 
-A draft outline, framed as a data and methods paper. Title idea: *Grass green-up and curing on
-the ground: a national record from NEON and USA-NPN percent-green observations*.
+**Framing (25 Oct, with USA-NPN).** The paper introduces where wildfire management needs for
+live fuel moisture monitoring in the contiguous U.S. meet the surface observations that exist:
+what managers need, what data are realistically available, how NPN percent-green observations
+fit in and what they can and cannot say, and what is needed to strengthen surface observations.
+The analyses on this page are its evidence. Working title to be revisited.
 
-**Contribution.** The first national ground record of when U.S. grasses green up and cure, by
-ecoregion and grass type; evidence that typical green-up follows site climate while typical
-curing largely does not; and evidence that weather adds no skill over the typical date from
-year to year, with the reason (most of the year-to-year scatter belongs to single plants).
-The typical date is therefore the baseline for grass fuel monitoring, and any weather
-adjustment has to beat it on ground data. ("First" still needs a literature check.)
+1. **Introduction: the management need.** Herbaceous fuel moisture and curing drive fire danger
+   (NFDRS herbaceous model, 120 → 30 %; the Growing Season Index), and status matters through the
+   season, not only two dates. Observed fuel state carries a fire signal that weather forecasts
+   of curing do not (companion fire study, in preparation).
+2. **What is realistically available.** Measured herbaceous LFMC (Globe-LFMC 2.0 / National Fuel
+   Moisture Database), NPN and NEON percent green, LTER phenology records, PhenoCam, satellite
+   greenness and moisture indices; what each measures, where, how often and how fast. Figures:
+   the NPN and LFMC site maps, coverage against U.S. grass fuel area by ecoregion and fuel model.
+3. **What NPN observations can say.** The national ground record of green-up and curing by
+   ecoregion and grass type; typical dates and what sets them across sites; no gap between the
+   cool- and warm-season pulses; agreement with LTER on seasons; satellite agreement at region-year
+   scale. Figures: dates by ecoregion, maps.
+4. **What they cannot (yet) say.** Year-to-year departures: place dominates, the shared year
+   signal is small and local, no weather model beats the typical date; in-season dips and weekly
+   change in percent green; single-plant and observer scatter; 2016–17 at NEON. Figures:
+   variance, ladder, in-season.
+5. **What is needed.** Where to add sites (Cold Deserts, Western Cordillera, Temperate Prairies,
+   grass-shrub fuels); more sites with a few plants each rather than more plants per site (power
+   analysis); co-located herbaceous LFMC sampling at some NPN sites to calibrate percent green;
+   reading through the end of the season; clearer percent-green guidance; data latency suited to
+   operations.
+6. **Conclusions.**
 
-1. **Introduction.** Curing is the grass fuel variable fire managers need and has almost no
-   ground record in the U.S.; NPN's percent-green question is, in practice, a curing
-   measurement.
-2. **Data and methods.** The record and its filters; curve dates; C3 / C4 and life-cycle
-   labels; PRISM metrics and normals; ecoregions; typical dates, spatial models, variance
-   partition, model ladder.
-3. **The record (Q1).** Size and coverage, reading density, use of the percent-green classes,
-   second green-ups, plants that never pass 50 %. Figures: site map, record.
-4. **Typical dates (Q2).** By ecoregion and grass type; cool- versus warm-season and annual
-   versus perennial contrasts; no gap between the cool- and warm-season pulses. Figure: dates by
-   ecoregion.
-5. **What sets the typical date across sites (Q4).** Green-up follows site climate; cool-season
-   curing follows the species; warm-season curing is unexplained. Figure: spatial.
-6. **Year to year (Q3, Q5, Q6).** Place dominates; a small shared year signal tracked weakly by
-   moisture; no model beats the typical date, simple process rules included. Figures:
-   variance, ladder, shared signal.
-7. **Data quality: 2016–2017.** What it is and what it changes (pending USA-NPN / NEON).
-8. **Discussion.** The typical date as the baseline for fire danger; why prediction from year to
-   year is capped; why warm-season curing resists explanation; recommendations for monitoring
-   (read through the end of the season, the same plants for several years, several plants per
-   species, wildland sites, clearer percent-green guidance).
-9. **Conclusions.**
-
-Supplement: filter funnel, the stricter year-to-year set as a sensitivity, the C3 / C4 table,
-per-ecoregion tables. Open: venue (*International Journal of Wildland Fire*, *Fire*, a
-phenology or data journal), co-authors from USA-NPN, whether to invite NEON, and whether the
-PhenoCam comparison earns a place.
+Supplement: filter funnel, the stricter year-to-year set, the C3 / C4 table, robustness (date
+methods, clustered cross-validation, bootstrap), species table, per-ecoregion tables. Open:
+venue (*International Journal of Wildland Fire*, *Fire*, *Fire Ecology*, a phenology journal),
+co-authors (USA-NPN; NEON?), PhenoCam in or out.
 
 ## Decisions so far
 
@@ -1057,6 +1160,7 @@ PhenoCam comparison earns a place.
 
 | Date | Change |
 |---|---|
+| 2026-10-25 | In-season status: reversible dips and weekly greenness change vs weather (58i); sustained curing date (58f); NPN against measured herbaceous fuel moisture, Globe-LFMC 2.0 (59d); paper outline reframed |
 | 2026-10-23 | Maps of the Level II ecoregions with the sites, typical dates, warm- minus cool-season timing and the year-to-year variance partition by ecoregion (53b); ecoregion outlines on the grass fuel map |
 | 2026-10-23 | How the record covers U.S. grass fuels: LANDFIRE grass fuel area by ecoregion and fuel model (59c) |
 | 2026-10-23 | Bootstrap intervals for the headline numbers (58g); monitoring design and power (58h) |
