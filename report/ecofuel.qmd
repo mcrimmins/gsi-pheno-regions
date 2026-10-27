@@ -306,6 +306,13 @@ if (!is.null(OE)) {
 } else cat("Fair season test pending (run 73 and 79).")
 ```
 
+**What the fair test shows (Oct 27, 2026).** The season split holds up on years it was not fitted
+to. Learned from odd years and scored on even years, it lifts the Level II units' curing score from
+0.20 to 0.61 and green-up from 0.18 to 0.38 (the all-years score, 0.81 for curing, was inflated by
+the circular test, but most of the gain survives). On Level III × herbaceous units it adds less
+(green-up 0.44 to 0.50, curing 0.58 to 0.67), because Level III boundaries already follow much of
+the two-season pattern. Level III × herbaceous × season is the best grouping tested.
+
 ## Level III × herbaceous climatologies (step 7)
 
 **Decided (Oct 27, 2026).** Step 5 showed fuel type adds little and Level III adds a lot, so the
@@ -337,6 +344,15 @@ if (!is.null(HU) && !is.null(HC)) {
 } else cat("Level III × herbaceous climatology pending (run 72 with eco3_herb, then 79).")
 ```
 
+**First findings (Oct 27, 2026).** 52 Level III units qualify, covering 174,345 cells (the Level II
+units covered 152,642); 31 small units (1,607 cells) are left out. Typical green-up runs from late
+November in California to early July in the monsoon units; curing from mid-April (Sonoran) to early
+December. The unit curing date moves 4–27 days from year to year (sd, median 11), most in the Texas
+units. Only about a quarter of the cells' year-to-year variation is shared within a unit. On the
+ground, the unit's typical date misses NPN sites by about 55 days (green-up) and 53 days (curing),
+against 42 and 45 for the site's own cell; satellite green-up runs about 23 days ahead of the ground
+and curing about 16 days behind.
+
 ## Fire as a check on the units (step 8)
 
 **Decided (Oct 27, 2026).** Wildfires of at least 10 acres (FPA-FOD, 2001–2024, debris burning
@@ -366,13 +382,27 @@ if (!is.null(PO)) {
 } else cat("Fire check pending (run 75 and 79).")
 ```
 
+**What the fire check shows (Oct 27, 2026).** Over all units the satellite cured window does not
+gather fires: 52 % of the 65,738 fires on unit cells fall in windows covering 54 % of the year
+(median concentration 1.05). It does in California (Central California Foothills 1.76), the interior
+Northwest and the eastern prairies (Flint Hills, Ozarks, Central Irregular Plains 1.5–1.6). It does
+not in the Rockies, Colorado Plateau and northern Plains (0.1–0.7), where fires burn in summer inside
+the NDVI growing season. Year to year, pooled over 41 units, later curing has no link with
+cured-window fires (r −0.02, 90 % interval −0.10 to 0.05; with the season split −0.04, −0.11 to
+0.02). All six interior Northwest units have negative r (−0.26 to −0.55), the expected sign where
+fires follow cured fine fuel. That pattern was found after looking, so it is a lead for the fire
+study to test, not a result.
+
 
 ## Still open
 
-1. **Write-up of steps 5–8** once the CONUS results are in.
-2. **Models** for units whose year-to-year variation is large and shared, with the ground check
-   as the gate.
-3. **LANDFIRE 2024** as a later sensitivity check.
+1. **Unit set:** adopt Level III × herbaceous × season in place of Level II × fuel (proposed).
+2. **A curing marker closer to fire:** rerun the fire concentration check with eos20, cure50 and the
+   NDII curve, since the NDVI end of season misses the summer fire season in the Rockies and
+   northern Plains.
+3. **Interior Northwest lead:** test it in the fire study's design, with the units fixed in advance.
+4. **Models** only once a curing marker lines up with fire.
+5. **LANDFIRE 2024** and 75 % purity as sensitivity checks.
 
 ## Status and changelog
 
@@ -383,3 +413,4 @@ if (!is.null(PO)) {
 | Oct 26, 2026 | Decided: compare groupings (step 5) before more units work, with the season split of two-season units and Level III ecoregions among them. Built and tested on synthetic data. |
 | Oct 27, 2026 | Step 5 run for CONUS: fuel type adds almost nothing to Level II ecoregions; Level III explains about twice as much satellite timing; only ground green-up has a transferable spatial pattern; the season split's satellite score is circular and needs a fair test. |
 | Oct 27, 2026 | Decided: a fair season test (seasons from odd years, scored on even years), climatologies rebuilt on Level III × herbaceous cells (no fuel split), and a fire check on those units. Steps 6–8 built and tested on synthetic data; CONUS runs pending. |
+| Oct 27, 2026 | Steps 6–8 run for CONUS: the season split holds up on held-out years; Level III × herbaceous × season is the best grouping; 52 Level III climatologies; the NDVI cured window gathers fires only in some regions and later curing has no pooled year-to-year link with fires, with a lead in the interior Northwest. |
