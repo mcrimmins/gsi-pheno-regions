@@ -1,0 +1,650 @@
+"eco","code","name","model","group","km2","npn_sites"
+4,"5.2","Mixed Wood Shield","NB1","NB_urban",7243,0
+4,"5.2","Mixed Wood Shield","NB3","NB_ag",7936,0
+4,"5.2","Mixed Wood Shield","NB8","NB_water",19128,0
+4,"5.2","Mixed Wood Shield","NB9","NB_barren",308,0
+4,"5.2","Mixed Wood Shield","GR1","GR",1122,0
+4,"5.2","Mixed Wood Shield","GR2","GR",10409,0
+4,"5.2","Mixed Wood Shield","GR3","GR",449,0
+4,"5.2","Mixed Wood Shield","GR4","GR",268,0
+4,"5.2","Mixed Wood Shield","GR5","GR",151,0
+4,"5.2","Mixed Wood Shield","GR6","GR",5431,0
+4,"5.2","Mixed Wood Shield","GR7","GR",182,0
+4,"5.2","Mixed Wood Shield","GR8","GR",9,0
+4,"5.2","Mixed Wood Shield","GS1","GS",89,0
+4,"5.2","Mixed Wood Shield","GS2","GS",2904,0
+4,"5.2","Mixed Wood Shield","GS3","GS",1311,0
+4,"5.2","Mixed Wood Shield","GS4","GS",2,0
+4,"5.2","Mixed Wood Shield","SH1","SH",34,0
+4,"5.2","Mixed Wood Shield","SH2","SH",5093,0
+4,"5.2","Mixed Wood Shield","SH3","SH",968,0
+4,"5.2","Mixed Wood Shield","SH4","SH",6591,0
+4,"5.2","Mixed Wood Shield","SH5","SH",1461,0
+4,"5.2","Mixed Wood Shield","SH6","SH",847,0
+4,"5.2","Mixed Wood Shield","SH7","SH",518,0
+4,"5.2","Mixed Wood Shield","SH8","SH",2,0
+4,"5.2","Mixed Wood Shield","SH9","SH",25,0
+4,"5.2","Mixed Wood Shield","TU1","TU",15493,0
+4,"5.2","Mixed Wood Shield","TU2","TU",25215,0
+4,"5.2","Mixed Wood Shield","TU3","TU",201,0
+4,"5.2","Mixed Wood Shield","TU5","TU",10918,0
+4,"5.2","Mixed Wood Shield","TL1","TL",5400,0
+4,"5.2","Mixed Wood Shield","TL2","TL",35945,2
+4,"5.2","Mixed Wood Shield","TL3","TL",2605,0
+4,"5.2","Mixed Wood Shield","TL4","TL",32845,1
+4,"5.2","Mixed Wood Shield","TL5","TL",311,0
+4,"5.2","Mixed Wood Shield","TL6","TL",8813,0
+4,"5.2","Mixed Wood Shield","TL7","TL",1,0
+4,"5.2","Mixed Wood Shield","TL8","TL",389,0
+4,"5.2","Mixed Wood Shield","TL9","TL",14031,0
+4,"5.2","Mixed Wood Shield","SB1","SB",24,0
+4,"5.2","Mixed Wood Shield","SB2","SB",34,0
+4,"5.2","Mixed Wood Shield","SB3","SB",12,0
+5,"5.3","Atlantic Highlands","NB1","NB_urban",5345,0
+5,"5.3","Atlantic Highlands","NB3","NB_ag",1241,0
+5,"5.3","Atlantic Highlands","NB8","NB_water",4689,0
+5,"5.3","Atlantic Highlands","NB9","NB_barren",125,0
+5,"5.3","Atlantic Highlands","GR1","GR",611,0
+5,"5.3","Atlantic Highlands","GR2","GR",6549,0
+5,"5.3","Atlantic Highlands","GR3","GR",580,0
+5,"5.3","Atlantic Highlands","GR5","GR",137,0
+5,"5.3","Atlantic Highlands","GR6","GR",818,1
+5,"5.3","Atlantic Highlands","GS1","GS",59,0
+5,"5.3","Atlantic Highlands","GS2","GS",688,0
+5,"5.3","Atlantic Highlands","GS3","GS",569,1
+5,"5.3","Atlantic Highlands","SH1","SH",145,0
+5,"5.3","Atlantic Highlands","SH2","SH",309,0
+5,"5.3","Atlantic Highlands","SH3","SH",11218,0
+5,"5.3","Atlantic Highlands","SH4","SH",623,0
+5,"5.3","Atlantic Highlands","SH6","SH",753,0
+5,"5.3","Atlantic Highlands","TU1","TU",3870,0
+5,"5.3","Atlantic Highlands","TU2","TU",13908,0
+5,"5.3","Atlantic Highlands","TU3","TU",8833,0
+5,"5.3","Atlantic Highlands","TU5","TU",965,0
+5,"5.3","Atlantic Highlands","TL1","TL",8441,0
+5,"5.3","Atlantic Highlands","TL2","TL",16052,0
+5,"5.3","Atlantic Highlands","TL3","TL",5071,0
+5,"5.3","Atlantic Highlands","TL4","TL",5314,0
+5,"5.3","Atlantic Highlands","TL5","TL",14538,0
+5,"5.3","Atlantic Highlands","TL6","TL",38799,0
+5,"5.3","Atlantic Highlands","TL8","TL",92,0
+5,"5.3","Atlantic Highlands","TL9","TL",2826,0
+5,"5.3","Atlantic Highlands","SB1","SB",1,0
+7,"6.2","Western Cordillera","NB1","NB_urban",13225,0
+7,"6.2","Western Cordillera","NB2","NB_snow",1439,0
+7,"6.2","Western Cordillera","NB3","NB_ag",9685,0
+7,"6.2","Western Cordillera","NB8","NB_water",9088,0
+7,"6.2","Western Cordillera","NB9","NB_barren",33279,0
+7,"6.2","Western Cordillera","GR1","GR",20338,1
+7,"6.2","Western Cordillera","GR2","GR",64209,1
+7,"6.2","Western Cordillera","GR3","GR",1243,0
+7,"6.2","Western Cordillera","GR4","GR",6,0
+7,"6.2","Western Cordillera","GS1","GS",27172,4
+7,"6.2","Western Cordillera","GS2","GS",130775,5
+7,"6.2","Western Cordillera","GS3","GS",14494,0
+7,"6.2","Western Cordillera","SH1","SH",11799,0
+7,"6.2","Western Cordillera","SH2","SH",54793,0
+7,"6.2","Western Cordillera","SH3","SH",634,0
+7,"6.2","Western Cordillera","SH4","SH",8968,0
+7,"6.2","Western Cordillera","SH5","SH",3191,0
+7,"6.2","Western Cordillera","SH6","SH",492,0
+7,"6.2","Western Cordillera","SH7","SH",4812,0
+7,"6.2","Western Cordillera","TU1","TU",42460,0
+7,"6.2","Western Cordillera","TU2","TU",60525,0
+7,"6.2","Western Cordillera","TU3","TU",50,0
+7,"6.2","Western Cordillera","TU5","TU",140824,0
+7,"6.2","Western Cordillera","TL1","TL",14507,1
+7,"6.2","Western Cordillera","TL2","TL",4167,1
+7,"6.2","Western Cordillera","TL3","TL",48991,1
+7,"6.2","Western Cordillera","TL4","TL",10552,0
+7,"6.2","Western Cordillera","TL5","TL",39694,0
+7,"6.2","Western Cordillera","TL6","TL",6396,0
+7,"6.2","Western Cordillera","TL7","TL",2294,0
+7,"6.2","Western Cordillera","TL8","TL",39383,0
+7,"6.2","Western Cordillera","TL9","TL",5351,0
+7,"6.2","Western Cordillera","SB1","SB",2,0
+7,"6.2","Western Cordillera","SB2","SB",52,0
+7,"6.2","Western Cordillera","SB3","SB",616,0
+8,"7.1","Marine West Coast Forest","NB1","NB_urban",8966,0
+8,"7.1","Marine West Coast Forest","NB2","NB_snow",9,0
+8,"7.1","Marine West Coast Forest","NB3","NB_ag",3030,0
+8,"7.1","Marine West Coast Forest","NB8","NB_water",8810,0
+8,"7.1","Marine West Coast Forest","NB9","NB_barren",536,0
+8,"7.1","Marine West Coast Forest","GR1","GR",330,0
+8,"7.1","Marine West Coast Forest","GR2","GR",8405,1
+8,"7.1","Marine West Coast Forest","GR3","GR",4,0
+8,"7.1","Marine West Coast Forest","GS1","GS",332,0
+8,"7.1","Marine West Coast Forest","GS2","GS",1537,1
+8,"7.1","Marine West Coast Forest","GS3","GS",121,0
+8,"7.1","Marine West Coast Forest","SH1","SH",3,0
+8,"7.1","Marine West Coast Forest","SH2","SH",448,0
+8,"7.1","Marine West Coast Forest","SH3","SH",4,0
+8,"7.1","Marine West Coast Forest","SH4","SH",24,0
+8,"7.1","Marine West Coast Forest","SH5","SH",35,0
+8,"7.1","Marine West Coast Forest","SH6","SH",4,0
+8,"7.1","Marine West Coast Forest","SH7","SH",468,0
+8,"7.1","Marine West Coast Forest","TU1","TU",11678,0
+8,"7.1","Marine West Coast Forest","TU2","TU",6698,0
+8,"7.1","Marine West Coast Forest","TU3","TU",30,0
+8,"7.1","Marine West Coast Forest","TU5","TU",10626,0
+8,"7.1","Marine West Coast Forest","TL1","TL",1036,0
+8,"7.1","Marine West Coast Forest","TL2","TL",899,0
+8,"7.1","Marine West Coast Forest","TL3","TL",3434,0
+8,"7.1","Marine West Coast Forest","TL4","TL",7205,0
+8,"7.1","Marine West Coast Forest","TL5","TL",16062,0
+8,"7.1","Marine West Coast Forest","TL6","TL",1749,0
+8,"7.1","Marine West Coast Forest","TL7","TL",44,0
+8,"7.1","Marine West Coast Forest","TL8","TL",1025,0
+8,"7.1","Marine West Coast Forest","TL9","TL",242,0
+8,"7.1","Marine West Coast Forest","SB1","SB",6,0
+8,"7.1","Marine West Coast Forest","SB2","SB",50,0
+9,"8.1","Mixed Wood Plains","NB1","NB_urban",40873,0
+9,"8.1","Mixed Wood Plains","NB3","NB_ag",81918,0
+9,"8.1","Mixed Wood Plains","NB8","NB_water",26146,0
+9,"8.1","Mixed Wood Plains","NB9","NB_barren",330,0
+9,"8.1","Mixed Wood Plains","GR1","GR",6099,2
+9,"8.1","Mixed Wood Plains","GR2","GR",52247,1
+9,"8.1","Mixed Wood Plains","GR3","GR",1535,1
+9,"8.1","Mixed Wood Plains","GR4","GR",1529,0
+9,"8.1","Mixed Wood Plains","GR5","GR",916,1
+9,"8.1","Mixed Wood Plains","GR6","GR",2834,1
+9,"8.1","Mixed Wood Plains","GR7","GR",3,0
+9,"8.1","Mixed Wood Plains","GR8","GR",1600,0
+9,"8.1","Mixed Wood Plains","GS1","GS",204,0
+9,"8.1","Mixed Wood Plains","GS2","GS",2397,0
+9,"8.1","Mixed Wood Plains","GS3","GS",1052,0
+9,"8.1","Mixed Wood Plains","GS4","GS",209,0
+9,"8.1","Mixed Wood Plains","SH1","SH",209,0
+9,"8.1","Mixed Wood Plains","SH2","SH",4112,0
+9,"8.1","Mixed Wood Plains","SH3","SH",14598,1
+9,"8.1","Mixed Wood Plains","SH4","SH",3173,1
+9,"8.1","Mixed Wood Plains","SH5","SH",452,0
+9,"8.1","Mixed Wood Plains","SH6","SH",4439,2
+9,"8.1","Mixed Wood Plains","SH7","SH",1557,0
+9,"8.1","Mixed Wood Plains","SH8","SH",5,0
+9,"8.1","Mixed Wood Plains","SH9","SH",2,0
+9,"8.1","Mixed Wood Plains","TU1","TU",12801,0
+9,"8.1","Mixed Wood Plains","TU2","TU",11406,0
+9,"8.1","Mixed Wood Plains","TU3","TU",11449,1
+9,"8.1","Mixed Wood Plains","TU5","TU",917,0
+9,"8.1","Mixed Wood Plains","TL1","TL",11663,0
+9,"8.1","Mixed Wood Plains","TL2","TL",33262,0
+9,"8.1","Mixed Wood Plains","TL3","TL",7776,4
+9,"8.1","Mixed Wood Plains","TL4","TL",10511,0
+9,"8.1","Mixed Wood Plains","TL5","TL",7127,1
+9,"8.1","Mixed Wood Plains","TL6","TL",42288,2
+9,"8.1","Mixed Wood Plains","TL8","TL",330,0
+9,"8.1","Mixed Wood Plains","TL9","TL",12507,2
+9,"8.1","Mixed Wood Plains","SB1","SB",29,0
+9,"8.1","Mixed Wood Plains","SB2","SB",8,0
+9,"8.1","Mixed Wood Plains","SB3","SB",4,0
+10,"8.2","Central Usa Plains","NB1","NB_urban",29590,0
+10,"8.2","Central Usa Plains","NB3","NB_ag",134569,0
+10,"8.2","Central Usa Plains","NB8","NB_water",5843,0
+10,"8.2","Central Usa Plains","NB9","NB_barren",160,0
+10,"8.2","Central Usa Plains","GR1","GR",3461,0
+10,"8.2","Central Usa Plains","GR2","GR",19992,2
+10,"8.2","Central Usa Plains","GR3","GR",532,0
+10,"8.2","Central Usa Plains","GR4","GR",390,0
+10,"8.2","Central Usa Plains","GR5","GR",140,0
+10,"8.2","Central Usa Plains","GR6","GR",38,0
+10,"8.2","Central Usa Plains","GS1","GS",42,0
+10,"8.2","Central Usa Plains","GS2","GS",439,0
+10,"8.2","Central Usa Plains","GS3","GS",79,0
+10,"8.2","Central Usa Plains","SH1","SH",2,0
+10,"8.2","Central Usa Plains","SH2","SH",573,0
+10,"8.2","Central Usa Plains","SH3","SH",2490,1
+10,"8.2","Central Usa Plains","SH4","SH",76,0
+10,"8.2","Central Usa Plains","SH5","SH",1,0
+10,"8.2","Central Usa Plains","SH6","SH",130,0
+10,"8.2","Central Usa Plains","SH7","SH",1106,0
+10,"8.2","Central Usa Plains","TU1","TU",1865,0
+10,"8.2","Central Usa Plains","TU2","TU",529,0
+10,"8.2","Central Usa Plains","TU3","TU",18,0
+10,"8.2","Central Usa Plains","TU5","TU",17,0
+10,"8.2","Central Usa Plains","TL1","TL",201,0
+10,"8.2","Central Usa Plains","TL2","TL",11820,4
+10,"8.2","Central Usa Plains","TL3","TL",586,0
+10,"8.2","Central Usa Plains","TL4","TL",212,0
+10,"8.2","Central Usa Plains","TL5","TL",91,0
+10,"8.2","Central Usa Plains","TL6","TL",10716,0
+10,"8.2","Central Usa Plains","TL8","TL",26,0
+10,"8.2","Central Usa Plains","TL9","TL",3183,0
+11,"8.3","Southeastern Usa Plains","NB1","NB_urban",83219,0
+11,"8.3","Southeastern Usa Plains","NB3","NB_ag",124906,0
+11,"8.3","Southeastern Usa Plains","NB8","NB_water",23092,0
+11,"8.3","Southeastern Usa Plains","NB9","NB_barren",928,0
+11,"8.3","Southeastern Usa Plains","GR1","GR",8480,0
+11,"8.3","Southeastern Usa Plains","GR2","GR",166638,3
+11,"8.3","Southeastern Usa Plains","GR3","GR",25785,1
+11,"8.3","Southeastern Usa Plains","GR4","GR",80,0
+11,"8.3","Southeastern Usa Plains","GR5","GR",2773,1
+11,"8.3","Southeastern Usa Plains","GR6","GR",205,0
+11,"8.3","Southeastern Usa Plains","GR8","GR",82,0
+11,"8.3","Southeastern Usa Plains","GS1","GS",1788,0
+11,"8.3","Southeastern Usa Plains","GS2","GS",7711,0
+11,"8.3","Southeastern Usa Plains","GS3","GS",11210,0
+11,"8.3","Southeastern Usa Plains","GS4","GS",2,0
+11,"8.3","Southeastern Usa Plains","SH1","SH",363,0
+11,"8.3","Southeastern Usa Plains","SH2","SH",934,0
+11,"8.3","Southeastern Usa Plains","SH3","SH",2945,0
+11,"8.3","Southeastern Usa Plains","SH4","SH",4973,0
+11,"8.3","Southeastern Usa Plains","SH6","SH",10238,1
+11,"8.3","Southeastern Usa Plains","SH7","SH",18797,0
+11,"8.3","Southeastern Usa Plains","SH8","SH",4715,0
+11,"8.3","Southeastern Usa Plains","SH9","SH",1337,0
+11,"8.3","Southeastern Usa Plains","TU1","TU",30933,1
+11,"8.3","Southeastern Usa Plains","TU2","TU",18623,1
+11,"8.3","Southeastern Usa Plains","TU3","TU",19908,0
+11,"8.3","Southeastern Usa Plains","TU5","TU",128,0
+11,"8.3","Southeastern Usa Plains","TL1","TL",7661,0
+11,"8.3","Southeastern Usa Plains","TL2","TL",77852,2
+11,"8.3","Southeastern Usa Plains","TL3","TL",20079,4
+11,"8.3","Southeastern Usa Plains","TL4","TL",1890,1
+11,"8.3","Southeastern Usa Plains","TL5","TL",2864,0
+11,"8.3","Southeastern Usa Plains","TL6","TL",207418,2
+11,"8.3","Southeastern Usa Plains","TL8","TL",12536,1
+11,"8.3","Southeastern Usa Plains","TL9","TL",130346,1
+11,"8.3","Southeastern Usa Plains","SB1","SB",1,0
+11,"8.3","Southeastern Usa Plains","SB2","SB",6,0
+11,"8.3","Southeastern Usa Plains","SB3","SB",2,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","NB1","NB_urban",35382,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","NB3","NB_ag",14368,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","NB8","NB_water",8422,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","NB9","NB_barren",557,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR1","GR",3652,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR2","GR",91679,2
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR3","GR",4587,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR4","GR",4,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR5","GR",55,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GR6","GR",1,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GS1","GS",229,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GS2","GS",281,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GS3","GS",1013,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","GS4","GS",1,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH1","SH",28,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH2","SH",66,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH3","SH",2251,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH4","SH",393,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH6","SH",2543,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH7","SH",1648,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SH8","SH",336,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TU1","TU",4766,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TU2","TU",6794,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TU3","TU",51830,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TU5","TU",256,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL1","TL",6222,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL2","TL",69256,1
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL3","TL",4937,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL4","TL",693,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL5","TL",1942,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL6","TL",86446,1
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL8","TL",32455,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","TL9","TL",87217,3
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SB1","SB",1,0
+12,"8.4","Ozark/Ouachita-Appalachian Forests","SB2","SB",9,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","NB1","NB_urban",32601,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","NB3","NB_ag",71376,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","NB8","NB_water",53972,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","NB9","NB_barren",521,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR1","GR",4461,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR2","GR",23059,2
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR3","GR",7727,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR4","GR",268,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR5","GR",6088,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR6","GR",1712,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR8","GR",12649,2
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GS1","GS",1678,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GS2","GS",1942,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GS3","GS",2807,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH1","SH",665,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH2","SH",422,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH3","SH",2079,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH4","SH",10367,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH6","SH",24987,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH7","SH",7905,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH8","SH",4163,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SH9","SH",6135,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TU1","TU",6892,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TU2","TU",2908,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TU3","TU",8594,2
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TU4","TU",1,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TU5","TU",1,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL1","TL",1675,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL2","TL",43256,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL3","TL",5866,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL4","TL",170,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL5","TL",783,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL6","TL",21246,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL8","TL",901,0
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","TL9","TL",12440,1
+13,"8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","SB2","SB",1,0
+14,"9.2","Temperate Prairies","NB1","NB_urban",28563,0
+14,"9.2","Temperate Prairies","NB3","NB_ag",308486,0
+14,"9.2","Temperate Prairies","NB8","NB_water",10196,0
+14,"9.2","Temperate Prairies","NB9","NB_barren",164,0
+14,"9.2","Temperate Prairies","GR1","GR",4489,5
+14,"9.2","Temperate Prairies","GR2","GR",108123,8
+14,"9.2","Temperate Prairies","GR3","GR",2982,0
+14,"9.2","Temperate Prairies","GR4","GR",6112,1
+14,"9.2","Temperate Prairies","GR5","GR",3764,0
+14,"9.2","Temperate Prairies","GR6","GR",8034,0
+14,"9.2","Temperate Prairies","GR7","GR",3455,0
+14,"9.2","Temperate Prairies","GR8","GR",489,0
+14,"9.2","Temperate Prairies","GS1","GS",147,0
+14,"9.2","Temperate Prairies","GS2","GS",861,0
+14,"9.2","Temperate Prairies","GS3","GS",4,0
+14,"9.2","Temperate Prairies","SH1","SH",1,0
+14,"9.2","Temperate Prairies","SH2","SH",47,0
+14,"9.2","Temperate Prairies","SH3","SH",439,0
+14,"9.2","Temperate Prairies","SH4","SH",26,0
+14,"9.2","Temperate Prairies","SH6","SH",4,0
+14,"9.2","Temperate Prairies","SH7","SH",433,0
+14,"9.2","Temperate Prairies","SH8","SH",295,0
+14,"9.2","Temperate Prairies","SH9","SH",4,0
+14,"9.2","Temperate Prairies","TU1","TU",1556,0
+14,"9.2","Temperate Prairies","TU2","TU",1590,0
+14,"9.2","Temperate Prairies","TU5","TU",4454,0
+14,"9.2","Temperate Prairies","TL1","TL",48,0
+14,"9.2","Temperate Prairies","TL2","TL",14387,4
+14,"9.2","Temperate Prairies","TL3","TL",1045,1
+14,"9.2","Temperate Prairies","TL4","TL",4,0
+14,"9.2","Temperate Prairies","TL5","TL",42,0
+14,"9.2","Temperate Prairies","TL6","TL",12848,1
+14,"9.2","Temperate Prairies","TL8","TL",63,0
+14,"9.2","Temperate Prairies","TL9","TL",2517,0
+15,"9.3","West-Central Semiarid Prairies","NB1","NB_urban",8937,0
+15,"9.3","West-Central Semiarid Prairies","NB3","NB_ag",124384,0
+15,"9.3","West-Central Semiarid Prairies","NB8","NB_water",10154,0
+15,"9.3","West-Central Semiarid Prairies","NB9","NB_barren",6302,0
+15,"9.3","West-Central Semiarid Prairies","GR1","GR",4254,0
+15,"9.3","West-Central Semiarid Prairies","GR2","GR",318264,21
+15,"9.3","West-Central Semiarid Prairies","GR3","GR",957,0
+15,"9.3","West-Central Semiarid Prairies","GR4","GR",24464,0
+15,"9.3","West-Central Semiarid Prairies","GR5","GR",3,0
+15,"9.3","West-Central Semiarid Prairies","GR6","GR",1055,0
+15,"9.3","West-Central Semiarid Prairies","GR7","GR",5455,2
+15,"9.3","West-Central Semiarid Prairies","GR8","GR",8,0
+15,"9.3","West-Central Semiarid Prairies","GS1","GS",7421,0
+15,"9.3","West-Central Semiarid Prairies","GS2","GS",66381,1
+15,"9.3","West-Central Semiarid Prairies","GS3","GS",4809,0
+15,"9.3","West-Central Semiarid Prairies","SH1","SH",3992,0
+15,"9.3","West-Central Semiarid Prairies","SH2","SH",1098,0
+15,"9.3","West-Central Semiarid Prairies","SH3","SH",1,0
+15,"9.3","West-Central Semiarid Prairies","SH4","SH",2,0
+15,"9.3","West-Central Semiarid Prairies","SH5","SH",6,0
+15,"9.3","West-Central Semiarid Prairies","SH6","SH",294,0
+15,"9.3","West-Central Semiarid Prairies","SH7","SH",15,0
+15,"9.3","West-Central Semiarid Prairies","SH9","SH",52,0
+15,"9.3","West-Central Semiarid Prairies","TU1","TU",2242,0
+15,"9.3","West-Central Semiarid Prairies","TU2","TU",135,0
+15,"9.3","West-Central Semiarid Prairies","TU5","TU",723,0
+15,"9.3","West-Central Semiarid Prairies","TL1","TL",57,0
+15,"9.3","West-Central Semiarid Prairies","TL2","TL",77,0
+15,"9.3","West-Central Semiarid Prairies","TL3","TL",3163,0
+15,"9.3","West-Central Semiarid Prairies","TL4","TL",53,0
+15,"9.3","West-Central Semiarid Prairies","TL5","TL",91,0
+15,"9.3","West-Central Semiarid Prairies","TL6","TL",93,0
+15,"9.3","West-Central Semiarid Prairies","TL8","TL",1671,0
+15,"9.3","West-Central Semiarid Prairies","TL9","TL",4,0
+16,"9.4","South Central Semiarid Prairies","NB1","NB_urban",41375,0
+16,"9.4","South Central Semiarid Prairies","NB3","NB_ag",239302,0
+16,"9.4","South Central Semiarid Prairies","NB8","NB_water",7896,0
+16,"9.4","South Central Semiarid Prairies","NB9","NB_barren",3586,0
+16,"9.4","South Central Semiarid Prairies","GR1","GR",51189,2
+16,"9.4","South Central Semiarid Prairies","GR2","GR",410361,14
+16,"9.4","South Central Semiarid Prairies","GR3","GR",47827,2
+16,"9.4","South Central Semiarid Prairies","GR4","GR",18838,7
+16,"9.4","South Central Semiarid Prairies","GR5","GR",8654,0
+16,"9.4","South Central Semiarid Prairies","GR6","GR",5097,0
+16,"9.4","South Central Semiarid Prairies","GR7","GR",165,0
+16,"9.4","South Central Semiarid Prairies","GR8","GR",1953,0
+16,"9.4","South Central Semiarid Prairies","GS1","GS",17472,10
+16,"9.4","South Central Semiarid Prairies","GS2","GS",98035,3
+16,"9.4","South Central Semiarid Prairies","GS3","GS",210,0
+16,"9.4","South Central Semiarid Prairies","SH1","SH",851,0
+16,"9.4","South Central Semiarid Prairies","SH2","SH",3889,0
+16,"9.4","South Central Semiarid Prairies","SH3","SH",83,0
+16,"9.4","South Central Semiarid Prairies","SH4","SH",10,0
+16,"9.4","South Central Semiarid Prairies","SH7","SH",3082,0
+16,"9.4","South Central Semiarid Prairies","SH9","SH",212,0
+16,"9.4","South Central Semiarid Prairies","TU1","TU",9110,1
+16,"9.4","South Central Semiarid Prairies","TU2","TU",493,0
+16,"9.4","South Central Semiarid Prairies","TU3","TU",1,0
+16,"9.4","South Central Semiarid Prairies","TU5","TU",29,0
+16,"9.4","South Central Semiarid Prairies","TL1","TL",195,0
+16,"9.4","South Central Semiarid Prairies","TL2","TL",1516,0
+16,"9.4","South Central Semiarid Prairies","TL3","TL",1687,0
+16,"9.4","South Central Semiarid Prairies","TL4","TL",9,0
+16,"9.4","South Central Semiarid Prairies","TL5","TL",251,0
+16,"9.4","South Central Semiarid Prairies","TL6","TL",20740,1
+16,"9.4","South Central Semiarid Prairies","TL8","TL",1248,0
+16,"9.4","South Central Semiarid Prairies","TL9","TL",1259,0
+16,"9.4","South Central Semiarid Prairies","SB1","SB",2,0
+17,"9.5","Texas-Louisiana Coastal Plain","NB1","NB_urban",8282,0
+17,"9.5","Texas-Louisiana Coastal Plain","NB3","NB_ag",15214,0
+17,"9.5","Texas-Louisiana Coastal Plain","NB8","NB_water",10072,0
+17,"9.5","Texas-Louisiana Coastal Plain","NB9","NB_barren",507,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR1","GR",1405,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR2","GR",22750,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR3","GR",2433,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR5","GR",1313,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR6","GR",294,0
+17,"9.5","Texas-Louisiana Coastal Plain","GR8","GR",3913,0
+17,"9.5","Texas-Louisiana Coastal Plain","GS1","GS",872,0
+17,"9.5","Texas-Louisiana Coastal Plain","GS2","GS",7115,0
+17,"9.5","Texas-Louisiana Coastal Plain","GS3","GS",10,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH1","SH",35,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH2","SH",12,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH3","SH",6,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH4","SH",2,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH6","SH",542,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH7","SH",540,0
+17,"9.5","Texas-Louisiana Coastal Plain","SH8","SH",4,0
+17,"9.5","Texas-Louisiana Coastal Plain","TU1","TU",1748,0
+17,"9.5","Texas-Louisiana Coastal Plain","TU2","TU",498,0
+17,"9.5","Texas-Louisiana Coastal Plain","TU3","TU",291,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL1","TL",71,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL2","TL",2246,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL3","TL",287,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL4","TL",1,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL5","TL",14,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL6","TL",1852,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL8","TL",11,0
+17,"9.5","Texas-Louisiana Coastal Plain","TL9","TL",352,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","NB1","NB_urban",1446,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","NB3","NB_ag",2702,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","NB8","NB_water",481,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","NB9","NB_barren",222,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","GR1","GR",275,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","GR2","GR",3979,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","GR3","GR",2363,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","GS1","GS",10163,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","GS2","GS",33539,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","SH1","SH",520,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","SH2","SH",4,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TU1","TU",154,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TU2","TU",3,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TL1","TL",4,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TL2","TL",87,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TL3","TL",3,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TL5","TL",1,0
+18,"9.6","Tamaulipas-Texas Semiarid Plain","TL6","TL",77,0
+19,"10.1","Cold Deserts","NB1","NB_urban",16288,0
+19,"10.1","Cold Deserts","NB2","NB_snow",3,0
+19,"10.1","Cold Deserts","NB3","NB_ag",52168,0
+19,"10.1","Cold Deserts","NB8","NB_water",9854,0
+19,"10.1","Cold Deserts","NB9","NB_barren",79184,0
+19,"10.1","Cold Deserts","GR1","GR",97093,2
+19,"10.1","Cold Deserts","GR2","GR",137098,2
+19,"10.1","Cold Deserts","GR3","GR",327,0
+19,"10.1","Cold Deserts","GR4","GR",12,0
+19,"10.1","Cold Deserts","GS1","GS",79001,0
+19,"10.1","Cold Deserts","GS2","GS",255950,8
+19,"10.1","Cold Deserts","GS3","GS",19304,0
+19,"10.1","Cold Deserts","SH1","SH",68141,0
+19,"10.1","Cold Deserts","SH2","SH",52366,2
+19,"10.1","Cold Deserts","SH3","SH",941,0
+19,"10.1","Cold Deserts","SH4","SH",3027,0
+19,"10.1","Cold Deserts","SH5","SH",65358,2
+19,"10.1","Cold Deserts","SH6","SH",27,0
+19,"10.1","Cold Deserts","SH7","SH",4923,0
+19,"10.1","Cold Deserts","TU1","TU",5142,0
+19,"10.1","Cold Deserts","TU2","TU",2584,0
+19,"10.1","Cold Deserts","TU5","TU",4368,0
+19,"10.1","Cold Deserts","TL1","TL",10541,0
+19,"10.1","Cold Deserts","TL2","TL",524,0
+19,"10.1","Cold Deserts","TL3","TL",35753,1
+19,"10.1","Cold Deserts","TL4","TL",199,0
+19,"10.1","Cold Deserts","TL5","TL",980,0
+19,"10.1","Cold Deserts","TL6","TL",799,0
+19,"10.1","Cold Deserts","TL7","TL",1,0
+19,"10.1","Cold Deserts","TL8","TL",2195,0
+19,"10.1","Cold Deserts","TL9","TL",27,0
+19,"10.1","Cold Deserts","SB3","SB",1,0
+20,"10.2","Warm Deserts","NB1","NB_urban",12192,0
+20,"10.2","Warm Deserts","NB3","NB_ag",6550,0
+20,"10.2","Warm Deserts","NB8","NB_water",1749,0
+20,"10.2","Warm Deserts","NB9","NB_barren",62608,0
+20,"10.2","Warm Deserts","GR1","GR",100136,5
+20,"10.2","Warm Deserts","GR2","GR",53188,1
+20,"10.2","Warm Deserts","GR3","GR",328,0
+20,"10.2","Warm Deserts","GS1","GS",64062,1
+20,"10.2","Warm Deserts","GS2","GS",70596,19
+20,"10.2","Warm Deserts","SH1","SH",38117,7
+20,"10.2","Warm Deserts","SH2","SH",2217,0
+20,"10.2","Warm Deserts","SH3","SH",2,0
+20,"10.2","Warm Deserts","SH4","SH",413,0
+20,"10.2","Warm Deserts","SH5","SH",534,0
+20,"10.2","Warm Deserts","SH6","SH",2,0
+20,"10.2","Warm Deserts","SH7","SH",1050,1
+20,"10.2","Warm Deserts","TU1","TU",300,0
+20,"10.2","Warm Deserts","TU2","TU",138,0
+20,"10.2","Warm Deserts","TU3","TU",16,0
+20,"10.2","Warm Deserts","TU5","TU",252,0
+20,"10.2","Warm Deserts","TL1","TL",33,0
+20,"10.2","Warm Deserts","TL2","TL",94,0
+20,"10.2","Warm Deserts","TL3","TL",187,0
+20,"10.2","Warm Deserts","TL4","TL",1,0
+20,"10.2","Warm Deserts","TL5","TL",159,0
+20,"10.2","Warm Deserts","TL6","TL",164,0
+20,"10.2","Warm Deserts","TL7","TL",1,0
+20,"10.2","Warm Deserts","TL8","TL",25,0
+21,"11.1","Mediterranean California","NB1","NB_urban",21347,0
+21,"11.1","Mediterranean California","NB3","NB_ag",13556,0
+21,"11.1","Mediterranean California","NB8","NB_water",7196,0
+21,"11.1","Mediterranean California","NB9","NB_barren",2612,0
+21,"11.1","Mediterranean California","GR1","GR",2639,1
+21,"11.1","Mediterranean California","GR2","GR",49307,1
+21,"11.1","Mediterranean California","GR3","GR",1803,0
+21,"11.1","Mediterranean California","GS1","GS",6233,2
+21,"11.1","Mediterranean California","GS2","GS",21445,4
+21,"11.1","Mediterranean California","GS3","GS",2521,0
+21,"11.1","Mediterranean California","SH1","SH",287,0
+21,"11.1","Mediterranean California","SH2","SH",2850,0
+21,"11.1","Mediterranean California","SH3","SH",15,0
+21,"11.1","Mediterranean California","SH4","SH",9575,0
+21,"11.1","Mediterranean California","SH5","SH",12860,2
+21,"11.1","Mediterranean California","SH6","SH",2,0
+21,"11.1","Mediterranean California","SH7","SH",80,0
+21,"11.1","Mediterranean California","TU1","TU",269,0
+21,"11.1","Mediterranean California","TU2","TU",1082,1
+21,"11.1","Mediterranean California","TU3","TU",1020,0
+21,"11.1","Mediterranean California","TU5","TU",5306,1
+21,"11.1","Mediterranean California","TL1","TL",211,0
+21,"11.1","Mediterranean California","TL2","TL",329,0
+21,"11.1","Mediterranean California","TL3","TL",1545,0
+21,"11.1","Mediterranean California","TL4","TL",557,0
+21,"11.1","Mediterranean California","TL5","TL",1031,0
+21,"11.1","Mediterranean California","TL6","TL",3049,0
+21,"11.1","Mediterranean California","TL7","TL",91,0
+21,"11.1","Mediterranean California","TL8","TL",711,0
+21,"11.1","Mediterranean California","TL9","TL",69,0
+21,"11.1","Mediterranean California","SB1","SB",1,0
+21,"11.1","Mediterranean California","SB2","SB",19,0
+22,"12.1","Western Sierra Madre Piedmont","NB1","NB_urban",681,0
+22,"12.1","Western Sierra Madre Piedmont","NB3","NB_ag",525,0
+22,"12.1","Western Sierra Madre Piedmont","NB8","NB_water",16,0
+22,"12.1","Western Sierra Madre Piedmont","NB9","NB_barren",752,0
+22,"12.1","Western Sierra Madre Piedmont","GR1","GR",9749,4
+22,"12.1","Western Sierra Madre Piedmont","GR2","GR",11123,2
+22,"12.1","Western Sierra Madre Piedmont","GR3","GR",8,0
+22,"12.1","Western Sierra Madre Piedmont","GS1","GS",6451,1
+22,"12.1","Western Sierra Madre Piedmont","GS2","GS",11071,1
+22,"12.1","Western Sierra Madre Piedmont","SH1","SH",1902,0
+22,"12.1","Western Sierra Madre Piedmont","SH2","SH",795,0
+22,"12.1","Western Sierra Madre Piedmont","SH3","SH",31,0
+22,"12.1","Western Sierra Madre Piedmont","SH4","SH",1,0
+22,"12.1","Western Sierra Madre Piedmont","SH5","SH",10,0
+22,"12.1","Western Sierra Madre Piedmont","SH7","SH",503,1
+22,"12.1","Western Sierra Madre Piedmont","TU1","TU",186,1
+22,"12.1","Western Sierra Madre Piedmont","TU2","TU",1,0
+22,"12.1","Western Sierra Madre Piedmont","TU5","TU",52,0
+22,"12.1","Western Sierra Madre Piedmont","TL1","TL",50,0
+22,"12.1","Western Sierra Madre Piedmont","TL2","TL",18,0
+22,"12.1","Western Sierra Madre Piedmont","TL3","TL",196,1
+22,"12.1","Western Sierra Madre Piedmont","TL4","TL",7,0
+22,"12.1","Western Sierra Madre Piedmont","TL5","TL",3,0
+22,"12.1","Western Sierra Madre Piedmont","TL6","TL",31,0
+22,"12.1","Western Sierra Madre Piedmont","TL7","TL",4,0
+22,"12.1","Western Sierra Madre Piedmont","TL8","TL",82,0
+22,"12.1","Western Sierra Madre Piedmont","SB2","SB",10,0
+23,"13.1","Upper Gila Mountains","NB1","NB_urban",1336,0
+23,"13.1","Upper Gila Mountains","NB3","NB_ag",15,0
+23,"13.1","Upper Gila Mountains","NB8","NB_water",202,0
+23,"13.1","Upper Gila Mountains","NB9","NB_barren",2823,0
+23,"13.1","Upper Gila Mountains","GR1","GR",14622,0
+23,"13.1","Upper Gila Mountains","GR2","GR",24555,0
+23,"13.1","Upper Gila Mountains","GR3","GR",64,0
+23,"13.1","Upper Gila Mountains","GR4","GR",2,0
+23,"13.1","Upper Gila Mountains","GS1","GS",7866,0
+23,"13.1","Upper Gila Mountains","GS2","GS",30143,3
+23,"13.1","Upper Gila Mountains","SH1","SH",1793,0
+23,"13.1","Upper Gila Mountains","SH2","SH",2475,0
+23,"13.1","Upper Gila Mountains","SH3","SH",13,0
+23,"13.1","Upper Gila Mountains","SH4","SH",3,0
+23,"13.1","Upper Gila Mountains","SH5","SH",100,0
+23,"13.1","Upper Gila Mountains","SH7","SH",3287,0
+23,"13.1","Upper Gila Mountains","TU1","TU",645,0
+23,"13.1","Upper Gila Mountains","TU2","TU",301,0
+23,"13.1","Upper Gila Mountains","TU5","TU",1212,0
+23,"13.1","Upper Gila Mountains","TL1","TL",534,0
+23,"13.1","Upper Gila Mountains","TL2","TL",27,0
+23,"13.1","Upper Gila Mountains","TL3","TL",4501,0
+23,"13.1","Upper Gila Mountains","TL4","TL",198,0
+23,"13.1","Upper Gila Mountains","TL5","TL",1016,1
+23,"13.1","Upper Gila Mountains","TL6","TL",134,0
+23,"13.1","Upper Gila Mountains","TL7","TL",198,0
+23,"13.1","Upper Gila Mountains","TL8","TL",10698,0
+23,"13.1","Upper Gila Mountains","TL9","TL",25,0
+23,"13.1","Upper Gila Mountains","SB2","SB",28,0
+26,"15.4","Everglades","NB1","NB_urban",2921,0
+26,"15.4","Everglades","NB3","NB_ag",2083,0
+26,"15.4","Everglades","NB8","NB_water",4855,0
+26,"15.4","Everglades","NB9","NB_barren",15,0
+26,"15.4","Everglades","GR1","GR",401,0
+26,"15.4","Everglades","GR2","GR",586,0
+26,"15.4","Everglades","GR3","GR",130,0
+26,"15.4","Everglades","GR5","GR",922,0
+26,"15.4","Everglades","GR6","GR",2,0
+26,"15.4","Everglades","GR8","GR",7205,0
+26,"15.4","Everglades","GS1","GS",52,0
+26,"15.4","Everglades","GS2","GS",197,0
+26,"15.4","Everglades","GS3","GS",5,0
+26,"15.4","Everglades","SH2","SH",204,0
+26,"15.4","Everglades","SH3","SH",524,0
+26,"15.4","Everglades","SH4","SH",1209,0
+26,"15.4","Everglades","SH6","SH",244,0
+26,"15.4","Everglades","SH7","SH",333,0
+26,"15.4","Everglades","SH8","SH",120,0
+26,"15.4","Everglades","SH9","SH",1,0
+26,"15.4","Everglades","TU1","TU",888,0
+26,"15.4","Everglades","TU2","TU",95,0
+26,"15.4","Everglades","TU3","TU",258,0
+26,"15.4","Everglades","TL1","TL",13,0
+26,"15.4","Everglades","TL2","TL",1899,0
+26,"15.4","Everglades","TL3","TL",105,0
+26,"15.4","Everglades","TL5","TL",38,0
+26,"15.4","Everglades","TL6","TL",212,0
+26,"15.4","Everglades","TL8","TL",5,0
+26,"15.4","Everglades","TL9","TL",7,0

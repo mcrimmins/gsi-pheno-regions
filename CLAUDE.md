@@ -932,3 +932,27 @@ climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel
   fires/yr); copies inventory CSVs to report/tables/ecofuel_<table>_<profile>.csv for the page.
   Colours: categorical slots 1-5 (validated), nonburnable greys.
 - `91_sync_from_p720.R ecofuel` copies <remote run>/ecofuel/*.tif, *.csv and inventory/* to the laptop.
+- Oct 26 fix: 70's window was the grid box's 4 CORNERS projected to Albers, which misses the southern
+  parallel's bulge: land south of ~28 N (south FL / TX, 4,839 cells) got no shares. R/ecofuel.R
+  ext_in_crs() projects 500 points per edge (0 cells missed); rerun done. R/nlcd.R (03) has the same
+  corner-only window: its NLCD shares / herb_share / herb_mask lack 4,835 of 6,557 land cells in that
+  strip (affects herb mask, rules confidence, fire_fuel_share there; A2 regions and the fire pilot
+  regions are unaffected). Not fixed: regions-work code, Mike's call (fix = same function in nlcd.R,
+  then rerun 03, ~34 min P720).
+  CONUS inventory (Oct 26, after the fix): 26 % of cells have one group >= 75 % of land; GR1-2 = 87 %
+  of GR area (GR3+ matters only in 8.5); 25 GR/GS units with >= 200 cells at >= 50 %, 11 of them with
+  >= 3 NPN record sites; 60 record sites in GR/GS fuel, 39 in SH/TU/TL; eastern GR units (8.x, 9.2)
+  have ~no strict-herb cells (pasture); NB_ag ~15 % of mapped land (60 % of 9.2 and 8.2).
+- DECIDED Oct 26 (Mike; config ecofuel: climatology): climatologies for GR + GS everywhere plus SH in
+  10.1; unit cells = group >= 50 % of land (75 % sensitivity); units >= 200 cells; agriculture context
+  only; fire check later as its own step. R/ecofuel.R ecofuel_unit_cells(cfg, purity), cdiff().
+- `scripts/72_ecofuel_climatology.R [profile]` (laptop, minutes; needs cutb/metrics per year, summaries
+  cutb_*_curve_median + cutb_metrics_median, NPN record series_typical.csv): per unit x metric (sos20,
+  ndvi_peak_doy, eos50, eos20, cure50, gsl20, ndvi_amp) x version p50 / p75 -> ecofuel/climatology/
+  climatology.csv (typical = median of cell medians, q25 / q75 across cells, two_season share > 60 d off,
+  yty_sd / p10 / p90 of unit-year median departures (|d| > 90 dropped), sync = 1 - within-year SS /
+  total SS of cell departures, coverage, jumps), years.csv, curves.csv, units.csv, ground_sites.csv /
+  ground_summary.csv (NPN record sites by eco + 59b fuel group; site = median over species series;
+  greenup~sos20, curing~eos50, cured~eos20; bias and MAE of unit typical vs the site's own cell typical,
+  circular differences). Planted fixture: typicals exact, yty_sd = planted, r 0.999, sync within 0.02,
+  jumps 4 %, ground offsets recovered. 79 figure ecofuel_climatology + tables ecofuel_clim_*.

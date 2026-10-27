@@ -131,22 +131,82 @@ if (have) {
 }
 ```
 
-## Open questions (to settle before building climatologies)
+## Climatologies by unit (step 4)
 
-1. **Product.** Climatology table and maps only, or also models? Grass and grass-shrub only, or
-   shrub and timber-understory too? (For shrub and timber groups the satellite mostly sees the
-   canopy, not the surface fuel; live fuel moisture is the only ground check there.)
-2. **Fuel grouping.** The five groups, or finer (e.g. low-load GR1–2 vs higher-load GR3+)? How to
-   treat agricultural cells, which cover much of the Plains and upper Midwest?
-3. **Purity and minimum unit size.** Share-weighted summaries, pure cells only, or both? What
-   minimum area makes a unit worth reporting?
-4. **Fire as a check.** Use fire activity by unit (seasonal curves, and the year-to-year test of the
-   fire study) to judge the units? Fires are counted here so the numbers are in hand.
-5. **Ecoregion level and LANDFIRE version.** Level II for now (as the NPN study); Level III as a
-   later sensitivity? LANDFIRE 2023 (as the NPN study) or 2024?
+**Decided (Oct 26, 2026).** Climatologies for grass (GR) and grass-shrub (GS) units in every Level II
+ecoregion, plus shrub (SH) in the Cold Deserts, where shrub is extensive and overlaps the herbaceous
+mask. A unit's cells are the 4 km cells where its fuel group holds at least half the land (three
+quarters as a sensitivity check), and a unit needs at least 200 such cells (about 3,000 km²). Timber
+groups are left out (the satellite sees the canopy, not the surface fuel), as is agriculture (crop
+calendars, not fuel; reported above as context). Fire activity as a check on the units comes later,
+as its own step.
+
+**How.** For each cell, the typical date of each satellite season metric is its median over
+2001–2025 (the same typical date as the regions work's rules package). A unit's typical date is the
+median over its cells, with the spread across cells (25–75 %). Year-to-year spread comes from each
+year's median departure across the unit's cells (departures over 90 days are left out as season
+jumps). "Shared" is the share of the cells' year-to-year variation that the unit has in common: high
+values mean the unit moves together, so a unit-level adjustment could work. NPN grass sites in the
+usable record are matched to units by their ecoregion and fuel model; each site's date is the median
+over its species. The unit's typical date is compared with the site's own 4 km cell's typical date, to
+see how much a unit table loses against a per-cell map.
+
+```{r clim-fig, results="asis"}
+show_fig("ecofuel_climatology", "Typical green-up, NDVI peak and curing for each grass, grass-shrub and Cold Deserts shrub unit, with the spread across the unit's cells, NPN ground medians where a unit has three or more sites, and the year-to-year spread of curing.")
+```
+
+```{r clim-table}
+#| tbl-cap: "Unit climatologies (cells where the group holds >= 50 % of the land). Dates are typical dates with the 25-75 % range across the unit's cells; year sd = year-to-year spread; shared = share of year-to-year variation common to the unit."
+ctab <- function(name) {
+  for (p in c("full", "dev")) { f <- sprintf("tables/ecofuel_clim_%s_%s.csv", name, p); if (file.exists(f)) return(utils::read.csv(f, stringsAsFactors = FALSE)) }
+  NULL
+}
+CU <- ctab("units"); CC <- ctab("climatology"); CG <- ctab("ground_summary")
+md <- function(d) ifelse(is.na(d), "–", format(as.Date("2001-01-01") + round(d) - 1, "%b %d"))
+if (!is.null(CU) && !is.null(CC)) {
+  CU <- CU[CU$eligible, ]; CC <- CC[CC$version == "p50", ]
+  g <- function(u, m, f) { v <- CC[[f]][CC$unit == u & CC$metric == m]; if (length(v)) v[1] else NA }
+  grp <- c(GR = "Grass", GS = "Grass-shrub", SH = "Shrub")
+  x <- data.frame(
+    Unit = sprintf("%s %s", CU$code, CU$name), Fuel = grp[CU$group], Cells = format(CU$cells, big.mark = ","),
+    `Green-up` = sapply(CU$unit, function(u) sprintf("%s (%s–%s)", md(g(u, "sos20", "typical")), md(g(u, "sos20", "q25")), md(g(u, "sos20", "q75")))),
+    `Green-up year sd` = sapply(CU$unit, function(u) sprintf("%.0f d", g(u, "sos20", "yty_sd"))),
+    Peak = sapply(CU$unit, function(u) md(g(u, "ndvi_peak_doy", "typical"))),
+    Curing = sapply(CU$unit, function(u) sprintf("%s (%s–%s)", md(g(u, "eos50", "typical")), md(g(u, "eos50", "q25")), md(g(u, "eos50", "q75")))),
+    `Curing year sd` = sapply(CU$unit, function(u) sprintf("%.0f d", g(u, "eos50", "yty_sd"))),
+    `Curing shared` = sapply(CU$unit, function(u) sprintf("%.2f", g(u, "eos50", "sync"))),
+    check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "llrllllrr")
+} else cat("Table pending (run 72 and 79).")
+```
+
+```{r ground-table}
+#| tbl-cap: "Ground check: NPN grass sites in each unit. Bias = unit typical date minus ground date (median over sites); error = mean absolute difference using the unit's typical date vs the site's own 4 km cell's typical date."
+if (!is.null(CG)) {
+  z <- CG[CG$sites >= 3 | CG$unit == "all units", ]
+  z <- z[order(z$unit == "all units", z$unit, z$target), ]
+  x <- data.frame(Unit = z$unit, `Ground event` = z$target, `Satellite metric` = z$metric, Sites = z$sites,
+                  `Ground median` = md(z$ground_median), `Satellite typical` = md(z$sat_typical),
+                  Bias = sprintf("%+.0f d", z$bias), `Error, unit` = sprintf("%.0f d", z$mae_unit),
+                  `Error, own cell` = sprintf("%.0f d", z$mae_cell), check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "lllrllrrr")
+} else cat("Ground check pending (72 on the laptop, where the NPN record lives).")
+```
+
+## Still open
+
+1. **Fire as a check on the units** (next step after the climatologies): the fire study's
+   year-to-year test with these units in place of the climate regions, in the large western and
+   Plains grass and grass-shrub units.
+2. **Does the split earn its keep?** How much of the satellite and ground timing ecoregion alone,
+   ecoregion × fuel and the climate regions (A2, 13 regions) each explain.
+3. **Models** for units whose year-to-year variation is large and shared, with the ground check
+   as the gate.
+4. **Level III ecoregions and LANDFIRE 2024** as later sensitivity checks.
 
 ## Status and changelog
 
 | Date | Change |
 |---|---|
-| Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory); tested on synthetic data; CONUS run pending. |
+| Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory) and run for CONUS. A first run missed land south of about 28° N (south Texas, south Florida) because the map window was projected from its corners only; fixed and rerun. |
+| Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built and tested on synthetic data. |

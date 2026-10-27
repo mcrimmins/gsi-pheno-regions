@@ -8,6 +8,10 @@
 #                      outlines; share of the land held by that group (purity)
 #   ecofuel_inventory  per ecoregion: land area split by fuel group (bars), NPN grass sites in GR / GS
 #                      fuel and FPA-FOD fires >= 10 ac per year (columns of numbers)
+#   ecofuel_climatology  per climatology unit (72): typical green-up, NDVI peak and curing (eos50) with the
+#                      spread of the unit's cells (25-75 %), NPN ground medians where >= 3 sites, and the
+#                      year-to-year spread of curing; also copies 72's unit, climatology and ground-summary
+#                      tables (no site ids) to report/tables
 # Usage: Rscript scripts/79_ecofuel_figs.R [profile] [figure ...]
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -19,7 +23,7 @@ source(here::here("R", "log.R"))
 source(here::here("R", "grid.R"))
 source(here::here("R", "ecofuel.R"))
 
-all_figs <- c("ecofuel_units", "ecofuel_inventory")
+all_figs <- c("ecofuel_units", "ecofuel_inventory", "ecofuel_climatology")
 want <- if (length(args) >= 2) args[-1] else all_figs
 cfg <- load_cfg(profile)
 log_file <- log_init("79_ecofuel_figs", profile)
@@ -40,6 +44,11 @@ for (f in c("units", "ecoregions", "models", "purity")) {
 }
 ss <- ecofuel_dir(cfg, "shares_summary.csv")
 if (file.exists(ss)) file.copy(ss, file.path(tdir, sprintf("ecofuel_shares_%s.csv", profile)), overwrite = TRUE)
+cdir <- ecofuel_dir(cfg, "climatology")
+for (f in c("units", "climatology", "ground_summary")) {
+  src <- file.path(cdir, paste0(f, ".csv"))
+  if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_clim_%s_%s.csv", f, profile)), overwrite = TRUE)
+}
 log_msg("tables -> report/tables/ecofuel_*_", profile, ".csv")
 
 # ---- drawing helpers (as 69) ---------------------------------------------------------------------
@@ -137,6 +146,56 @@ if ("ecofuel_inventory" %in% want) {
     text(xr + xmax * 0.13, seq_len(n), if (has_fire) format(round(fy), big.mark = ",") else "-", adj = 0, cex = 0.78, col = ink)
     show <- c("GR", "GS", "SH", "TU", "TL", "NB_ag", "NB_urban", "NB_barren")
     legend(x = 0, y = n + 1.5, legend = glab[show], fill = gcol[show], border = bg, bty = "n", ncol = 4, cex = 0.72, text.col = ink2, yjust = 0)
+  })
+}
+# ---- climatology timeline (72) -----------------------------------------------------------------
+cf <- file.path(cdir, "climatology.csv")
+if ("ecofuel_climatology" %in% want && file.exists(cf)) {
+  CL <- utils::read.csv(cf, stringsAsFactors = FALSE); CL <- CL[CL$version == "p50", ]
+  UT <- utils::read.csv(file.path(cdir, "units.csv"), stringsAsFactors = FALSE, colClasses = c(code = "character"))
+  UT <- UT[UT$eligible, ]
+  gf <- file.path(cdir, "ground_summary.csv")
+  GG <- if (file.exists(gf)) utils::read.csv(gf, stringsAsFactors = FALSE) else NULL
+  n <- nrow(UT)
+  gv <- function(u, m, f) { v <- CL[[f]][CL$unit == u & CL$metric == m]; if (length(v)) v[1] else NA }
+  gg <- function(u, t) { if (is.null(GG)) return(c(NA, NA)); z <- GG[GG$unit == u & GG$target == t, ]; if (!nrow(z)) c(NA, 0) else c(z$ground_median[1], z$sites[1]) }
+  mcol <- c(gu = "#2a78d6", cu = "#eb6834")
+  plot_png("ecofuel_climatology", "MODIS 2001-2025; NPN ground 2014-2024", 2200, 360 + 64 * n, function() {
+    par(mar = c(3.2, 17, 5.5, 15), xpd = NA)
+    xl <- c(0, 400)
+    plot(NA, xlim = xl, ylim = c(0.4, n + 0.6), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n", xaxs = "i")
+    mon <- c(as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, 366, 397)
+    lab <- c(month.abb, "Jan", "Feb")
+    segments(mon, 0.4, mon, n + 0.5, col = grid_col, xpd = FALSE)
+    axis(1, at = mon + 15, labels = lab, tick = FALSE, line = -0.8, cex.axis = 0.75)
+    for (i in seq_len(n)) {
+      y <- n + 1 - i; u <- UT$unit[i]
+      for (m in c("sos20", "eos50")) {
+        cc <- if (m == "sos20") mcol["gu"] else mcol["cu"]
+        segments(gv(u, m, "q25"), y, gv(u, m, "q75"), y, col = cc, lwd = 2.2, lend = 1)
+        points(gv(u, m, "typical"), y, pch = 21, bg = cc, col = bg, cex = 1.5, lwd = 1.5)
+      }
+      points(gv(u, "ndvi_peak_doy", "typical"), y, pch = 124, col = ink2, cex = 1.1)
+      for (t in c("greenup", "curing")) {
+        g <- gg(u, t)
+        if (!is.na(g[1]) && g[2] >= 3) points(g[1], y, pch = 5, col = if (t == "greenup") mcol["gu"] else mcol["cu"], cex = 1.2, lwd = 1.6)
+      }
+    }
+    grp <- c(GR = "grass", GS = "grass-shrub", SH = "shrub")
+    labs <- sprintf("%s %s, %s", UT$code, substr(UT$name, 1, 24), grp[UT$group])
+    text(-6, n + 1 - seq_len(n), labs, adj = 1, cex = 0.74, col = ink)
+    xr <- xl[2] + 10
+    text(xr, n + 1.05, "Cells", adj = 0, cex = 0.7, col = ink2)
+    text(xr + 42, n + 1.05, "NPN sites", adj = 0, cex = 0.7, col = ink2)
+    text(xr + 92, n + 1.05, "Curing\nyear sd", adj = 0, cex = 0.7, col = ink2)
+    ns <- vapply(UT$unit, function(u) { g <- gg(u, "greenup")[2]; c2 <- gg(u, "curing")[2]; max(c(g, c2, 0), na.rm = TRUE) }, 0)
+    text(xr, n + 1 - seq_len(n), format(UT$cells, big.mark = ","), adj = 0, cex = 0.74, col = ink)
+    text(xr + 42, n + 1 - seq_len(n), if (is.null(GG)) "-" else ns, adj = 0, cex = 0.74, col = ink)
+    text(xr + 92, n + 1 - seq_len(n), sprintf("%.0f d", vapply(UT$unit, function(u) gv(u, "eos50", "yty_sd"), 0)), adj = 0, cex = 0.74, col = ink)
+    legend(x = 0, y = n + 2.2, legend = c("Green-up (NDVI 20 %)", "Curing (NDVI end of season, 50 %)", "NDVI peak", "NPN ground median (>= 3 sites)"),
+           pch = c(21, 21, 124, 5), pt.bg = c(mcol, NA, NA), col = c(bg, bg, ink2, ink2), pt.cex = c(1.4, 1.4, 1, 1.1), bty = "n",
+           ncol = 4, cex = 0.72, text.col = ink2, yjust = 0)
+    text(0, n + 0.75, "Dot = typical date (median of the unit's cells); bar = 25-75 % of cells", adj = 0, cex = 0.66, col = ink2)
   })
 }
 log_msg("=== done | log: ", log_file)

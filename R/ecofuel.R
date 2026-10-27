@@ -153,3 +153,41 @@ ecofuel_bands <- function(lf_file, mask_file, fact, rows_per_band, margin_m = 50
     c(xmin = e[1], xmax = e[2], ymin = bot, ymax = top)
   })
 }
+
+# ---- units (72+) ------------------------------------------------------------------------------------
+# Cells of every climatology unit (ecoregion x fuel group) at a purity threshold: a land cell belongs to
+# group g's unit in its ecoregion when g holds >= purity of the cell's land (share / (1 - water), as 71),
+# and LANDFIRE maps at least min_mapped of the cell. Groups from config ecofuel: climatology (groups
+# everywhere + extra_units by ecoregion). Shares >= 0.5 sum to <= 1, so a cell is in at most one unit.
+# Returns a data.frame: row (index into the land cells), cell (grid cell number), eco, code, group,
+# share, unit ("<code> <group>").
+ecofuel_unit_cells <- function(cfg, purity) {
+  ec <- cfg$ecofuel; cl <- ec$climatology
+  lev <- as.integer(ec$ecoregions$level %||% 2)
+  mask <- grid_mask(cfg)
+  land <- which(!is.na(terra::values(mask, mat = FALSE)))
+  G <- terra::values(terra::rast(ecofuel_dir(cfg, "fuel_groups.tif")))[land, , drop = FALSE]
+  E <- terra::values(terra::rast(ecofuel_dir(cfg, sprintf("eco_l%d.tif", lev)))[["eco"]], mat = FALSE)[land]
+  L <- utils::read.csv(ecofuel_dir(cfg, sprintf("eco_l%d_lookup.csv", lev)), stringsAsFactors = FALSE, colClasses = c(code = "character"))
+  w <- G[, "NB_water"]; w[is.na(w)] <- 0
+  mp <- G[, "mapped"]; mp[is.na(mp)] <- 0
+  lw <- ifelse(1 - w > 0.01, 1 - w, NA)
+  ok_map <- mp >= as.numeric(ec$min_mapped %||% 0.5)
+  code <- L$code[match(E, L$eco)]
+  extra <- cl$extra_units %||% list()
+  out <- list()
+  for (g in unique(c(unlist(cl$groups), names(extra)))) {
+    sl <- G[, g] / lw
+    inside <- !is.na(sl) & sl >= purity & ok_map & !is.na(code)
+    if (!(g %in% unlist(cl$groups))) inside <- inside & code %in% unlist(extra[[g]])
+    i <- which(inside)
+    if (length(i)) out[[g]] <- data.frame(row = i, cell = land[i], eco = E[i], code = code[i], group = g,
+                                          share = sl[i], stringsAsFactors = FALSE)
+  }
+  U <- do.call(rbind, out)
+  U$unit <- paste(U$code, U$group)
+  U
+}
+
+# Circular day difference a - b in (-182.5, 182.5]
+cdiff <- function(a, b) ((a - b + 182.5) %% 365) - 182.5

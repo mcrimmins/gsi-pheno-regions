@@ -1,0 +1,38 @@
+"unit","code","name","group","cells","cells_p75","land_km2","herb_mask_share","eligible"
+"5.2 GR","5.2","Mixed Wood Shield","GR",183,36,2641,0.0109289617486339,FALSE
+"5.2 GS","5.2","Mixed Wood Shield","GS",1,0,15,0,FALSE
+"5.3 GR","5.3","Atlantic Highlands","GR",2,0,31,0,FALSE
+"6.2 GR","6.2","Western Cordillera","GR",2111,437,32967,0.741354808147797,TRUE
+"6.2 GS","6.2","Western Cordillera","GS",6473,1568,101489,0.882280241001081,TRUE
+"7.1 GR","7.1","Marine West Coast Forest","GR",188,9,2871,0.0372340425531915,FALSE
+"7.1 GS","7.1","Marine West Coast Forest","GS",9,2,145,0.222222222222222,FALSE
+"8.1 GR","8.1","Mixed Wood Plains","GR",362,6,5562,0.00552486187845304,TRUE
+"8.2 GR","8.2","Central Usa Plains","GR",31,7,491,0,FALSE
+"8.2 GS","8.2","Central Usa Plains","GS",1,0,16,0,FALSE
+"8.3 GR","8.3","Southeastern Usa Plains","GR",4079,574,73399,0.0262319195881343,TRUE
+"8.3 GS","8.3","Southeastern Usa Plains","GS",62,9,1164,0.854838709677419,FALSE
+"8.4 GR","8.4","Ozark/Ouachita-Appalachian Forests","GR",2311,159,39813,0.0103851146689745,TRUE
+"8.5 GR","8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GR",2711,1259,50105,0.00221320545924013,TRUE
+"8.5 GS","8.5","Mississippi Alluvial and Southeast Usa Coastal Plains","GS",28,3,473,0,FALSE
+"9.2 GR","9.2","Temperate Prairies","GR",4790,835,76913,0.0916492693110647,TRUE
+"9.3 GR","9.3","West-Central Semiarid Prairies","GR",24939,13537,376707,0.823689803119612,TRUE
+"9.3 GS","9.3","West-Central Semiarid Prairies","GS",3375,622,50468,0.998814814814815,TRUE
+"9.4 GR","9.4","South Central Semiarid Prairies","GR",33257,16020,576932,0.755660462459031,TRUE
+"9.4 GS","9.4","South Central Semiarid Prairies","GS",3421,903,60874,0.940952937737504,TRUE
+"9.5 GR","9.5","Texas-Louisiana Coastal Plain","GR",1977,878,37096,0.0242792109256449,TRUE
+"9.5 GS","9.5","Texas-Louisiana Coastal Plain","GS",298,177,5691,0,TRUE
+"9.6 GR","9.6","Tamaulipas-Texas Semiarid Plain","GR",76,6,1431,0.473684210526316,FALSE
+"9.6 GS","9.6","Tamaulipas-Texas Semiarid Plain","GS",2599,2046,49084,0.57829934590227,TRUE
+"10.1 GR","10.1","Cold Deserts","GR",9796,2475,162639,0.8794405879951,TRUE
+"10.1 GS","10.1","Cold Deserts","GS",18602,6899,300687,0.965810127943232,TRUE
+"10.1 SH","10.1","Cold Deserts","SH",7744,2893,128014,0.860278925619835,TRUE
+"10.2 GR","10.2","Warm Deserts","GR",7575,3930,134211,0.981782178217822,TRUE
+"10.2 GS","10.2","Warm Deserts","GS",7006,2557,126799,0.972166714244933,TRUE
+"11.1 GR","11.1","Mediterranean California","GR",2688,819,45913,0.534970238095238,TRUE
+"11.1 GS","11.1","Mediterranean California","GS",679,88,11987,0.891016200294551,TRUE
+"12.1 GR","12.1","Western Sierra Madre Piedmont","GR",1103,446,20076,0.961922030825023,TRUE
+"12.1 GS","12.1","Western Sierra Madre Piedmont","GS",856,231,15518,0.924065420560748,TRUE
+"13.1 GR","13.1","Upper Gila Mountains","GR",1733,444,30805,0.717253317945759,TRUE
+"13.1 GS","13.1","Upper Gila Mountains","GS",1701,308,30261,0.553203997648442,TRUE
+"15.4 GR","15.4","Everglades","GR",456,301,8782,0,TRUE
+"15.4 GS","15.4","Everglades","GS",3,0,58,0,FALSE

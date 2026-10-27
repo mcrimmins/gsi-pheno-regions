@@ -490,6 +490,25 @@ default:
     purity: [0.5, 0.75]         # 71: cells where one fuel group has >= this share of the land
     min_mapped: 0.5             # 71: cells less mapped than this (border, coast) count for area, not purity
     fire_years: {start: 2001, end: 2024}   # 71: FPA-FOD fires counted per unit (read from fire_study/fod)
+    # 72 climatologies (DECIDED Oct 26 2026, Mike): GR + GS units everywhere plus SH in Cold Deserts
+    # (10.1); unit cells = cells where the group holds >= 50 % of the land (75 % as a sensitivity);
+    # units need >= 200 such cells; agriculture is context only (no climatology); fire as a check
+    # comes later, as its own step.
+    climatology:
+      groups: [GR, GS]
+      extra_units:              # group: [ecoregion codes]
+        SH: ["10.1"]
+      purity: 0.5
+      purity_sensitivity: 0.75
+      min_cells: 200
+      years: {start: 2001, end: 2025}
+      metrics: [sos20, ndvi_peak_doy, eos50, eos20, cure50, gsl20, ndvi_amp]
+      max_jump: 90              # cell-year departures beyond +/- this many days = season jump, left out (as 33)
+      two_season_days: 60       # share of unit cells whose typical date is > this far from the unit's
+      ground:                   # NPN ground check: ground target -> satellite metric
+        greenup: sos20
+        curing: eos50
+        cured: eos20
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season
