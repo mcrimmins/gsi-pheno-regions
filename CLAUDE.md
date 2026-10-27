@@ -972,3 +972,23 @@ climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel
   ground.csv, groupings.csv, season_split.csv. Fixture (planted two-season unit, uninformative L3 / A2 /
   elevation): split found (65 % early, centres +120 / +60 d as planted), green-up cv r2 0.17 -> 0.97;
   uninformative groupings gain nothing. 79 figure ecofuel_compare + tables ecofuel_cmp_*.
+- DECIDED Oct 27 (Mike), after step 5 (fuel adds ~nothing; Level III ~doubles satellite R2; season split's
+  score circular): (6) fair season test, (7) climatologies on Level III x herbaceous cells, (8) fire check.
+- 73 also scores every grouping on EVEN-year typical dates with the season splits learned from ODD years
+  only (eco2_fuel_season_oe, eco3_herb_season_oe) -> compare/satellite_oddeven.csv,
+  season_split_oddyears_<eco2_fuel|eco3_herb>.csv; new grouping eco3_herb (Level III x (GR+GS)/land >= 0.5).
+  Fixture: a planted persistent split survives (0.97 / 0.95).
+- `72_ecofuel_climatology.R [profile] [scheme] [season]`: scheme eco2_fuel (default; config climatology:
+  scheme) or eco3_herb (R/ecofuel.R ecofuel_unit_cells_herb: Level III, (GR+GS)/land >= purity, group HERB,
+  needs ecoregions/eco_l3.tif from 73); "season" (or config season_split) splits units early / late with
+  73's rule on cutb_metrics_median. Output ecofuel/climatology[_<scheme>][_season]/ incl. cells.csv (cell,
+  unit, share). Ground check maps sites to L3 via the cell; GR/GS sites -> HERB.
+- `scripts/75_ecofuel_fire.R [profile] [climatology folder]` (laptop, < 1 min; default config ecofuel: fire:
+  climatology = climatology_eco3_herb): FPA-FOD C+ no-debris 2001-2024 on unit cells; typical cured window
+  (eos50 -> next sos20) concentration; year to year r of curing / green-up departure vs log1p cured-window
+  fires (all-units year mean removed), units >= min_fires_per_year (5), pooled r with year bootstrap
+  (n_boot 2000) -> ecofuel/fire/<folder>/windows.csv, seasonal.csv, yty.csv, pooled.csv. Consistency check
+  only (no dryness baseline). Fixture: planted 80 % concentration recovered; pooled r matches by hand.
+- 79 draws ecofuel_climatology_<scheme folder> for every climatology_* folder and ecofuel_fire_<folder>;
+  copies tables ecofuel_<folder>_<units|climatology|ground_summary>_<p>, ecofuel_fire_<folder>_<windows|yty|
+  pooled>_<p>, ecofuel_cmp_satellite_oddeven_<p>. Page sections steps 6-8.

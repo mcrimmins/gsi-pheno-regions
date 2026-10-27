@@ -15,6 +15,9 @@
 #   ecofuel_compare    73: how well each grouping (ecoregion, ecoregion x fuel, + season split, + elevation,
 #                      Level III, climate regions) explains satellite typical dates (block CV), shares
 #                      year-to-year variation, and predicts NPN ground dates (clustered CV)
+#   ecofuel_climatology_<scheme>  the climatology figure for every other 72 scheme folder (eco3_herb[_season])
+#   ecofuel_fire_<folder>         75: fire concentration in each unit's typical cured window, and the
+#                      year-to-year correlation of curing with cured-window fires (pooled band)
 # Usage: Rscript scripts/79_ecofuel_figs.R [profile] [figure ...]
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -26,7 +29,7 @@ source(here::here("R", "log.R"))
 source(here::here("R", "grid.R"))
 source(here::here("R", "ecofuel.R"))
 
-all_figs <- c("ecofuel_units", "ecofuel_inventory", "ecofuel_climatology", "ecofuel_compare")
+all_figs <- c("ecofuel_units", "ecofuel_inventory", "ecofuel_climatology", "ecofuel_compare", "ecofuel_fire")
 want <- if (length(args) >= 2) args[-1] else all_figs
 cfg <- load_cfg(profile)
 log_file <- log_init("79_ecofuel_figs", profile)
@@ -56,6 +59,19 @@ for (f in c("units", "climatology", "ground_summary")) {
   src <- file.path(cdir, paste0(f, ".csv"))
   if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_clim_%s_%s.csv", f, profile)), overwrite = TRUE)
 }
+# other unit schemes (72 eco3_herb [+ season]): ecofuel_<folder>_<table>_<profile>.csv; fire check (75)
+clim_dirs <- basename(list.dirs(ecofuel_dir(cfg), recursive = FALSE))
+clim_dirs <- clim_dirs[grepl("^climatology_", clim_dirs)]
+for (cd in clim_dirs) for (f in c("units", "climatology", "ground_summary")) {
+  src <- ecofuel_dir(cfg, cd, paste0(f, ".csv"))
+  if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_%s_%s_%s.csv", cd, f, profile)), overwrite = TRUE)
+}
+for (cd in c("climatology", clim_dirs)) for (f in c("windows", "yty", "pooled")) {
+  src <- ecofuel_dir(cfg, "fire", cd, paste0(f, ".csv"))
+  if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_fire_%s_%s_%s.csv", cd, f, profile)), overwrite = TRUE)
+}
+src <- ecofuel_dir(cfg, "compare", "satellite_oddeven.csv")
+if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_cmp_satellite_oddeven_%s.csv", profile)), overwrite = TRUE)
 log_msg("tables -> report/tables/ecofuel_*_", profile, ".csv")
 
 # ---- drawing helpers (as 69) ---------------------------------------------------------------------
@@ -156,8 +172,8 @@ if ("ecofuel_inventory" %in% want) {
   })
 }
 # ---- climatology timeline (72) -----------------------------------------------------------------
-cf <- file.path(cdir, "climatology.csv")
-if ("ecofuel_climatology" %in% want && file.exists(cf)) {
+draw_clim <- function(cdir, figname) {
+  cf <- file.path(cdir, "climatology.csv"); if (!file.exists(cf)) return(invisible())
   CL <- utils::read.csv(cf, stringsAsFactors = FALSE); CL <- CL[CL$version == "p50", ]
   UT <- utils::read.csv(file.path(cdir, "units.csv"), stringsAsFactors = FALSE, colClasses = c(code = "character"))
   UT <- UT[UT$eligible, ]
@@ -167,7 +183,7 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
   gv <- function(u, m, f) { v <- CL[[f]][CL$unit == u & CL$metric == m]; if (length(v)) v[1] else NA }
   gg <- function(u, t) { if (is.null(GG)) return(c(NA, NA)); z <- GG[GG$unit == u & GG$target == t, ]; if (!nrow(z)) c(NA, 0) else c(z$ground_median[1], z$sites[1]) }
   mcol <- c(gu = "#2a78d6", cu = "#eb6834")
-  plot_png("ecofuel_climatology", "MODIS 2001-2025; NPN ground 2014-2024", 2200, 360 + 64 * n, function() {
+  plot_png(figname, "MODIS 2001-2025; NPN ground 2014-2024", 2200, 360 + 64 * n, function() {
     par(mar = c(3.2, 17, 5.5, 15), xpd = NA)
     xl <- c(-92, 400)                                   # Oct of the previous year (CA green-up) to early Feb
     plot(NA, xlim = xl, ylim = c(0.4, n + 0.6), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n", xaxs = "i")
@@ -189,8 +205,9 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
         if (!is.na(g[1]) && g[2] >= 3) points(g[1], y, pch = 5, col = if (t == "greenup") mcol["gu"] else mcol["cu"], cex = 1.2, lwd = 1.6)
       }
     }
-    grp <- c(GR = "grass", GS = "grass-shrub", SH = "shrub")
-    labs <- sprintf("%s %s, %s", UT$code, substr(UT$name, 1, 24), grp[UT$group])
+    grp <- c(GR = "grass", GS = "grass-shrub", SH = "shrub", HERB = "herbaceous")
+    sea <- ifelse(grepl(" early$", UT$unit), " (early)", ifelse(grepl(" late$", UT$unit), " (late)", ""))
+    labs <- sprintf("%s %s, %s%s", UT$code, substr(UT$name, 1, 24), grp[UT$group], sea)
     text(xl[1] - 6, n + 1 - seq_len(n), labs, adj = 1, cex = 0.74, col = ink)
     xr <- xl[2] + 10
     text(xr, n + 1.05, "Cells", adj = 0, cex = 0.7, col = ink2)
@@ -206,6 +223,11 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
     text(xl[1], n + 0.75, "Dot = typical date (median of the unit's cells); bar = 25-75 % of cells", adj = 0, cex = 0.66, col = ink2)
   })
 }
+for (cd in c("climatology", clim_dirs)) {
+  fn <- if (cd == "climatology") "ecofuel_climatology" else paste0("ecofuel_", cd)
+  if (fn %in% want || "ecofuel_climatology" %in% want) draw_clim(ecofuel_dir(cfg, cd), fn)
+}
+
 # ---- grouping comparison (73) ---------------------------------------------------------------------
 sf_ <- ecofuel_dir(cfg, "compare", "satellite.csv")
 if ("ecofuel_compare" %in% want && file.exists(sf_)) {
@@ -244,5 +266,42 @@ if ("ecofuel_compare" %in% want && file.exists(sf_)) {
     panel(function(g) c(sv(g, "sos20", "sync"), sv(g, "eos50", "sync")), "Year-to-year variation\nshared within groups", c(0, 1))
     panel(function(g) c(gv2(g, "greenup"), gv2(g, "curing")), "NPN ground dates predicted\n(R2, nearby sites held out)", c(-0.5, 1))
   })
+}
+# ---- fire check (75) ------------------------------------------------------------------------------
+draw_fire <- function(cd, figname) {
+  fd <- ecofuel_dir(cfg, "fire", cd); wf <- file.path(fd, "windows.csv"); if (!file.exists(wf)) return(invisible())
+  WN <- utils::read.csv(wf, stringsAsFactors = FALSE); WN <- WN[WN$fires_per_yr >= 1, ]
+  YT <- if (file.exists(file.path(fd, "yty.csv"))) utils::read.csv(file.path(fd, "yty.csv"), stringsAsFactors = FALSE) else NULL
+  PO <- if (file.exists(file.path(fd, "pooled.csv"))) utils::read.csv(file.path(fd, "pooled.csv"), stringsAsFactors = FALSE) else NULL
+  WN <- WN[order(WN$concentration), ]; n <- nrow(WN); if (!n) return(invisible())
+  plot_png(figname, "FPA-FOD 2001-2024; MODIS 2001-2025", 2200, 380 + 30 * n, function() {
+    layout(matrix(1:2, 1), widths = c(1.35, 1))
+    par(mar = c(3.4, 15, 4.5, 1), xpd = NA)
+    xl <- c(0, max(2.5, max(WN$concentration, na.rm = TRUE) * 1.05))
+    plot(NA, xlim = xl, ylim = c(0.5, n + 0.5), yaxt = "n", xaxt = "n", xlab = "", ylab = "", bty = "n")
+    at <- pretty(xl); segments(at, 0.5, at, n + 0.5, col = grid_col); segments(1, 0.5, 1, n + 0.5, col = ink2, lty = 3)
+    axis(1, at = at, tick = FALSE, line = -0.8, cex.axis = 0.75)
+    cex_p <- 0.6 + 1.6 * sqrt(WN$fires_per_yr / max(WN$fires_per_yr))
+    points(WN$concentration, seq_len(n), pch = 21, bg = "#eb6834", col = bg, cex = cex_p)
+    uf <- ecofuel_dir(cfg, cd, "units.csv"); lab <- WN$unit
+    if (file.exists(uf)) { UU <- utils::read.csv(uf, stringsAsFactors = FALSE); k <- match(WN$unit, UU$unit)
+      sea <- ifelse(grepl(" early$", WN$unit), " (early)", ifelse(grepl(" late$", WN$unit), " (late)", ""))
+      lab <- ifelse(is.na(k), WN$unit, sprintf("%s %s%s", UU$code[k], substr(UU$name[k], 1, 26), sea)) }
+    text(-0.03 * xl[2], seq_len(n), lab, adj = 1, cex = 0.62, col = ink)
+    mtext("Fires in the typical cured window, relative to its share of the year\n(1 = no concentration; dot size = fires per year)", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink)
+    par(mar = c(3.4, 1, 4.5, 1))
+    plot(NA, xlim = c(-1, 1), ylim = c(0.5, n + 0.5), yaxt = "n", xaxt = "n", xlab = "", ylab = "", bty = "n")
+    segments(c(-1, -0.5, 0.5, 1), 0.5, c(-1, -0.5, 0.5, 1), n + 0.5, col = grid_col); segments(0, 0.5, 0, n + 0.5, col = ink2, lty = 3)
+    axis(1, at = c(-1, -0.5, 0, 0.5, 1), tick = FALSE, line = -0.8, cex.axis = 0.75)
+    if (!is.null(PO)) { p <- PO[PO$phenology == "curing", ]
+      rect(p$lo, 0.5, p$hi, n + 0.5, col = "#2a78d61f", border = NA); segments(p$r, 0.5, p$r, n + 0.5, col = "#2a78d6", lwd = 2) }
+    if (!is.null(YT)) { r <- YT$r_curing[match(WN$unit, YT$unit)]; ok <- !is.na(r)
+      points(r[ok], seq_len(n)[ok], pch = 21, bg = "#2a78d6", col = bg, cex = 1.2) }
+    mtext("Year to year: later curing vs fires in the cured window (r)\nline and band = pooled over units, 90 % interval over years", side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink)
+  })
+}
+for (cd in c("climatology", clim_dirs)) {
+  fn <- paste0("ecofuel_fire_", cd)
+  if (fn %in% want || "ecofuel_fire" %in% want) draw_fire(cd, fn)
 }
 log_msg("=== done | log: ", log_file)

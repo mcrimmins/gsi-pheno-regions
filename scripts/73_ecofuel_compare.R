@@ -13,6 +13,9 @@
 #   eco2_fuel_elev     ... x 500 m elevation bands (PRISM DEM)
 #   eco3 / eco3_fuel   EPA Level III ecoregion (downloaded once; config ecofuel: ecoregions_l3) [x fuel]
 #   a2 / a2_fuel       the climate regions (A2, 13 regions) [x fuel]
+#   eco3_herb          Level III x herbaceous (GR and GS pooled; other groups kept by name)
+# Fair season test (satellite_oddeven.csv): every grouping scored on even-year typical dates, with the
+# season splits (eco2_fuel_season_oe, eco3_herb_season_oe) learned from odd-year typical dates only.
 # Scores
 #   satellite (cells of the 72 climatology units at >= 50 % purity, so all groupings use the same cells):
 #     r2 / adj_r2      share of the variance of the cells' typical dates (median over 2001-2025) explained
@@ -78,34 +81,42 @@ med_f <- file.path(cfg$run_dir, "summaries", "cutb_metrics_median.tif")
 if (!file.exists(med_f)) stop("no ", med_f)
 TY <- terra::values(terra::rast(med_f)[[mets]])[land, , drop = FALSE]
 
-# season split of eco2 x fuel units (2-means on the cells' typical dates)
+# season split of units (2-means on the cells' typical dates). split_seasons(TYm, units, rows): TYm =
+# typical dates (rows x mets) for the land rows `rows`; units = unit label per land row. Returns the
+# label vector over all land rows ("all" where not split) and a table of the units split.
 lab <- function(...) { x <- paste(..., sep = "|"); x[Reduce(`|`, lapply(list(...), is.na))] <- NA; x }
 ef <- lab(eco2, fuel)
-season <- rep("all", length(land)); SPL <- list()
 min_cells <- as.integer(cp$season_min_cells %||% 200)
-set.seed(cfg$clustering$seed %||% 1)
-for (u in names(which(table(ef) >= min_cells))) {
-  i <- which(ef == u & stats::complete.cases(TY))
-  if (length(i) < min_cells) next
-  km <- tryCatch(stats::kmeans(TY[i, , drop = FALSE], centers = 2, nstart = 5), error = function(e) NULL)
-  if (is.null(km)) next
-  d <- sqrt(sum((km$centers[1, ] - km$centers[2, ])^2)); sh <- min(table(km$cluster)) / length(i)
-  if (d > as.numeric(cp$season_split_days %||% 60) && sh >= as.numeric(cp$season_min_share %||% 0.1)) {
-    early <- which.min(km$centers[, 1])
-    season[i] <- ifelse(km$cluster == early, "early", "late")
-    SPL[[u]] <- data.frame(unit = u, cells = length(i), early_share = mean(km$cluster == early), centre_distance = d,
-                           early_sos20 = km$centers[early, 1], late_sos20 = km$centers[3 - early, 1],
-                           early_eos50 = km$centers[early, 2], late_eos50 = km$centers[3 - early, 2])
+split_seasons <- function(TYm, units, rows) {
+  season <- rep("all", length(land)); out <- list()
+  u_r <- units[rows]
+  for (u in names(which(table(u_r) >= min_cells))) {
+    k <- which(u_r == u & stats::complete.cases(TYm))
+    if (length(k) < min_cells) next
+    set.seed(cfg$clustering$seed %||% 1)
+    km <- tryCatch(stats::kmeans(TYm[k, , drop = FALSE], centers = 2, nstart = 5), error = function(e) NULL)
+    if (is.null(km)) next
+    d <- sqrt(sum((km$centers[1, ] - km$centers[2, ])^2)); sh <- min(table(km$cluster)) / length(k)
+    if (d > as.numeric(cp$season_split_days %||% 60) && sh >= as.numeric(cp$season_min_share %||% 0.1)) {
+      early <- which.min(km$centers[, 1])
+      season[rows[k]] <- ifelse(km$cluster == early, "early", "late")
+      out[[u]] <- data.frame(unit = sub("\\|", " ", u), cells = length(k), early_share = mean(km$cluster == early), centre_distance = d,
+                             early_sos20 = km$centers[early, 1], late_sos20 = km$centers[3 - early, 1],
+                             early_eos50 = km$centers[early, 2], late_eos50 = km$centers[3 - early, 2])
+    }
   }
+  list(season = season, table = do.call(rbind, out))
 }
-SPL <- do.call(rbind, SPL)
-if (!is.null(SPL)) { SPL$unit <- sub("\\|", " ", SPL$unit); utils::write.csv(SPL, file.path(odir, "season_split.csv"), row.names = FALSE) }
-log_msg(sprintf("season split: %d units split in two: %s", if (is.null(SPL)) 0 else nrow(SPL),
+SS <- split_seasons(TY, ef, seq_along(land))
+season <- SS$season; SPL <- SS$table
+if (!is.null(SPL)) utils::write.csv(SPL, file.path(odir, "season_split.csv"), row.names = FALSE)
+log_msg(sprintf("season split (all years, in-sample): %d units split in two: %s", if (is.null(SPL)) 0 else nrow(SPL),
                 if (is.null(SPL)) "-" else paste(sprintf("%s (%.0f%% early)", SPL$unit, 100 * SPL$early_share), collapse = ", ")))
+herb <- ifelse(fuel %in% c("GR", "GS"), "HERB", fuel)       # grass and grass-shrub pooled (Oct 27: fuel split adds ~nothing)
 
 GR <- list(eco2 = lab(eco2), eco2_fuel = ef, eco2_fuel_season = lab(eco2, fuel, season))
 if (!is.null(elev)) GR$eco2_fuel_elev <- lab(eco2, fuel, floor(elev / as.numeric(cp$elev_band_m %||% 500)))
-GR$eco3 <- lab(eco3); GR$eco3_fuel <- lab(eco3, fuel)
+GR$eco3 <- lab(eco3); GR$eco3_fuel <- lab(eco3, fuel); GR$eco3_herb <- lab(eco3, herb)
 if (!is.null(a2)) { GR$a2 <- lab(a2); GR$a2_fuel <- lab(a2, fuel) }
 
 # ---- satellite: the 72 climatology unit cells ------------------------------------------------------
@@ -138,6 +149,7 @@ for (k in seq_along(have)) {
   v <- terra::values(terra::rast(mfile(have[k]))[[mets]])[cells_dom, , drop = FALSE]
   for (m in mets) DEP[[m]][, k] <- v[, m]
 }
+RAW <- DEP                                            # per-year values (dom cells x years), before departures
 for (m in mets) {
   ty <- apply(DEP[[m]], 1, stats::median, na.rm = TRUE)
   d <- DEP[[m]] - ty; d[abs(d) > as.numeric(cl$max_jump %||% 90)] <- NA; DEP[[m]] <- d
@@ -161,6 +173,36 @@ SAT <- do.call(rbind, lapply(names(GR), function(nm) {
   }))
 }))
 utils::write.csv(SAT, file.path(odir, "satellite.csv"), row.names = FALSE)
+
+# ---- fair season test: seasons learned from odd years, every grouping scored on even years -----------
+# (Oct 27, Mike: the all-years split is scored on the same dates it was fitted to.) Typical dates per cell
+# = median over odd years (fit) and over even years (score); the season split is refitted on the odd-year
+# typicals within eco2 x fuel units and within eco3 x herbaceous units.
+odd <- have %% 2 == 1
+TYo <- sapply(mets, function(m) apply(RAW[[m]][, odd, drop = FALSE], 1, stats::median, na.rm = TRUE))
+TYe <- sapply(mets, function(m) apply(RAW[[m]][, !odd, drop = FALSE], 1, stats::median, na.rm = TRUE))
+TYo[!is.finite(TYo)] <- NA; TYe[!is.finite(TYe)] <- NA
+SO2 <- split_seasons(TYo, ef, dom_rows); SO3 <- split_seasons(TYo, lab(eco3, herb), dom_rows)
+GRo <- GR[setdiff(names(GR), "eco2_fuel_season")]
+GRo$eco2_fuel_season_oe <- lab(eco2, fuel, SO2$season)
+GRo$eco3_herb_season_oe <- lab(eco3, herb, SO3$season)
+SOE <- do.call(rbind, lapply(names(GRo), function(nm) {
+  g <- GRo[[nm]][dom_rows]
+  do.call(rbind, lapply(mets, function(m) {
+    y <- TYe[, m]; ra <- r2_adj(y, g)
+    data.frame(grouping = nm, metric = m, cells = unname(ra["n"]), groups = unname(ra["groups"]), r2 = unname(ra["r2"]),
+               adj_r2 = unname(ra["adj_r2"]), cv_r2 = cv_r2(y, g, block))
+  }))
+}))
+utils::write.csv(SOE, file.path(odir, "satellite_oddeven.csv"), row.names = FALSE)
+for (nm in c("so2", "so3")) {
+  tb <- if (nm == "so2") SO2$table else SO3$table
+  if (!is.null(tb)) utils::write.csv(tb, file.path(odir, sprintf("season_split_oddyears_%s.csv", c(so2 = "eco2_fuel", so3 = "eco3_herb")[nm])), row.names = FALSE)
+}
+log_msg(sprintf("odd / even test: seasons from %d odd years, scored on %d even years; units split: eco2 x fuel %d, eco3 x herb %d",
+                sum(odd), sum(!odd), if (is.null(SO2$table)) 0 else nrow(SO2$table), if (is.null(SO3$table)) 0 else nrow(SO3$table)))
+for (nm in names(GRo)) { z <- SOE[SOE$grouping == nm, ]
+  log_msg(sprintf("  odd/even %-21s groups %4d | %s", nm, z$groups[1], paste(sprintf("%s r2 %.2f cv %.2f", z$metric, z$r2, z$cv_r2), collapse = " | "))) }
 
 GS <- do.call(rbind, lapply(names(GR), function(nm) {
   g <- GR[[nm]]; t <- table(g); td <- table(g[dom_rows])

@@ -533,6 +533,14 @@ default:
       metrics: [sos20, eos50]
       block_deg: 2              # satellite block cross-validation
       cluster_km: 10            # ground leave-out radius (as the NPN study's clustered CV)
+    # 75: fire as a check on the climatology units (Oct 27, Mike). FPA-FOD wildfires >= 10 ac, debris removed,
+    # 2001-2024 (fire_years), on the units' cells. Seasonal: share of fires in each unit's typical cured
+    # window (typical curing -> next typical green-up) vs that window's share of the year. Year to year:
+    # unit-year fire anomaly vs curing / green-up departure, both with the all-units year mean removed.
+    fire:
+      climatology: climatology_eco3_herb    # folder written by 72 (scheme [+ _season])
+      min_fires_per_year: 5                 # units with fewer (mean, cured window) left out of year-to-year
+      n_boot: 2000                          # bootstrap over years for the pooled correlation
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season

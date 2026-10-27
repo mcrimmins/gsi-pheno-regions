@@ -160,8 +160,11 @@ ecofuel_bands <- function(lf_file, mask_file, fact, rows_per_band, margin_m = 50
 # everywhere + extra_units by ecoregion). Shares >= 0.5 sum to <= 1, so a cell is in at most one unit.
 # Returns a data.frame: row (index into the land cells), cell (grid cell number), eco, code, group,
 # share, unit ("<code> <group>").
-ecofuel_unit_cells <- function(cfg, purity) {
+# scheme "eco3_herb" (Oct 27): Level III ecoregion x herbaceous, where herbaceous = GR + GS pooled
+# (the comparison found the fuel split adds ~nothing); group "HERB"; needs ecofuel/eco_l3.tif (73).
+ecofuel_unit_cells <- function(cfg, purity, scheme = "eco2_fuel") {
   ec <- cfg$ecofuel; cl <- ec$climatology
+  if (scheme == "eco3_herb") return(ecofuel_unit_cells_herb(cfg, purity, level = 3))
   lev <- as.integer(ec$ecoregions$level %||% 2)
   mask <- grid_mask(cfg)
   land <- which(!is.na(terra::values(mask, mat = FALSE)))
@@ -184,6 +187,26 @@ ecofuel_unit_cells <- function(cfg, purity) {
                                           share = sl[i], stringsAsFactors = FALSE)
   }
   U <- do.call(rbind, out)
+  U$unit <- paste(U$code, U$group)
+  U
+}
+
+ecofuel_unit_cells_herb <- function(cfg, purity, level = 3) {
+  ec <- cfg$ecofuel
+  mask <- grid_mask(cfg)
+  land <- which(!is.na(terra::values(mask, mat = FALSE)))
+  G <- terra::values(terra::rast(ecofuel_dir(cfg, "fuel_groups.tif")))[land, , drop = FALSE]
+  ef <- ecofuel_dir(cfg, sprintf("eco_l%d.tif", level)); lf <- ecofuel_dir(cfg, sprintf("eco_l%d_lookup.csv", level))
+  if (!file.exists(ef) || !file.exists(lf)) stop("no ", basename(ef), " (run 73_ecofuel_compare.R, which builds it)")
+  E <- terra::values(terra::rast(ef)[["eco"]], mat = FALSE)[land]
+  L <- utils::read.csv(lf, stringsAsFactors = FALSE, colClasses = c(code = "character"))
+  w <- G[, "NB_water"]; w[is.na(w)] <- 0
+  mp <- G[, "mapped"]; mp[is.na(mp)] <- 0
+  lw <- ifelse(1 - w > 0.01, 1 - w, NA)
+  sl <- (G[, "GR"] + G[, "GS"]) / lw
+  code <- L$code[match(E, L$eco)]
+  i <- which(!is.na(sl) & sl >= purity & mp >= as.numeric(ec$min_mapped %||% 0.5) & !is.na(code))
+  U <- data.frame(row = i, cell = land[i], eco = E[i], code = code[i], group = "HERB", share = sl[i], stringsAsFactors = FALSE)
   U$unit <- paste(U$code, U$group)
   U
 }

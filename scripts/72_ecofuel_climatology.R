@@ -31,12 +31,20 @@
 #
 # Outputs <run_dir>/ecofuel/climatology/
 #   units.csv           unit, code, name, group, cells (main / sensitivity), land_km2, herb_mask share, eligible
+#   cells.csv           grid cell, unit, group share (eligible units, main purity): unit membership for 75
 #   climatology.csv     unit x metric x version (p50 main, p75 sensitivity): the numbers above
 #   years.csv           unit x metric x year: median departure, cells (main version)
 #   curves.csv          unit x index (ndvi, ndii) x doy: median, q25, q75 of the cells' median curves
 #   ground_sites.csv    site x target: unit, ground date, unit typical, own-cell typical, errors
 #   ground_summary.csv  unit x target: sites, ground median / IQR, satellite typical, bias, MAE (unit vs cell)
-# Usage: Rscript scripts/72_ecofuel_climatology.R [profile]
+# Schemes (2nd argument, default config ecofuel: climatology: scheme or eco2_fuel):
+#   eco2_fuel   Level II x fuel group (GR, GS everywhere; SH in 10.1) -> ecofuel/climatology/
+#   eco3_herb   Level III x herbaceous (GR + GS pooled; Oct 27, after 73 found the fuel split adds ~nothing)
+#               -> ecofuel/climatology_eco3_herb/ (needs eco_l3.tif from 73)
+# Season split (config ecofuel: climatology: season_split, or "season" as 3rd argument): units whose cells'
+# typical (green-up, curing) form two clusters > season_split_days apart (73's rule) are split into
+# "<unit> early" / "<unit> late"; the folder gets the suffix _season.
+# Usage: Rscript scripts/72_ecofuel_climatology.R [profile] [scheme] [season]
 
 args <- commandArgs(trailingOnly = TRUE)
 profile <- if (length(args) >= 1) args[1] else if (exists("gsi_profile", envir = globalenv())) {
@@ -51,21 +59,46 @@ source(here::here("R", "ecofuel.R"))
 cfg <- load_cfg(profile)
 log_file <- log_init("72_ecofuel_climatology", profile)
 ec <- cfg$ecofuel; cl <- ec$climatology
-lev <- as.integer(ec$ecoregions$level %||% 2)
+scheme <- if (length(args) >= 2 && nzchar(args[2])) args[2] else (cl$scheme %||% "eco2_fuel")
+if (!scheme %in% c("eco2_fuel", "eco3_herb")) stop("unknown scheme ", scheme, " (eco2_fuel or eco3_herb)")
+season_split <- isTRUE(cl$season_split) || (length(args) >= 3 && args[3] == "season")
+lev <- if (scheme == "eco3_herb") 3L else as.integer(ec$ecoregions$level %||% 2)
 yrs <- seq(as.integer(cl$years$start), as.integer(cl$years$end))
 mets <- unlist(cl$metrics)
 date_mets <- intersect(mets, c("sos20", "sos50", "ndvi_peak_doy", "eos50", "eos20", "cure50", "ndii_peak_doy"))
 max_jump <- as.numeric(cl$max_jump %||% 90); two_d <- as.numeric(cl$two_season_days %||% 60)
 min_cells <- as.integer(cl$min_cells %||% 200)
-odir <- ecofuel_dir(cfg, "climatology"); dir.create(odir, showWarnings = FALSE, recursive = TRUE)
+odir <- ecofuel_dir(cfg, paste0("climatology", if (scheme != "eco2_fuel") paste0("_", scheme) else "", if (season_split) "_season" else ""))
+dir.create(odir, showWarnings = FALSE, recursive = TRUE)
 t0 <- Sys.time()
-log_msg("=== 72_ecofuel_climatology | profile: ", profile, " | purity ", cl$purity, " (sensitivity ", cl$purity_sensitivity,
+log_msg("=== 72_ecofuel_climatology | profile: ", profile, " | scheme ", scheme, if (season_split) " + season split", " | purity ", cl$purity, " (sensitivity ", cl$purity_sensitivity,
         ") | min cells ", min_cells, " | years ", min(yrs), "-", max(yrs))
 
 # ---- units ---------------------------------------------------------------------------------------
-UM <- ecofuel_unit_cells(cfg, as.numeric(cl$purity))
-US <- ecofuel_unit_cells(cfg, as.numeric(cl$purity_sensitivity))
+UM <- ecofuel_unit_cells(cfg, as.numeric(cl$purity), scheme)
+US <- ecofuel_unit_cells(cfg, as.numeric(cl$purity_sensitivity), scheme)
+if (season_split) {                                    # 73's rule on the cells' typical dates (all years)
+  cp <- ec$compare
+  med <- terra::values(terra::rast(file.path(cfg$run_dir, "summaries", "cutb_metrics_median.tif"))[[c("sos20", "eos50")]])
+  sea <- rep(NA_character_, nrow(med))
+  for (u in unique(UM$unit)) {
+    cc <- UM$cell[UM$unit == u]; k <- cc[stats::complete.cases(med[cc, , drop = FALSE])]
+    if (length(k) < as.integer(cp$season_min_cells %||% 200)) next
+    set.seed(cfg$clustering$seed %||% 1)
+    km <- tryCatch(stats::kmeans(med[k, , drop = FALSE], centers = 2, nstart = 5), error = function(e) NULL)
+    if (is.null(km)) next
+    d <- sqrt(sum((km$centers[1, ] - km$centers[2, ])^2)); sh <- min(table(km$cluster)) / length(k)
+    if (d > as.numeric(cp$season_split_days %||% 60) && sh >= as.numeric(cp$season_min_share %||% 0.1)) {
+      early <- which.min(km$centers[, 1]); sea[k] <- ifelse(km$cluster == early, "early", "late")
+    }
+  }
+  relab <- function(U) { s_ <- sea[U$cell]; U$unit <- ifelse(is.na(s_), U$unit, paste(U$unit, s_)); U }
+  n_split <- length(unique(UM$unit[!is.na(sea[UM$cell])]))
+  UM <- relab(UM); US <- relab(US)
+  log_msg(sprintf("season split: %d units split into early / late", n_split))
+}
 L <- utils::read.csv(ecofuel_dir(cfg, sprintf("eco_l%d_lookup.csv", lev)), stringsAsFactors = FALSE, colClasses = c(code = "character"))
+L$name[is.na(L$name)] <- ""
 mask <- grid_mask(cfg)
 ca <- terra::values(terra::cellSize(mask, unit = "km"), mat = FALSE)
 hm_f <- file.path(static_dir(cfg), "herb_mask.tif")
@@ -78,12 +111,13 @@ UT <- do.call(rbind, lapply(units, function(u) {
              herb_mask_share = mean(hm[UM$cell[i]]), stringsAsFactors = FALSE)
 }))
 UT$eligible <- UT$cells >= min_cells
-num <- suppressWarnings(as.numeric(UT$code)); UT <- UT[order(num, UT$group), ]
+num <- suppressWarnings(as.numeric(UT$code)); UT <- UT[order(num, UT$unit), ]
 utils::write.csv(UT, file.path(odir, "units.csv"), row.names = FALSE)
 log_msg(sprintf("units: %d with any cell, %d eligible (>= %d cells at >= %.0f %%): %s", nrow(UT), sum(UT$eligible), min_cells,
                 100 * as.numeric(cl$purity), paste(UT$unit[UT$eligible], collapse = ", ")))
 keep_units <- UT$unit[UT$eligible]
 UM <- UM[UM$unit %in% keep_units, ]; US <- US[US$unit %in% keep_units, ]
+utils::write.csv(UM[, c("cell", "unit", "share")], file.path(odir, "cells.csv"), row.names = FALSE)   # unit membership (75)
 cells <- sort(unique(UM$cell))                         # p75 cells are a subset of p50 cells
 
 # ---- per-year metrics at unit cells ----------------------------------------------------------------
@@ -171,17 +205,25 @@ rec_f <- file.path(cfg$run_dir, "npn_study", "record", "series_typical.csv")
 fe <- here::here("npn_study", "data", "npn_site_ecoregions.csv"); ff <- here::here("npn_study", "data", "npn_site_fuelmodels.csv")
 gmap <- unlist(cl$ground %||% list(greenup = "sos20", curing = "eos50", cured = "eos20"))
 gmap <- gmap[gmap %in% mets]
-if (file.exists(rec_f) && file.exists(fe) && file.exists(ff) && lev == 2) {
+if (file.exists(rec_f) && file.exists(fe) && file.exists(ff)) {
   ST <- utils::read.csv(rec_f, stringsAsFactors = FALSE)
   SE <- utils::read.csv(fe, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
   SF <- utils::read.csv(ff, stringsAsFactors = FALSE)
   burn <- !is.na(SF$fbfm_group) & SF$fbfm_group != "NB"
   SF$group <- ifelse(burn, SF$fbfm_group, SF$fbfm_3x3_group)
   sites <- unique(ST[, c("site_id", "lat", "lon")]); sites <- sites[!duplicated(sites$site_id), ]
-  sites$code <- SE$eco_l2_code[match(sites$site_id, SE$site_id)]
   sites$group <- SF$group[match(sites$site_id, SF$site_id)]
-  sites$unit <- ifelse(paste(sites$code, sites$group) %in% keep_units, paste(sites$code, sites$group), NA)
   sites$cell <- terra::cellFromXY(mask, cbind(sites$lon, sites$lat))
+  if (scheme == "eco3_herb") {
+    e3 <- terra::values(terra::rast(ecofuel_dir(cfg, "eco_l3.tif"))[["eco"]], mat = FALSE)[sites$cell]
+    sites$code <- L$code[match(e3, L$eco)]
+    sites$group <- ifelse(sites$group %in% c("GR", "GS"), "HERB", sites$group)
+  } else sites$code <- SE$eco_l2_code[match(sites$site_id, SE$site_id)]
+  cand <- paste(sites$code, sites$group)
+  if (season_split) {                                  # a site in a split unit takes its cell's season
+    s_ <- sea[sites$cell]; cand <- ifelse(!is.na(s_) & paste(cand, s_) %in% keep_units, paste(cand, s_), cand)
+  }
+  sites$unit <- ifelse(cand %in% keep_units, cand, NA)
   med_f <- file.path(cfg$run_dir, "summaries", "cutb_metrics_median.tif")
   CM <- if (file.exists(med_f)) terra::values(terra::rast(med_f)[[unname(gmap)]])[sites$cell, , drop = FALSE] else NULL
   if (is.null(CM)) log_warn("no summaries/cutb_metrics_median.tif: own-cell comparison left NA")

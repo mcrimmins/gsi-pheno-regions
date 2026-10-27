@@ -277,14 +277,99 @@ if (!is.null(SA)) {
 - **The season split's satellite score is circular**, so it is not a fair test: each cell's season
   comes from its own typical satellite dates, the same dates it is then scored on. The two-season
   pattern is real (in the Warm Deserts, spring and monsoon seasons about four months apart), but what
-  the split is worth needs a fair test, with the seasons taken from other years or from climate. On
+  the split is worth needs a fair test, with the seasons taken from other years or from climate (step 6 below). On
   the ground, which is independent, it adds nothing.
+
+## A fair test of the season split (step 6)
+
+**Decided (Oct 27, 2026).** The season split is learned from the odd years only (2001, 2003, …) and
+every grouping is then scored on typical dates from the even years. A split that reflects a lasting
+pattern (spring vs monsoon green-up) keeps its value; one that only fits noise in a cell's own dates
+loses it. The same test is run for the Level III × herbaceous units of step 7.
+
+```{r oe-table}
+#| tbl-cap: "Fair season test: share of the variance of the cells' even-year typical dates explained (all cells, R2; and predicting from other 2-degree blocks, CV), with the season split learned from odd years only."
+OE <- mt("satellite_oddeven")
+if (!is.null(OE)) {
+  glo <- c(eco2 = "Level II ecoregion", eco2_fuel = "Level II × fuel (units)", eco2_fuel_season_oe = "Level II × fuel × season (odd years)",
+           eco2_fuel_elev = "Level II × fuel × 500 m elevation", eco3 = "Level III ecoregion", eco3_fuel = "Level III × fuel",
+           eco3_herb = "Level III × herbaceous", eco3_herb_season_oe = "Level III × herbaceous × season (odd years)",
+           a2 = "Climate regions (A2, 13)", a2_fuel = "Climate regions × fuel")
+  gs <- intersect(names(glo), unique(OE$grouping))
+  f2 <- function(x) ifelse(is.na(x), "–", sprintf("%.2f", x))
+  ov <- function(g, m, f) OE[[f]][OE$grouping == g & OE$metric == m][1]
+  x <- data.frame(Grouping = glo[gs], Groups = sapply(gs, function(g) OE$groups[OE$grouping == g][1]),
+                  `Green-up R2` = f2(sapply(gs, ov, m = "sos20", f = "r2")), `Green-up CV` = f2(sapply(gs, ov, m = "sos20", f = "cv_r2")),
+                  `Curing R2` = f2(sapply(gs, ov, m = "eos50", f = "r2")), `Curing CV` = f2(sapply(gs, ov, m = "eos50", f = "cv_r2")),
+                  check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "lrrrrr")
+} else cat("Fair season test pending (run 73 and 79).")
+```
+
+## Level III × herbaceous climatologies (step 7)
+
+**Decided (Oct 27, 2026).** Step 5 showed fuel type adds little and Level III adds a lot, so the
+climatologies are rebuilt on Level III ecoregions, using all cells where grass and grass-shrub
+together hold at least half the land, with no split by fuel model. Units need at least 200 cells.
+A second version splits two-season units by season.
+
+```{r eco3-fig, results="asis"}
+show_fig("ecofuel_climatology_eco3_herb", "Typical green-up, NDVI peak and curing dates of each Level III × herbaceous unit (median of its cells, bar = 25-75 % of cells), with NPN ground medians where a unit has at least 3 sites.")
+show_fig("ecofuel_climatology_eco3_herb_season", "As above, with two-season units split into early and late seasons.")
+```
+
+```{r eco3-table}
+#| tbl-cap: "Level III × herbaceous units: typical dates, with the ground check where a unit has NPN grass sites. Bias = unit typical minus ground median; error = mean absolute difference using the unit's typical vs the site's own cell."
+et <- function(f, n) { for (p in c("full", "dev")) { g <- sprintf("tables/ecofuel_%s_%s_%s.csv", f, n, p); if (file.exists(g)) return(suppressWarnings(utils::read.csv(g, stringsAsFactors = FALSE, colClasses = c(code = "character")))) }; NULL }
+HU <- et("climatology_eco3_herb", "units"); HC <- et("climatology_eco3_herb", "climatology"); HG <- et("climatology_eco3_herb", "ground_summary")
+if (!is.null(HU) && !is.null(HC)) {
+  HU <- HU[HU$eligible %in% TRUE, ]
+  md <- function(d) ifelse(is.na(d), "–", format(as.Date("2001-01-01") + round(d) - 1, "%b %d"))
+  tv <- function(u, m) { v <- HC$typical[HC$unit == u & HC$metric == m & HC$version == "p50"]; if (length(v)) v[1] else NA }
+  gv <- function(u, t, f) if (is.null(HG)) NA else { v <- HG[[f]][HG$unit == u & HG$target == t]; if (length(v)) v[1] else NA }
+  d0 <- function(x) ifelse(is.na(x), "–", sprintf("%+.0f d", x))
+  x <- data.frame(Unit = sprintf("%s %s", HU$code, HU$name), Cells = format(HU$cells, big.mark = ","),
+                  `Green-up` = md(sapply(HU$unit, tv, m = "sos20")), Curing = md(sapply(HU$unit, tv, m = "eos50")),
+                  Sites = sapply(HU$unit, function(u) { v <- gv(u, "greenup", "sites"); ifelse(is.na(v), 0, v) }),
+                  `Green-up bias` = d0(sapply(HU$unit, gv, t = "greenup", f = "bias")), `Curing bias` = d0(sapply(HU$unit, gv, t = "curing", f = "bias")),
+                  check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "lrrrrrr")
+} else cat("Level III × herbaceous climatology pending (run 72 with eco3_herb, then 79).")
+```
+
+## Fire as a check on the units (step 8)
+
+**Decided (Oct 27, 2026).** Wildfires of at least 10 acres (FPA-FOD, 2001–2024, debris burning
+removed) on each unit's cells. Two checks:
+
+- **Season.** Each unit's typical cured window runs from its typical curing date to its next
+  typical green-up. If fires follow cured fuel, a larger share of fires falls in that window than
+  its share of the year (concentration above 1).
+- **Year to year.** In units with at least 5 fires a year in the cured window, do years with later
+  curing (a shorter cured window) have fewer fires there? The all-units mean is removed from each
+  year first, so national reporting changes and continent-wide years don't drive it. There is no
+  dryness baseline here, so this is a consistency check, not an effect estimate; the fire study
+  tests phenology against dryness in its pilot regions.
+
+```{r fire-fig, results="asis"}
+show_fig("ecofuel_fire_climatology_eco3_herb", "Left: how much fires gather in each Level III × herbaceous unit's typical cured window (1 = no more than its share of the year). Right: year-to-year correlation of later curing with fires in the cured window, per unit, with the pooled value and its 90 % interval over years.")
+```
+
+```{r fire-table}
+#| tbl-cap: "Year to year, pooled over units: correlation of the curing (or green-up) date with fires in the unit's typical cured window, both relative to the all-units mean for the year; 90 % interval from resampling years."
+PO <- et("fire_climatology_eco3_herb", "pooled")
+if (!is.null(PO)) {
+  x <- data.frame(Phenology = c(curing = "Curing date", greenup = "Green-up date")[PO$phenology],
+                  r = sprintf("%.2f", PO$r), `90 % interval` = sprintf("%.2f to %.2f", PO$lo, PO$hi),
+                  Units = PO$units, `Units with r < 0` = PO$units_negative, check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "lrrrr")
+} else cat("Fire check pending (run 75 and 79).")
+```
+
 
 ## Still open
 
-1. **Fire as a check on the units** (next step after the climatologies): the fire study's
-   year-to-year test with these units in place of the climate regions, in the large western and
-   Plains grass and grass-shrub units.
+1. **Write-up of steps 5–8** once the CONUS results are in.
 2. **Models** for units whose year-to-year variation is large and shared, with the ground check
    as the gate.
 3. **LANDFIRE 2024** as a later sensitivity check.
@@ -297,3 +382,4 @@ if (!is.null(SA)) {
 | Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built, tested on synthetic data and run for CONUS: 26 units; first findings added. |
 | Oct 26, 2026 | Decided: compare groupings (step 5) before more units work, with the season split of two-season units and Level III ecoregions among them. Built and tested on synthetic data. |
 | Oct 27, 2026 | Step 5 run for CONUS: fuel type adds almost nothing to Level II ecoregions; Level III explains about twice as much satellite timing; only ground green-up has a transferable spatial pattern; the season split's satellite score is circular and needs a fair test. |
+| Oct 27, 2026 | Decided: a fair season test (seasons from odd years, scored on even years), climatologies rebuilt on Level III × herbaceous cells (no fuel split), and a fire check on those units. Steps 6–8 built and tested on synthetic data; CONUS runs pending. |
