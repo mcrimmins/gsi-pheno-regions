@@ -67,6 +67,7 @@ G <- terra::values(terra::rast(need[1]))[land, , drop = FALSE]
 S <- terra::values(terra::rast(need[2]))[land, , drop = FALSE]
 EC <- terra::values(terra::rast(need[3]))[land, , drop = FALSE]
 L <- utils::read.csv(need[4], stringsAsFactors = FALSE, colClasses = c(code = "character"))
+L <- L[L$cells > 0, ]                       # polygons that only overlap the grid's bounding box (Canada, Mexico)
 ca <- terra::values(terra::cellSize(mask, unit = "km"), mat = FALSE)[land]
 hm_f <- file.path(static_dir(cfg), "herb_mask.tif")
 herb <- if (file.exists(hm_f)) { h <- terra::values(terra::rast(hm_f), mat = FALSE)[land]; !is.na(h) & h > 0 } else {
@@ -133,14 +134,14 @@ for (e in L$eco) {
     j <- match(g, grp)
     a <- sum(AREA[ie, j], na.rm = TRUE)
     sl <- SLd[ie, j]
-    r <- data.frame(eco = e, code = L$code[e], name = L$name[e], group = g,
+    r <- data.frame(eco = e, code = L$code[match(e, L$eco)], name = L$name[match(e, L$eco)], group = g,
                     land_km2 = round(a), share_of_eco = if (eco_land > 0) a / eco_land else NA,
                     cells_dom = sum(dom[ie] == g, na.rm = TRUE), cells_p50 = sum(sl >= pur[1], na.rm = TRUE),
                     cells_p75 = sum(sl >= pur[length(pur)], na.rm = TRUE),
                     herb_cells_dom = if (all(is.na(herb))) NA else sum(dom[ie] == g & herb[ie], na.rm = TRUE),
                     npn_sites = NA, npn_sites_record = NA, fires_dom = NA, fires_wt = NA, fires_wt_per_yr = NA)
     if (!is.null(npn)) {
-      s <- npn$eco_l2_code == L$code[e] & npn$group == g
+      s <- npn$eco_l2_code == L$code[match(e, L$eco)] & npn$group == g
       r$npn_sites <- sum(s); if (!all(is.na(npn$record))) r$npn_sites_record <- sum(s & npn$record)
     }
     if (!is.null(fires)) {
@@ -160,15 +161,16 @@ burn <- ecofuel_burnable()
 ER <- do.call(rbind, lapply(L$eco, function(e) {
   u <- U[U$eco == e, ]; ie <- which(ok & eco == e)
   tot <- sum(u$land_km2)
-  data.frame(eco = e, code = L$code[e], name = L$name[e], l1_name = L$l1_name[e], cells = length(ie),
+  k <- match(e, L$eco)
+  data.frame(eco = e, code = L$code[k], name = L$name[k], l1_name = L$l1_name[k], cells = length(ie),
              land_km2 = tot, share_burnable = sum(u$land_km2[u$group %in% burn]) / max(tot, 1),
              share_ag = sum(u$land_km2[u$group == "NB_ag"]) / max(tot, 1),
              share_urban = sum(u$land_km2[u$group == "NB_urban"]) / max(tot, 1),
              top_group = u$group[which.max(u$land_km2)],
              burnable_mix = paste(sprintf("%s %.0f%%", u$group[u$group %in% burn], 100 * u$share_of_eco[u$group %in% burn]), collapse = ", "),
              median_dom_share = stats::median(dom_share[ie], na.rm = TRUE),
-             npn_sites = if (is.null(npn)) NA else sum(npn$eco_l2_code == L$code[e]),
-             npn_sites_nonburnable = if (is.null(npn)) NA else sum(npn$eco_l2_code == L$code[e] & npn$group == "none"),
+             npn_sites = if (is.null(npn)) NA else sum(npn$eco_l2_code == L$code[k]),
+             npn_sites_nonburnable = if (is.null(npn)) NA else sum(npn$eco_l2_code == L$code[k] & npn$group == "none"),
              fires = if (is.null(fires)) NA else sum(fires$row %in% ie))
 }))
 ER <- ER[order(-ER$land_km2), ]
@@ -178,9 +180,10 @@ utils::write.csv(ER, file.path(odir, "ecoregions.csv"), row.names = FALSE)
 MA <- S[, FT$model, drop = FALSE] * S[, "mapped"] * ca
 M <- do.call(rbind, lapply(L$eco, function(e) {
   ie <- which(ok & eco == e)
-  data.frame(eco = e, code = L$code[e], name = L$name[e], model = FT$model, group = FT$group,
+  k <- match(e, L$eco)
+  data.frame(eco = e, code = L$code[k], name = L$name[k], model = FT$model, group = FT$group,
              km2 = round(colSums(MA[ie, , drop = FALSE], na.rm = TRUE)),
-             npn_sites = if (is.null(npn)) NA else vapply(FT$model, function(m) sum(npn$eco_l2_code == L$code[e] & npn$model %in% m), 0))
+             npn_sites = if (is.null(npn)) NA else vapply(FT$model, function(m) sum(npn$eco_l2_code == L$code[k] & npn$model %in% m), 0))
 }))
 M <- M[M$km2 > 0 | (!is.na(M$npn_sites) & M$npn_sites > 0), ]
 utils::write.csv(M, file.path(odir, "models.csv"), row.names = FALSE)

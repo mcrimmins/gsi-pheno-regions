@@ -125,10 +125,21 @@ ecofuel_band_shares <- function(lf_file, win, codes, labels, out_file, fact, mem
 # Bands of LANDFIRE rows covering the analysis grid: window = grid extent projected to the
 # LANDFIRE CRS + margin, snapped to LANDFIRE cells; split into bands of rows_per_band * fact rows
 # (multiples of fact, so the ~1 km blocks of all bands line up).
+# Extent of a lon/lat raster's bounding box in another CRS, from n points along every edge. Projecting
+# only the 4 corners (as 03 / R/nlcd.R do) misses the bulge of the southern parallel in Albers: on the
+# CONUS grid that cut off land south of ~28 N (south Florida, south Texas; found Oct 26 2026).
+ext_in_crs <- function(r, crs_to, n = 500) {
+  e <- terra::ext(r)
+  xs <- seq(e[1], e[2], length.out = n); ys <- seq(e[3], e[4], length.out = n)
+  pts <- rbind(cbind(xs, e[3]), cbind(xs, e[4]), cbind(e[1], ys), cbind(e[2], ys))
+  p <- terra::project(pts, terra::crs(r), crs_to)
+  terra::ext(min(p[, 1]), max(p[, 1]), min(p[, 2]), max(p[, 2]))
+}
+
 ecofuel_bands <- function(lf_file, mask_file, fact, rows_per_band, margin_m = 5000) {
   lc <- terra::rast(lf_file)[[1]]
   mask <- terra::rast(mask_file)
-  e <- terra::ext(terra::project(terra::as.polygons(terra::ext(mask), crs = terra::crs(mask)), terra::crs(lc)))
+  e <- ext_in_crs(mask, terra::crs(lc))
   e <- terra::ext(e[1] - margin_m, e[2] + margin_m, e[3] - margin_m, e[4] + margin_m)
   e <- terra::intersect(e, terra::ext(lc))
   if (is.null(e)) stop("the analysis grid does not overlap the LANDFIRE map")
