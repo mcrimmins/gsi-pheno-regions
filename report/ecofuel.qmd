@@ -193,6 +193,27 @@ if (!is.null(CG)) {
 } else cat("Ground check pending (72 on the laptop, where the NPN record lives).")
 ```
 
+**First findings (Oct 26, 2026).**
+
+- **26 units** qualify (152,642 cells): grass and grass-shrub across the Plains, deserts, Western
+  Cordillera, Southwest highlands, California and the Southeast, plus Cold Deserts shrub.
+- **Some units mix two seasons.** In the Cold and Warm Deserts, the Western Cordillera and the
+  Everglades, a quarter to two fifths of a unit's cells have a typical curing date more than 60 days
+  from the unit's typical date. In the Warm Deserts, grass greens up typically in early March and
+  grass-shrub in mid-June: spring and monsoon seasons share these units. One typical date per unit
+  hides that split.
+- **Units don't move together much from year to year.** The year-to-year spread of a unit's curing
+  date is 5–17 days in most units (about 30 days in the two small south Texas units), and only about
+  a fifth of the cells' year-to-year variation is shared across a unit (0.04–0.42). That argues
+  against unit-level weather adjustments, as the NPN study found at the ground.
+- **The satellite dates are offset from the ground.** At NPN sites in these units, the satellite's
+  green-up (20 % of the NDVI rise) comes about 26 days before the ground green-up, and its curing
+  about 20 days after the ground's 50 % curing. Leaving out sites where the satellite and the ground
+  pick different seasons (7–12 sites per event), the unit's typical curing date is about as good as
+  the site's own 4 km cell (error 32 vs 29 days; correlation across sites 0.54 vs 0.52). For
+  green-up the unit loses the spatial pattern within it (error 39 vs 30 days; correlation 0.18 vs
+  0.84), so ecoregion × fuel units are too coarse for green-up.
+
 ## Still open
 
 1. **Fire as a check on the units** (next step after the climatologies): the fire study's
@@ -209,4 +230,4 @@ if (!is.null(CG)) {
 | Date | Change |
 |---|---|
 | Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory) and run for CONUS. A first run missed land south of about 28° N (south Texas, south Florida) because the map window was projected from its corners only; fixed and rerun. |
-| Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built and tested on synthetic data. |
+| Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built, tested on synthetic data and run for CONUS: 26 units; first findings added. |

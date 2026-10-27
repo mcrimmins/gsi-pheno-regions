@@ -162,12 +162,13 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
   mcol <- c(gu = "#2a78d6", cu = "#eb6834")
   plot_png("ecofuel_climatology", "MODIS 2001-2025; NPN ground 2014-2024", 2200, 360 + 64 * n, function() {
     par(mar = c(3.2, 17, 5.5, 15), xpd = NA)
-    xl <- c(0, 400)
+    xl <- c(-92, 400)                                   # Oct of the previous year (CA green-up) to early Feb
     plot(NA, xlim = xl, ylim = c(0.4, n + 0.6), xaxt = "n", yaxt = "n", xlab = "", ylab = "", bty = "n", xaxs = "i")
-    mon <- c(as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, 366, 397)
-    lab <- c(month.abb, "Jan", "Feb")
+    mon <- c(-91, -61, -30, as.numeric(as.Date(sprintf("2001-%02d-01", 1:12)) - as.Date("2001-01-01")) + 1, 366)
+    lab <- c("Oct", "Nov", "Dec", month.abb, "Jan")
     segments(mon, 0.4, mon, n + 0.5, col = grid_col, xpd = FALSE)
-    axis(1, at = mon + 15, labels = lab, tick = FALSE, line = -0.8, cex.axis = 0.75)
+    axis(1, at = mon + 15, labels = lab, tick = FALSE, line = -0.8, cex.axis = 0.7)
+    segments(1, 0.4, 1, n + 0.5, col = ink2, lty = 3)
     for (i in seq_len(n)) {
       y <- n + 1 - i; u <- UT$unit[i]
       for (m in c("sos20", "eos50")) {
@@ -183,7 +184,7 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
     }
     grp <- c(GR = "grass", GS = "grass-shrub", SH = "shrub")
     labs <- sprintf("%s %s, %s", UT$code, substr(UT$name, 1, 24), grp[UT$group])
-    text(-6, n + 1 - seq_len(n), labs, adj = 1, cex = 0.74, col = ink)
+    text(xl[1] - 6, n + 1 - seq_len(n), labs, adj = 1, cex = 0.74, col = ink)
     xr <- xl[2] + 10
     text(xr, n + 1.05, "Cells", adj = 0, cex = 0.7, col = ink2)
     text(xr + 42, n + 1.05, "NPN sites", adj = 0, cex = 0.7, col = ink2)
@@ -192,10 +193,10 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
     text(xr, n + 1 - seq_len(n), format(UT$cells, big.mark = ","), adj = 0, cex = 0.74, col = ink)
     text(xr + 42, n + 1 - seq_len(n), if (is.null(GG)) "-" else ns, adj = 0, cex = 0.74, col = ink)
     text(xr + 92, n + 1 - seq_len(n), sprintf("%.0f d", vapply(UT$unit, function(u) gv(u, "eos50", "yty_sd"), 0)), adj = 0, cex = 0.74, col = ink)
-    legend(x = 0, y = n + 2.2, legend = c("Green-up (NDVI 20 %)", "Curing (NDVI end of season, 50 %)", "NDVI peak", "NPN ground median (>= 3 sites)"),
+    legend(x = xl[1], y = n + 2.2, legend = c("Green-up (NDVI 20 %)", "Curing (NDVI end of season, 50 %)", "NDVI peak", "NPN ground median (>= 3 sites)"),
            pch = c(21, 21, 124, 5), pt.bg = c(mcol, NA, NA), col = c(bg, bg, ink2, ink2), pt.cex = c(1.4, 1.4, 1, 1.1), bty = "n",
            ncol = 4, cex = 0.72, text.col = ink2, yjust = 0)
-    text(0, n + 0.75, "Dot = typical date (median of the unit's cells); bar = 25-75 % of cells", adj = 0, cex = 0.66, col = ink2)
+    text(xl[1], n + 0.75, "Dot = typical date (median of the unit's cells); bar = 25-75 % of cells", adj = 0, cex = 0.66, col = ink2)
   })
 }
 log_msg("=== done | log: ", log_file)
