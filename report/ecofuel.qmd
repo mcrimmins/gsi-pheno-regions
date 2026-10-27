@@ -259,6 +259,27 @@ if (!is.null(SA)) {
 } else cat("Comparison pending (run 73 and 79).")
 ```
 
+**What the comparison shows (Oct 27, 2026).**
+
+- **Fuel type adds almost nothing.** Within Level II ecoregions, splitting by fuel group barely
+  changes how much of the satellite timing is explained (green-up 0.19 → 0.22, curing 0.21 → 0.20),
+  and on the ground it makes predictions worse: splitting the sites into more groups leaves fewer
+  sites to learn from in each, and the fuel model at a site says little about its dates.
+- **Finer geography does more.** Level III ecoregions explain about twice as much of the satellite
+  timing as Level II (green-up 0.45, curing 0.58), more than the climate regions (0.29 and 0.49)
+  with more groups (75 vs 13). Elevation bands within the units help less than Level III.
+- **Units don't move together from year to year** under any grouping: a fifth to a third of the
+  cells' year-to-year variation is shared (0.18–0.33).
+- **On the ground, only green-up has a spatial pattern** that groupings can carry to new sites:
+  Level III and the climate regions predict NPN green-up best (about 0.23–0.24 of the variance, with
+  nearby sites held out); no grouping predicts ground curing better than the national median (88
+  sites, mostly NEON).
+- **The season split's satellite score is circular**, so it is not a fair test: each cell's season
+  comes from its own typical satellite dates, the same dates it is then scored on. The two-season
+  pattern is real (in the Warm Deserts, spring and monsoon seasons about four months apart), but what
+  the split is worth needs a fair test, with the seasons taken from other years or from climate. On
+  the ground, which is independent, it adds nothing.
+
 ## Still open
 
 1. **Fire as a check on the units** (next step after the climatologies): the fire study's
@@ -275,3 +296,4 @@ if (!is.null(SA)) {
 | Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory) and run for CONUS. A first run missed land south of about 28° N (south Texas, south Florida) because the map window was projected from its corners only; fixed and rerun. |
 | Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built, tested on synthetic data and run for CONUS: 26 units; first findings added. |
 | Oct 26, 2026 | Decided: compare groupings (step 5) before more units work, with the season split of two-season units and Level III ecoregions among them. Built and tested on synthetic data. |
+| Oct 27, 2026 | Step 5 run for CONUS: fuel type adds almost nothing to Level II ecoregions; Level III explains about twice as much satellite timing; only ground green-up has a transferable spatial pattern; the season split's satellite score is circular and needs a fair test. |
