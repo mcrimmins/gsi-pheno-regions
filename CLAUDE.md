@@ -937,8 +937,10 @@ climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel
   ext_in_crs() projects 500 points per edge (0 cells missed); rerun done. R/nlcd.R (03) has the same
   corner-only window: its NLCD shares / herb_share / herb_mask lack 4,835 of 6,557 land cells in that
   strip (affects herb mask, rules confidence, fire_fuel_share there; A2 regions and the fire pilot
-  regions are unaffected). Not fixed: regions-work code, Mike's call (fix = same function in nlcd.R,
-  then rerun 03, ~34 min P720).
+  regions are unaffected). FIXED Oct 26 (Mike: go ahead): R/nlcd.R nlcd_year_shares() window from 500
+  points per edge (CONUS synthetic test: 4,805 land cells without shares -> 0). Rerun 03 after deleting
+  the cached static/nlcd/share_*.tif (03 skips years whose share files exist). Downstream (rules 40,
+  fire_fuel_share users) picks up the new cells only when rerun; index.qmd changelog row added.
   CONUS inventory (Oct 26, after the fix): 26 % of cells have one group >= 75 % of land; GR1-2 = 87 %
   of GR area (GR3+ matters only in 8.5); 25 GR/GS units with >= 200 cells at >= 50 %, 11 of them with
   >= 3 NPN record sites; 60 record sites in GR/GS fuel, 39 in SH/TU/TL; eastern GR units (8.x, 9.2)
@@ -956,3 +958,17 @@ climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel
   greenup~sos20, curing~eos50, cured~eos20; bias and MAE of unit typical vs the site's own cell typical,
   circular differences). Planted fixture: typicals exact, yty_sd = planted, r 0.999, sync within 0.02,
   jumps 4 %, ground offsets recovered. 79 figure ecofuel_climatology + tables ecofuel_clim_*.
+- DECIDED Oct 26 (Mike): compare groupings before more units work (73), with the season split and
+  Level III among them. R/ecofuel.R ecofuel_eco_raster(cfg, eo, ...) now builds any ecoregion level (70
+  calls it for Level II; refactor checked on the fixture: identical grid); config ecofuel: ecoregions_l3
+  (EPA us_eco_l3.zip, US_L3CODE / US_L3NAME, parent NA_L2CODE) and ecofuel: compare.
+- `scripts/73_ecofuel_compare.R [profile]` (laptop, minutes; downloads Level III once): groupings of every
+  land cell (fuel = 71's dominant group): eco2, eco2_fuel, eco2_fuel_season (2-means split of a unit's
+  cells on typical (sos20, eos50) when centres > 60 d apart and the smaller part >= 10 %), eco2_fuel_elev
+  (500 m bands), eco3, eco3_fuel, a2, a2_fuel (A2 k13 via region_set_labels). Satellite scores on the 72
+  unit cells: r2 / adj_r2 / cv_r2 (2-degree block CV, group means from other blocks) of the cells' typical
+  dates, sync of year-to-year departures; ground: NPN record site medians predicted from other sites in
+  the group, sites within 10 km held out (cv_r2, cv_mae, own_group share) -> ecofuel/compare/satellite.csv,
+  ground.csv, groupings.csv, season_split.csv. Fixture (planted two-season unit, uninformative L3 / A2 /
+  elevation): split found (65 % early, centres +120 / +60 d as planted), green-up cv r2 0.17 -> 0.97;
+  uninformative groupings gain nothing. 79 figure ecofuel_compare + tables ecofuel_cmp_*.

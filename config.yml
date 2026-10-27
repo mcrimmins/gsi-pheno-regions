@@ -509,6 +509,30 @@ default:
         greenup: sos20
         curing: eos50
         cured: eos20
+    # 73: does the split earn its keep? (DECIDED Oct 26 2026, Mike: run the comparison before more units
+    # work.) Groupings compared on the same cells: Level II, Level II x fuel (the units), + season split,
+    # + 500 m elevation bands, Level III, Level III x fuel, A2 k13 climate regions, A2 x fuel. Fuel =
+    # each cell's dominant group (71). Scores: satellite typical dates (R2, 2-degree block CV), year-to-year
+    # shared variation, and NPN ground dates (leave-out CV with sites within cluster_km held out).
+    ecoregions_l3:
+      level: 3
+      url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/us/us_eco_l3.zip"
+      code_field: US_L3CODE
+      name_field: US_L3NAME
+      parent_code_field: NA_L2CODE
+      parent_name_field: NA_L2NAME
+      shp_pattern: "l3"
+      drop_codes: []
+      sub_cells: 10
+    compare:
+      a2: {partition: A2_groups, k: 13}
+      elev_band_m: 500
+      season_split_days: 60     # split an ecoregion x fuel unit in two when 2-means centres of the cells'
+      season_min_share: 0.1     #   typical (green-up, curing) differ by more than this and the smaller part
+      season_min_cells: 200     #   holds >= this share; only units with >= season_min_cells cells
+      metrics: [sos20, eos50]
+      block_deg: 2              # satellite block cross-validation
+      cluster_km: 10            # ground leave-out radius (as the NPN study's clustered CV)
 
   # Region profiles (32_region_profiles.R, laptop): what each candidate region looks like.
   # Per region: climate feature medians and 25-75 % ranges (all cells), satellite season

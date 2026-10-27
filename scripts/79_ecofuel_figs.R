@@ -12,6 +12,9 @@
 #                      spread of the unit's cells (25-75 %), NPN ground medians where >= 3 sites, and the
 #                      year-to-year spread of curing; also copies 72's unit, climatology and ground-summary
 #                      tables (no site ids) to report/tables
+#   ecofuel_compare    73: how well each grouping (ecoregion, ecoregion x fuel, + season split, + elevation,
+#                      Level III, climate regions) explains satellite typical dates (block CV), shares
+#                      year-to-year variation, and predicts NPN ground dates (clustered CV)
 # Usage: Rscript scripts/79_ecofuel_figs.R [profile] [figure ...]
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -23,7 +26,7 @@ source(here::here("R", "log.R"))
 source(here::here("R", "grid.R"))
 source(here::here("R", "ecofuel.R"))
 
-all_figs <- c("ecofuel_units", "ecofuel_inventory", "ecofuel_climatology")
+all_figs <- c("ecofuel_units", "ecofuel_inventory", "ecofuel_climatology", "ecofuel_compare")
 want <- if (length(args) >= 2) args[-1] else all_figs
 cfg <- load_cfg(profile)
 log_file <- log_init("79_ecofuel_figs", profile)
@@ -45,6 +48,10 @@ for (f in c("units", "ecoregions", "models", "purity")) {
 ss <- ecofuel_dir(cfg, "shares_summary.csv")
 if (file.exists(ss)) file.copy(ss, file.path(tdir, sprintf("ecofuel_shares_%s.csv", profile)), overwrite = TRUE)
 cdir <- ecofuel_dir(cfg, "climatology")
+for (f in c("satellite", "ground", "groupings", "season_split")) {
+  src <- ecofuel_dir(cfg, "compare", paste0(f, ".csv"))
+  if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_cmp_%s_%s.csv", f, profile)), overwrite = TRUE)
+}
 for (f in c("units", "climatology", "ground_summary")) {
   src <- file.path(cdir, paste0(f, ".csv"))
   if (file.exists(src)) file.copy(src, file.path(tdir, sprintf("ecofuel_clim_%s_%s.csv", f, profile)), overwrite = TRUE)
@@ -197,6 +204,45 @@ if ("ecofuel_climatology" %in% want && file.exists(cf)) {
            pch = c(21, 21, 124, 5), pt.bg = c(mcol, NA, NA), col = c(bg, bg, ink2, ink2), pt.cex = c(1.4, 1.4, 1, 1.1), bty = "n",
            ncol = 4, cex = 0.72, text.col = ink2, yjust = 0)
     text(xl[1], n + 0.75, "Dot = typical date (median of the unit's cells); bar = 25-75 % of cells", adj = 0, cex = 0.66, col = ink2)
+  })
+}
+# ---- grouping comparison (73) ---------------------------------------------------------------------
+sf_ <- ecofuel_dir(cfg, "compare", "satellite.csv")
+if ("ecofuel_compare" %in% want && file.exists(sf_)) {
+  SA <- utils::read.csv(sf_, stringsAsFactors = FALSE)
+  gf2 <- ecofuel_dir(cfg, "compare", "ground.csv"); GD <- if (file.exists(gf2)) utils::read.csv(gf2, stringsAsFactors = FALSE) else NULL
+  GN <- utils::read.csv(ecofuel_dir(cfg, "compare", "groupings.csv"), stringsAsFactors = FALSE)
+  glab <- c(eco2 = "Level II ecoregion", eco2_fuel = "Level II x fuel (units)", eco2_fuel_season = "Level II x fuel x season",
+            eco2_fuel_elev = "Level II x fuel x 500 m elevation", eco3 = "Level III ecoregion", eco3_fuel = "Level III x fuel",
+            a2 = "Climate regions (A2, 13)", a2_fuel = "Climate regions x fuel")
+  gs <- intersect(names(glab), unique(SA$grouping)); n <- length(gs)
+  mcol <- c("#2a78d6", "#eb6834")
+  panel <- function(get, title, xl, ref = 0) {
+    plot(NA, xlim = xl, ylim = c(0.5, n + 0.5), yaxt = "n", xaxt = "n", xlab = "", ylab = "", bty = "n")
+    at <- pretty(xl); at <- at[at >= xl[1] & at <= xl[2]]
+    segments(at, 0.5, at, n + 0.5, col = grid_col, xpd = FALSE)
+    if (ref >= xl[1]) segments(ref, 0.5, ref, n + 0.5, col = ink2, lty = 3)
+    axis(1, at = at, tick = FALSE, line = -0.8, cex.axis = 0.75)
+    for (i in seq_len(n)) {
+      v <- get(gs[i]); y <- n + 1 - i
+      for (j in 1:2) if (!is.na(v[j])) points(max(min(v[j], xl[2]), xl[1]), y + c(0.12, -0.12)[j], pch = if (v[j] < xl[1]) 60 else 21,
+                                             bg = mcol[j], col = if (v[j] < xl[1]) mcol[j] else bg, cex = 1.4, lwd = 1.2)
+    }
+    mtext(title, side = 3, line = 0.6, adj = 0, cex = 0.72, col = ink)
+  }
+  sv <- function(g, m, f) { v <- SA[[f]][SA$grouping == g & SA$metric == m]; if (length(v)) v[1] else NA }
+  gv2 <- function(g, t) { if (is.null(GD)) return(NA); v <- GD$cv_r2[GD$grouping == g & GD$target == t]; if (length(v)) v[1] else NA }
+  plot_png("ecofuel_compare", "MODIS 2001-2025; NPN ground 2014-2024", 2200, 300 + 70 * n, function() {
+    layout(matrix(1:4, 1), widths = c(1.15, 1, 1, 1))
+    par(mar = c(3, 0.5, 4.2, 0.5)); plot.new(); plot.window(c(0, 1), c(0.5, n + 0.5))
+    lab <- sprintf("%s (%s groups)", glab[gs], GN$groups_domain[match(gs, GN$grouping)])
+    text(0.98, n + 1 - seq_len(n), lab, adj = 1, cex = 0.8, col = ink, xpd = NA)
+    legend("topleft", inset = c(0, -0.09), legend = c("Green-up", "Curing"), pch = 21, pt.bg = mcol, col = bg, pt.cex = 1.3,
+           bty = "n", horiz = TRUE, cex = 0.78, text.col = ink2, xpd = NA)
+    par(mar = c(3, 1, 4.2, 1.2))
+    panel(function(g) c(sv(g, "sos20", "cv_r2"), sv(g, "eos50", "cv_r2")), "Satellite typical dates\nexplained (R2, held-out blocks)", c(0, 1))
+    panel(function(g) c(sv(g, "sos20", "sync"), sv(g, "eos50", "sync")), "Year-to-year variation\nshared within groups", c(0, 1))
+    panel(function(g) c(gv2(g, "greenup"), gv2(g, "curing")), "NPN ground dates predicted\n(R2, nearby sites held out)", c(-0.5, 1))
   })
 }
 log_msg("=== done | log: ", log_file)

@@ -1513,6 +1513,7 @@ Comments on any of these are welcome.
 
 | Date | Change |
 |---|---|
+| 2026-10-26 | Correction: the herbaceous cover layers (NLCD shares, herbaceous share and mask) missed land south of about 28° N (south Florida, south Texas, about 4,800 cells) because the map window was projected from its corners only; fixed and rerun. The climate regions are unaffected; the herbaceous mask gains cells there, and the typical-date confidence classes follow when the rules package is next rebuilt |
 | 2026-10-19 | Fire activity study: first results summarized here and linked from the top of the page |
 | 2026-10-17 | Fire activity study designed; companion page added (fire_study.html) |
 | 2026-10-16 | NPN curing study: the record, typical dates on all usable curves, and typical dates against site climate; 2016–17 check (on the study page) |

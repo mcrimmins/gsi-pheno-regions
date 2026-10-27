@@ -74,8 +74,14 @@ nlcd_year_shares <- function(nlcd_tif, codes, out_files, mask_file, fact, memfra
     terra::terraOptions(memfrac = memfrac, progress = 0)
     lc <- terra::rast(nlcd_tif)
     mask <- terra::rast(mask_file)
-    e <- terra::ext(terra::project(terra::as.polygons(terra::ext(mask), crs = terra::crs(mask)),
-                                   terra::crs(lc)))
+    # Window = the grid box projected to Albers from 500 points per edge. Projecting only the 4 corners
+    # (before Oct 26 2026) missed the southern parallel's bulge: land south of ~28 N (south FL / TX,
+    # ~4,800 CONUS cells) got no shares.
+    eg <- terra::ext(mask)
+    xs <- seq(eg[1], eg[2], length.out = 500); ys <- seq(eg[3], eg[4], length.out = 500)
+    pp <- terra::project(rbind(cbind(xs, eg[3]), cbind(xs, eg[4]), cbind(eg[1], ys), cbind(eg[2], ys)),
+                         terra::crs(mask), terra::crs(lc))
+    e <- terra::ext(min(pp[, 1]), max(pp[, 1]), min(pp[, 2]), max(pp[, 2]))
     margin <- 5000   # m
     e <- terra::ext(e[1] - margin, e[2] + margin, e[3] - margin, e[4] + margin)
     terra::window(lc) <- terra::intersect(e, terra::ext(lc))

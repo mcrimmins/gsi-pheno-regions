@@ -54,8 +54,7 @@ ecofuel_landfire_file <- function(cfg) {
 # Ecoregion polygons (config ecofuel: ecoregions). Looks in the shared cache
 # <data_root>/_shared/raw/ecoregions/l<level>/, then (read only) in the NPN study's copy
 # <run_dir>/npn_study/ecoregions/ for Level II, else downloads the zip into the cache.
-ecofuel_ecoregion_shp <- function(cfg) {
-  eo <- cfg$ecofuel$ecoregions
+ecofuel_ecoregion_shp <- function(cfg, eo = cfg$ecofuel$ecoregions) {
   lev <- as.integer(eo$level %||% 2)
   find_shp <- function(d) {
     if (!dir.exists(d)) return(NA_character_)
@@ -191,3 +190,84 @@ ecofuel_unit_cells <- function(cfg, purity) {
 
 # Circular day difference a - b in (-182.5, 182.5]
 cdiff <- function(a, b) ((a - b + 182.5) %% 365) - 182.5
+
+# ---- ecoregions on the grid (70 for Level II, 73 for Level III) ------------------------------------
+# eo = one config block (ecofuel: ecoregions or ecofuel: ecoregions_l3): level, url, code / name /
+# parent fields, drop_codes, sub_cells. Each land cell takes the ecoregion covering most of its
+# sub_cells x sub_cells sub-cells (eco, eco_purity); land cells outside every polygon take the nearest
+# one (eco_nearest = 1). Writes out_file (3 bands) and lookup_file (eco, code, name, l1_code, l1_name,
+# cells, land_km2, cells_nearest; l1_* hold the parent level's code / name). water: per-cell water share
+# (all grid cells) for land_km2, or NULL.
+ecofuel_eco_raster <- function(cfg, eo, mask_file, out_file, lookup_file, water = NULL) {
+  lev <- as.integer(eo$level %||% 2)
+  sub_cells <- as.integer(eo$sub_cells %||% 10)
+  mask <- terra::rast(mask_file)
+  shp <- ecofuel_ecoregion_shp(cfg, eo)
+  log_msg("ecoregions (level ", lev, "): ", shp)
+  E <- sf::st_read(shp, quiet = TRUE)
+  gc_ <- attr(E, "sf_column"); names(E)[names(E) != gc_] <- toupper(names(E)[names(E) != gc_])
+  f_code <- toupper(eo$code_field %||% sprintf("NA_L%dCODE", lev))
+  f_name <- toupper(eo$name_field %||% sprintf("NA_L%dNAME", lev))
+  f_pcode <- toupper(eo$parent_code_field %||% "NA_L1CODE")
+  f_pname <- toupper(eo$parent_name_field %||% "NA_L1NAME")
+  miss <- setdiff(c(f_code, f_name), names(E))
+  if (length(miss)) stop("ecoregion fields missing: ", paste(miss, collapse = ", "), " (have: ", paste(names(E), collapse = ", "), ")")
+  E$code <- as.character(E[[f_code]])
+  drop <- as.character(unlist(eo$drop_codes %||% list("0.0")))
+  E <- E[!is.na(E$code) & !(E$code %in% drop), ]
+  E <- sf::st_make_valid(E)
+  E <- sf::st_transform(E, terra::crs(mask))
+  bb <- sf::st_as_sfc(sf::st_bbox(c(xmin = terra::xmin(mask), ymin = terra::ymin(mask),
+                                    xmax = terra::xmax(mask), ymax = terra::ymax(mask)), crs = sf::st_crs(E)))
+  E <- E[lengths(sf::st_intersects(E, bb)) > 0, ]
+  codes <- sort(unique(E$code))
+  num <- suppressWarnings(as.numeric(codes))
+  if (!anyNA(num)) codes <- codes[order(num)]
+  E$eco <- match(E$code, codes)
+  attr_first <- function(f) if (f %in% names(E)) as.character(E[[f]][match(codes, E$code)]) else NA_character_
+  L <- data.frame(eco = seq_along(codes), code = codes,
+                  name = tools::toTitleCase(tolower(attr_first(f_name))),
+                  l1_code = attr_first(f_pcode), l1_name = tools::toTitleCase(tolower(attr_first(f_pname))),
+                  stringsAsFactors = FALSE)
+  log_msg(sprintf("%d polygons, %d ecoregions (level %d) overlap the grid", nrow(E), length(codes), lev))
+  fine <- terra::disagg(terra::rast(mask), fact = sub_cells)
+  ER <- terra::rasterize(terra::vect(E), fine, field = "eco")
+  k <- length(codes)
+  maj_fun <- function(v, ...) {
+    v <- v[!is.na(v)]
+    if (!length(v)) return(c(NA_real_, NA_real_))
+    t <- tabulate(v, k); j <- which.max(t)
+    c(j, t[j] / sub_cells^2)
+  }
+  M <- terra::aggregate(ER, fact = sub_cells, fun = maj_fun)
+  M <- terra::mask(M, mask)
+  names(M) <- c("eco", "eco_purity")
+  ev <- terra::values(M[["eco"]], mat = FALSE)
+  land <- which(!is.na(terra::values(mask, mat = FALSE)))
+  near <- land[is.na(ev[land])]
+  nearest_flag <- rep(NA_real_, terra::ncell(mask)); nearest_flag[land] <- 0
+  if (length(near)) {
+    xy <- terra::xyFromCell(mask, near)
+    P <- sf::st_as_sf(data.frame(x = xy[, 1], y = xy[, 2]), coords = c("x", "y"), crs = sf::st_crs(E))
+    j <- sf::st_nearest_feature(P, E)
+    ev[near] <- E$eco[j]
+    nearest_flag[near] <- 1
+    pv <- terra::values(M[["eco_purity"]], mat = FALSE); pv[near] <- 0; terra::values(M[["eco_purity"]]) <- pv
+    terra::values(M[["eco"]]) <- ev
+  }
+  NF <- terra::rast(mask); terra::values(NF) <- nearest_flag; names(NF) <- "eco_nearest"
+  out <- c(M, NF)
+  tmp <- paste0(out_file, ".tmp.tif")
+  terra::writeRaster(out, tmp, overwrite = TRUE, gdal = c("COMPRESS=DEFLATE", "TILED=YES", "INTERLEAVE=BAND"))
+  unlink(out_file); file.rename(tmp, out_file)
+  ca <- terra::values(terra::cellSize(mask, unit = "km"), mat = FALSE)
+  if (is.null(water)) water <- rep(0, length(ca))
+  landkm <- ca * (1 - ifelse(is.na(water), 0, water))
+  L$cells <- vapply(L$eco, function(e) sum(ev[land] == e, na.rm = TRUE), 0)
+  L$land_km2 <- round(vapply(L$eco, function(e) sum(landkm[land][ev[land] %in% e]), 0))
+  L$cells_nearest <- vapply(L$eco, function(e) sum(ev[near] == e, na.rm = TRUE), 0)
+  utils::write.csv(L, lookup_file, row.names = FALSE)
+  log_msg(sprintf("ecoregion raster (level %d): %d land cells, %d assigned to the nearest polygon; median purity %.2f",
+                  lev, length(land), length(near), stats::median(terra::values(M[["eco_purity"]], mat = FALSE)[land], na.rm = TRUE)))
+  invisible(L)
+}

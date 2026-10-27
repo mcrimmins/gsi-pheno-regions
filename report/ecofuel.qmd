@@ -214,16 +214,59 @@ if (!is.null(CG)) {
   green-up the unit loses the spatial pattern within it (error 39 vs 30 days; correlation 0.18 vs
   0.84), so ecoregion × fuel units are too coarse for green-up.
 
+## Does the split earn its keep? (step 5)
+
+**Decided (Oct 26, 2026).** Before more work on the units, compare them with other ways of
+grouping the same cells. Every grouping is scored on the same 4 km cells (those of the climatology
+units), so the comparison is fair:
+
+- **Level II ecoregion** alone, and **Level II × fuel** (the units above);
+- the units **split by season** where their cells form two clusters of typical dates more than
+  60 days apart (for example spring vs monsoon green-up), the smaller holding at least a tenth of
+  the cells;
+- the units split into **500 m elevation bands**;
+- **Level III ecoregions**, alone and × fuel;
+- the **climate regions** (A2, 13 regions) from the regions work, alone and × fuel.
+
+Three scores: how much of the variation in the satellite's typical dates each grouping explains,
+predicting each cell from its group's cells in other 2° blocks (so groupings that only fit their
+own neighbourhood are penalised); how much of the cells' year-to-year variation each group shares;
+and how well each grouping predicts the NPN ground dates, predicting each site from the other sites
+in its group with nearby sites (within 10 km) held out.
+
+```{r cmp-fig, results="asis"}
+show_fig("ecofuel_compare", "How well each grouping of the cells explains satellite typical green-up and curing dates (held-out blocks), shares year-to-year variation, and predicts NPN ground dates (nearby sites held out). Arrows mark values below the axis.")
+```
+
+```{r cmp-table}
+#| tbl-cap: "Grouping comparison. Satellite R2 = share of the variance of the cells' typical dates explained, predicting from other 2-degree blocks; shared = share of year-to-year variation common within groups; ground R2 = NPN site dates predicted from other sites in the group (sites within 10 km held out)."
+mt <- function(name) { for (p in c("full", "dev")) { f <- sprintf("tables/ecofuel_cmp_%s_%s.csv", name, p); if (file.exists(f)) return(utils::read.csv(f, stringsAsFactors = FALSE)) }; NULL }
+SA <- mt("satellite"); GDc <- mt("ground"); GNc <- mt("groupings")
+if (!is.null(SA)) {
+  glab <- c(eco2 = "Level II ecoregion", eco2_fuel = "Level II × fuel (units)", eco2_fuel_season = "Level II × fuel × season",
+            eco2_fuel_elev = "Level II × fuel × 500 m elevation", eco3 = "Level III ecoregion", eco3_fuel = "Level III × fuel",
+            a2 = "Climate regions (A2, 13)", a2_fuel = "Climate regions × fuel")
+  gs <- intersect(names(glab), unique(SA$grouping))
+  f2 <- function(x) ifelse(is.na(x), "–", sprintf("%.2f", x))
+  sv <- function(g, m, f) SA[[f]][SA$grouping == g & SA$metric == m][1]
+  gv <- function(g, t) if (is.null(GDc)) NA else { v <- GDc$cv_r2[GDc$grouping == g & GDc$target == t]; if (length(v)) v[1] else NA }
+  x <- data.frame(Grouping = glab[gs], Groups = GNc$groups_domain[match(gs, GNc$grouping)],
+                  `Sat. green-up R2` = f2(sapply(gs, sv, m = "sos20", f = "cv_r2")), `Sat. curing R2` = f2(sapply(gs, sv, m = "eos50", f = "cv_r2")),
+                  `Shared, green-up` = f2(sapply(gs, sv, m = "sos20", f = "sync")), `Shared, curing` = f2(sapply(gs, sv, m = "eos50", f = "sync")),
+                  `Ground green-up R2` = f2(sapply(gs, gv, t = "greenup")), `Ground curing R2` = f2(sapply(gs, gv, t = "curing")),
+                  check.names = FALSE)
+  knitr::kable(x, row.names = FALSE, align = "lrrrrrrr")
+} else cat("Comparison pending (run 73 and 79).")
+```
+
 ## Still open
 
 1. **Fire as a check on the units** (next step after the climatologies): the fire study's
    year-to-year test with these units in place of the climate regions, in the large western and
    Plains grass and grass-shrub units.
-2. **Does the split earn its keep?** How much of the satellite and ground timing ecoregion alone,
-   ecoregion × fuel and the climate regions (A2, 13 regions) each explain.
-3. **Models** for units whose year-to-year variation is large and shared, with the ground check
+2. **Models** for units whose year-to-year variation is large and shared, with the ground check
    as the gate.
-4. **Level III ecoregions and LANDFIRE 2024** as later sensitivity checks.
+3. **LANDFIRE 2024** as a later sensitivity check.
 
 ## Status and changelog
 
@@ -231,3 +274,4 @@ if (!is.null(CG)) {
 |---|---|
 | Oct 26, 2026 | Page started. Steps 1–3 built (fuel shares and ecoregions on the 4 km grid; unit inventory) and run for CONUS. A first run missed land south of about 28° N (south Texas, south Florida) because the map window was projected from its corners only; fixed and rerun. |
 | Oct 26, 2026 | Decided: climatologies for grass and grass-shrub units (plus Cold Deserts shrub), cells at least half one group, units of at least 200 cells; agriculture as context; fire check later. Step 4 (climatologies and NPN ground check) built, tested on synthetic data and run for CONUS: 26 units; first findings added. |
+| Oct 26, 2026 | Decided: compare groupings (step 5) before more units work, with the season split of two-season units and Level III ecoregions among them. Built and tested on synthetic data. |

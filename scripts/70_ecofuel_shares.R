@@ -133,73 +133,8 @@ eco_file <- file.path(odir, sprintf("eco_l%d.tif", lev))
 lookup_file <- file.path(odir, sprintf("eco_l%d_lookup.csv", lev))
 mask <- terra::rast(mask_file)
 if (force || !file.exists(eco_file) || !file.exists(lookup_file)) {
-  eo <- ec$ecoregions
-  shp <- ecofuel_ecoregion_shp(cfg)
-  log_msg("ecoregions: ", shp)
-  E <- sf::st_read(shp, quiet = TRUE)
-  gc_ <- attr(E, "sf_column"); names(E)[names(E) != gc_] <- toupper(names(E)[names(E) != gc_])
-  f_code <- toupper(eo$code_field %||% sprintf("NA_L%dCODE", lev))
-  f_name <- toupper(eo$name_field %||% sprintf("NA_L%dNAME", lev))
-  f_pcode <- toupper(eo$parent_code_field %||% "NA_L1CODE")
-  f_pname <- toupper(eo$parent_name_field %||% "NA_L1NAME")
-  miss <- setdiff(c(f_code, f_name), names(E))
-  if (length(miss)) stop("ecoregion fields missing: ", paste(miss, collapse = ", "), " (have: ", paste(names(E), collapse = ", "), ")")
-  E$code <- as.character(E[[f_code]])
-  drop <- as.character(unlist(eo$drop_codes %||% list("0.0")))
-  E <- E[!is.na(E$code) & !(E$code %in% drop), ]
-  E <- sf::st_make_valid(E)
-  E <- sf::st_transform(E, terra::crs(mask))
-  bb <- sf::st_as_sfc(sf::st_bbox(c(xmin = terra::xmin(mask), ymin = terra::ymin(mask),
-                                    xmax = terra::xmax(mask), ymax = terra::ymax(mask)), crs = sf::st_crs(E)))
-  E <- E[lengths(sf::st_intersects(E, bb)) > 0, ]
-  codes <- sort(unique(E$code))
-  num <- suppressWarnings(as.numeric(codes))
-  if (!anyNA(num)) codes <- codes[order(num)]
-  E$eco <- match(E$code, codes)
-  attr_first <- function(f) if (f %in% names(E)) as.character(E[[f]][match(codes, E$code)]) else NA_character_
-  L <- data.frame(eco = seq_along(codes), code = codes,
-                  name = tools::toTitleCase(tolower(attr_first(f_name))),
-                  l1_code = attr_first(f_pcode), l1_name = tools::toTitleCase(tolower(attr_first(f_pname))),
-                  stringsAsFactors = FALSE)
-  log_msg(sprintf("%d polygons, %d ecoregions (level %d) overlap the grid", nrow(E), length(codes), lev))
-
-  # majority on sub_cells x sub_cells sub-cells; purity = share of sub-cells in the majority class
-  fine <- terra::disagg(terra::rast(mask), fact = sub_cells)
-  ER <- terra::rasterize(terra::vect(E), fine, field = "eco")
-  k <- length(codes)
-  maj_fun <- function(v, ...) {
-    v <- v[!is.na(v)]
-    if (!length(v)) return(c(NA_real_, NA_real_))
-    t <- tabulate(v, k); j <- which.max(t)
-    c(j, t[j] / sub_cells^2)
-  }
-  M <- terra::aggregate(ER, fact = sub_cells, fun = maj_fun)
-  M <- terra::mask(M, mask)
-  names(M) <- c("eco", "eco_purity")
-  ev <- terra::values(M[["eco"]], mat = FALSE)
-  land <- which(!is.na(terra::values(mask, mat = FALSE)))
-  near <- land[is.na(ev[land])]
-  nearest_flag <- rep(NA_real_, terra::ncell(mask)); nearest_flag[land] <- 0
-  if (length(near)) {
-    xy <- terra::xyFromCell(mask, near)
-    P <- sf::st_as_sf(data.frame(x = xy[, 1], y = xy[, 2]), coords = c("x", "y"), crs = sf::st_crs(E))
-    j <- sf::st_nearest_feature(P, E)
-    ev[near] <- E$eco[j]
-    nearest_flag[near] <- 1
-    pv <- terra::values(M[["eco_purity"]], mat = FALSE); pv[near] <- 0; terra::values(M[["eco_purity"]]) <- pv
-    terra::values(M[["eco"]]) <- ev
-  }
-  NF <- terra::rast(mask); terra::values(NF) <- nearest_flag; names(NF) <- "eco_nearest"
-  wr(c(M, NF), eco_file)
-  ca <- terra::values(terra::cellSize(mask, unit = "km"), mat = FALSE)
-  lw <- terra::values(G[["NB_water"]], mat = FALSE)
-  landkm <- ca * (1 - ifelse(is.na(lw), 0, lw))
-  L$cells <- vapply(L$eco, function(e) sum(ev[land] == e, na.rm = TRUE), 0)
-  L$land_km2 <- round(vapply(L$eco, function(e) sum(landkm[land][ev[land] %in% e]), 0))
-  L$cells_nearest <- vapply(L$eco, function(e) sum(ev[near] == e, na.rm = TRUE), 0)
-  utils::write.csv(L, lookup_file, row.names = FALSE)
-  log_msg(sprintf("ecoregion raster: %d land cells, %d assigned to the nearest polygon; median purity %.2f",
-                  length(land), length(near), stats::median(terra::values(M[["eco_purity"]], mat = FALSE)[land], na.rm = TRUE)))
+  ecofuel_eco_raster(cfg, ec$ecoregions, mask_file, eco_file, lookup_file,
+                     water = terra::values(G[["NB_water"]], mat = FALSE))
 } else log_msg(basename(eco_file), " exists (force to redo)")
 
 # ---- 4. summary -----------------------------------------------------------------------------------
