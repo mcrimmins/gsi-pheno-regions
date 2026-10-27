@@ -1,0 +1,84 @@
+"unit","code","name","group","cells","cells_p75","land_km2","herb_mask_share","eligible"
+"1 HERB","1","Coast Range","HERB",97,24,1589,0.484536082474227,FALSE
+"2 HERB","2","Puget Lowland","HERB",53,0,768,0,FALSE
+"3 HERB","3","Willamette Valley","HERB",145,7,2215,0,FALSE
+"4 HERB","4","Cascades","HERB",62,12,999,0.532258064516129,FALSE
+"5 HERB","5","Sierra Nevada","HERB",265,62,4581,0.852830188679245,TRUE
+"6 HERB","6","Central California Foothills and Coastal Mountains","HERB",2462,1053,42148,0.927294882209586,TRUE
+"7 HERB","7","Central California Valley","HERB",1798,846,30699,0.164627363737486,TRUE
+"8 HERB","8","Southern California Mountains","HERB",200,39,3546,0.96,TRUE
+"9 HERB","9","Eastern Cascades Slopes and Foothills","HERB",1301,453,20736,0.730207532667179,TRUE
+"10 HERB","10","Columbia Plateau","HERB",3595,1676,53116,0.606119610570236,TRUE
+"11 HERB","11","Blue Mountains","HERB",2147,1079,32846,0.95761527713088,TRUE
+"12 HERB","12","Snake River Plain","HERB",2068,1475,32287,0.883462282398453,TRUE
+"13 HERB","13","Central Basin and Range","HERB",9498,5557,157358,0.934828384923142,TRUE
+"14 HERB","14","Mojave Basin and Range","HERB",5872,4820,102307,0.992506811989101,TRUE
+"15 HERB","15","Northern Rockies","HERB",286,88,4132,0.807692307692308,TRUE
+"16 HERB","16","Idaho Batholith","HERB",958,382,14772,0.862212943632568,TRUE
+"17 HERB","17","Middle Rockies","HERB",4840,2320,73733,0.820454545454545,TRUE
+"18 HERB","18","Wyoming Basin","HERB",6776,4644,107625,0.968270365997639,TRUE
+"19 HERB","19","Wasatch and Uinta Mountains","HERB",1169,405,19383,0.65098374679213,TRUE
+"20 HERB","20","Colorado Plateaus","HERB",4568,1618,77026,0.902145359019264,TRUE
+"21 HERB","21","Southern Rockies","HERB",2291,931,38241,0.683544303797468,TRUE
+"22 HERB","22","Arizona/New Mexico Plateau","HERB",6345,3450,110682,0.924822695035461,TRUE
+"23 HERB","23","Arizona/New Mexico Mountains","HERB",4941,3492,87767,0.54341226472374,TRUE
+"24 HERB","24","Chihuahuan Deserts","HERB",8203,6306,150016,0.969157625259052,TRUE
+"25 HERB","25","High Plains","HERB",10563,6829,178808,0.64546056991385,TRUE
+"26 HERB","26","Southwestern Tablelands","HERB",11033,9990,192066,0.929031088552524,TRUE
+"27 HERB","27","Central Great Plains","HERB",7974,3403,136962,0.59505894156007,TRUE
+"28 HERB","28","Flint Hills","HERB",1405,983,23736,0.837010676156584,TRUE
+"29 HERB","29","Cross Timbers","HERB",3855,1921,69124,0.794811932555123,TRUE
+"30 HERB","30","Edwards Plateau","HERB",3909,3513,72130,0.925300588385776,TRUE
+"31 HERB","31","Southern Texas Plains","HERB",2869,2672,54169,0.916695712791914,TRUE
+"32 HERB","32","Texas Blackland Prairies","HERB",1655,696,30235,0.165558912386707,TRUE
+"33 HERB","33","East Central Texas Plains","HERB",2547,1190,46947,0.0804868472712996,TRUE
+"34 HERB","34","Western Gulf Coastal Plain","HERB",2537,1550,47754,0.224280646432795,TRUE
+"35 HERB","35","South Central Plains","HERB",682,49,12277,0.0102639296187683,TRUE
+"36 HERB","36","Ouachita Mountains","HERB",23,0,406,0,FALSE
+"37 HERB","37","Arkansas Valley","HERB",470,41,8253,0.051063829787234,TRUE
+"38 HERB","38","Boston Mountains","HERB",21,0,365,0,FALSE
+"39 HERB","39","Ozark Highlands","HERB",1336,120,22901,0,TRUE
+"40 HERB","40","Central Irregular Plains","HERB",2721,452,45720,0.041896361631753,TRUE
+"41 HERB","41","Canadian Rockies","HERB",75,4,1079,0.68,FALSE
+"42 HERB","42","Northwestern Glaciated Plains","HERB",6559,3111,95586,0.622503430400976,TRUE
+"43 HERB","43","Northwestern Great Plains","HERB",21402,17204,322323,0.880945706008784,TRUE
+"44 HERB","44","Nebraska Sand Hills","HERB",3585,3349,57207,0.941422594142259,TRUE
+"45 HERB","45","Piedmont","HERB",26,0,455,0,FALSE
+"46 HERB","46","Northern Glaciated Plains","HERB",1499,324,22250,0.156104069379586,TRUE
+"47 HERB","47","Western Corn Belt Plains","HERB",433,22,7031,0.177829099307159,TRUE
+"48 HERB","48","Lake Agassiz Plain","HERB",218,52,3154,0.0596330275229358,TRUE
+"49 HERB","49","Northern Minnesota Wetlands","HERB",135,41,1920,0,FALSE
+"50 HERB","50","Northern Lakes and Forests","HERB",75,4,1114,0.04,FALSE
+"51 HERB","51","North Central Hardwood Forests","HERB",171,1,2565,0,FALSE
+"52 HERB","52","Driftless Area","HERB",17,0,267,0,FALSE
+"53 HERB","53","Southeastern Wisconsin Till Plains","HERB",3,0,47,0,FALSE
+"54 HERB","54","Central Corn Belt Plains","HERB",14,2,226,0,FALSE
+"55 HERB","55","Eastern Corn Belt Plains","HERB",3,0,49,0,FALSE
+"57 HERB","57","Huron/Erie Lake Plains","HERB",22,5,346,0,FALSE
+"58 HERB","58","Northeastern Highlands","HERB",2,0,31,0,FALSE
+"59 HERB","59","Northeastern Coastal Zone","HERB",15,0,236,0,FALSE
+"60 HERB","60","Northern Allegheny Plateau","HERB",23,0,368,0,FALSE
+"61 HERB","61","Erie Drift Plain","HERB",15,0,244,0,FALSE
+"63 HERB","63","Middle Atlantic Coastal Plain","HERB",443,241,7587,0,TRUE
+"64 HERB","64","Northern Piedmont","HERB",43,2,717,0,FALSE
+"65 HERB","65","Southeastern Plains","HERB",236,27,4262,0,TRUE
+"66 HERB","66","Blue Ridge","HERB",8,0,138,0,FALSE
+"67 HERB","67","Ridge and Valley","HERB",365,2,6251,0,TRUE
+"68 HERB","68","Southwestern Appalachians","HERB",56,0,986,0,FALSE
+"69 HERB","69","Central Appalachians","HERB",17,1,287,0,FALSE
+"70 HERB","70","Western Allegheny Plateau","HERB",39,0,640,0,FALSE
+"71 HERB","71","Interior Plateau","HERB",841,129,14338,0,TRUE
+"72 HERB","72","Interior River Valleys and Hills","HERB",71,1,1192,0,FALSE
+"73 HERB","73","Mississippi Alluvial Plain","HERB",856,695,15953,0,TRUE
+"74 HERB","74","Mississippi Valley Loess Plains","HERB",33,0,591,0,FALSE
+"75 HERB","75","Southern Coastal Plain","HERB",1545,424,29040,0.00258899676375405,TRUE
+"76 HERB","76","Southern Florida Coastal Plain","HERB",472,319,9090,0,TRUE
+"77 HERB","77","North Cascades","HERB",85,7,1219,0.964705882352941,FALSE
+"78 HERB","78","Klamath Mountains/California High North Coast Range","HERB",227,48,3638,0.599118942731278,TRUE
+"79 HERB","79","Madrean Archipelago","HERB",2195,1940,39905,0.938952164009112,TRUE
+"80 HERB","80","Northern Basin and Range","HERB",6488,3553,103012,0.954839704069051,TRUE
+"81 HERB","81","Sonoran Basin and Range","HERB",3311,1937,59491,0.933554817275748,TRUE
+"82 HERB","82","Acadian Plains and Hills","HERB",30,5,464,0.0666666666666667,FALSE
+"83 HERB","83","Eastern Great Lakes Lowlands","HERB",154,6,2382,0,FALSE
+"84 HERB","84","Atlantic Coastal Pine Barrens","HERB",74,28,1217,0.0675675675675676,FALSE
+"85 HERB","85","Southern California/Northern Baja Coast","HERB",531,181,9483,0.87758945386064,TRUE
