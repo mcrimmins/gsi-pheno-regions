@@ -257,8 +257,11 @@ if (do("nf_fire_fuel") && have(fi_f)) {
   FI <- utils::read.csv(fi_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
   keep_o <- c("fod_all", "fod_cplus", "mtbs_km2", "viirs_px")
   FT <- FI[FI$outcome %in% keep_o, c("outcome", "eco_l2_code", "eco_l2_name", "fuel", "total", "per_year", "years_with")]
+  nm_f <- FI[!duplicated(FI$eco_l2_code) & !is.na(FI$eco_l2_name), ]                 # names for ecoregions without NPN sites
+  miss_nm <- setdiff(nm_f$eco_l2_code, names(eco_name))
+  if (length(miss_nm)) eco_name <- c(eco_name, stats::setNames(gsub("\\bUsa\\b", "USA", tools::toTitleCase(tolower(nm_f$eco_l2_name[match(miss_nm, nm_f$eco_l2_code)]))), miss_nm))
   utils::write.csv(FT, file.path(tab_dir, "nf_fire_inventory.csv"), row.names = FALSE)
-  pan <- list(fod_all = "FPA-FOD wildfires, all sizes (per year)", viirs_px = "VIIRS active-fire pixel-days (per year)")
+  pan <- list(fod_all = "FPA-FOD wildfires, all sizes", viirs_px = "VIIRS active-fire pixel-days")
   codes <- eco_order(FT$eco_l2_code[FT$outcome == "fod_all"])
   fuels <- names(fuel_col)
   plot_png("nf_fire_fuel", "FPA-FOD 2001-2024; VIIRS 2012-2024", 2900, 1600, function() {
@@ -269,15 +272,15 @@ if (do("nf_fire_fuel") && have(fi_f)) {
       M <- matrix(0, length(codes), length(fuels), dimnames = list(codes, fuels))
       i <- match(d$eco_l2_code, codes); j <- match(d$fuel, fuels); ok <- !is.na(i) & !is.na(j)
       M[cbind(i[ok], j[ok])] <- d$per_year[ok]
-      tot <- rowSums(M); xm <- max(tot) * 1.12
+      tot <- rowSums(M); M <- M / ifelse(tot > 0, tot, NA); M[is.na(M)] <- 0; xm <- 1.2   # shares; totals as labels
       plot(NA, xlim = c(0, xm), ylim = c(length(codes) + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
-      abline(v = pretty(c(0, xm)), col = "#ecebe7", lwd = 0.8)
+      abline(v = seq(0, 1, 0.25), col = "#ecebe7", lwd = 0.8)
       for (r in seq_along(codes)) { x0 <- 0
         for (f in fuels) { v <- M[r, f]; if (v > 0) rect(x0, r - 0.38, x0 + v, r + 0.38, col = fuel_col[[f]], border = bg, lwd = 1); x0 <- x0 + v } }
-      text(tot, seq_along(codes), format(round(tot), big.mark = ","), pos = 4, cex = 0.62, col = ink, xpd = NA)
-      axis(1, at = pretty(c(0, xm)), labels = format(pretty(c(0, xm)), big.mark = ",", scientific = FALSE, trim = TRUE), cex.axis = 0.75, col = NA)
+      text(1, seq_along(codes), sprintf("%s / yr", format(round(tot), big.mark = ",")), pos = 4, cex = 0.62, col = ink, xpd = NA)
+      axis(1, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.75, col = NA)
       if (o == names(pan)[1]) axis(2, at = seq_along(codes), labels = eco_lab(codes), tick = FALSE, cex.axis = 0.72, col.axis = ink)
-      title2(pan[[o]], "split over each fire's 4 km cell by LANDFIRE fuel group", 0.95, 0.72)
+      title2(pan[[o]], "share by LANDFIRE fuel group of each fire's 4 km cell; number = per year", 0.95, 0.72)
     }
     par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
     legend("bottom", horiz = TRUE, bty = "n", fill = fuel_col, border = NA, legend = fuel_lab, cex = 0.72, text.col = ink2)

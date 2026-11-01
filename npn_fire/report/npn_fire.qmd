@@ -211,10 +211,36 @@ if (!is.null(INV)) {
 
 ## Fire activity by fuel type
 
+The three fire records, tabulated by ecoregion, week and fuel type: 1.48 million FPA-FOD wildfires of
+all sizes 2001–2024 (after removing 459,000 debris and open burns; 193,000 of them 10 acres or larger),
+10,400 MTBS wildfire perimeters, and 1.7 million VIIRS active-fire pixel-days 2012–2024 linked to
+reported wildfires. Every fire falls in a Level II ecoregion.
+
 ```{r fig-fire}
 #| results: asis
-show_fig("nf_fire_fuel", "Fire activity per year by ecoregion, split by LANDFIRE fuel group: FPA-FOD wildfires of all sizes (2001&ndash;2024) and VIIRS active-fire pixel-days (2012&ndash;2024).")
+show_fig("nf_fire_fuel", "Fuel mix of the fire records by ecoregion: share of each record by LANDFIRE fuel group of the fire's 4 km cell, with the average number per year. FPA-FOD wildfires of all sizes (2001&ndash;2024) and VIIRS active-fire pixel-days linked to wildfires (2012&ndash;2024).")
 ```
+
+What this shows for matching plant groups to fires:
+
+- **Timber fuels carry most fires in the forested East and Northwest.** Timber litter and
+  timber-understory cells hold 55–72 % of FPA-FOD wildfires in the Southeastern USA Plains, the
+  Ozark / Ouachita–Appalachian Forests, the Atlantic Highlands, the Marine West Coast Forest and the
+  Western Cordillera. These are also the ecoregions with the densest NPN record of deciduous trees, so
+  leaf-out and leaf-fall can be set against these fires directly.
+- **Grass and grass-shrub fuels carry most fires on the Plains and in the deserts:** 44–82 % of
+  FPA-FOD wildfires in the semiarid prairies, the deserts, the Western Sierra Madre Piedmont and the
+  Upper Gila Mountains. NPN's grass record is thin there (about 20 sites at most per ecoregion), though
+  forbs and shrubs are observed more widely.
+- **Many reported wildfires start in farmed or developed land.** A quarter of all FPA-FOD wildfires
+  fall in cells that are mostly nonburnable (agriculture, urban, barren), and two-thirds in the
+  Central USA Plains. These fires burn small patches of fuel that a 4 km fuel share can't place; step 1
+  will report them separately rather than assign them to a plant group.
+- **VIIRS adds little in the East.** After the fire study's screens (detections linked to a reported
+  wildfire, cropland removed), eastern ecoregions keep 13 to 2,000 pixel-days a year, against 8,000–91,000
+  in the larger western ones. Most eastern wildfires are small and short, and much eastern burning is
+  prescribed or agricultural. FPA-FOD will likely be the lead record in the East; in the West all three
+  records have enough fires to compare. The choice is made by the rule set out under Methods.
 
 ## Next steps
 
@@ -239,3 +265,4 @@ show_fig("nf_fire_fuel", "Fire activity per year by ecoregion, split by LANDFIRE
 | Date | Change |
 |---|---|
 | Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |
+| Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
