@@ -27,7 +27,7 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 | 01_nf_npn_download.R | P720 (internet) | NPN status + intensity, plants, CONUS, state x year, resumable; lookups | run 1 Nov: 29.4 M records |
 | 02a_nf_species_groups.R | laptop (internet) | plant group per species (NPN type + PLANTS growth habit) -> data/nf_species_groups.csv | built 1 Nov |
 | 02b_nf_npn_clean.R | P720 | onset / end / intensity-threshold dates per plant x phenophase x year; sites, Level II, effort | built 1 Nov |
-| 03_nf_fire.R | P720 | FPA-FOD, MTBS, FIRMS -> Level II x fuel class x week x year | planned |
+| 03_nf_fire.R | P720 | FPA-FOD (all sizes, C+), MTBS, VIIRS -> Level II x year x week x LANDFIRE fuel group | built 1 Nov |
 | 04_nf_prism.R | P720 | ppet60 by Level II x day | planned |
 | 05_nf_inventory.R | laptop | Tier 1 alignment; outcome choice | planned |
 | 06 / 07 | laptop | Tier 2 seasonal, Tier 3 year to year | planned |
@@ -57,3 +57,15 @@ tables are read, so 7 / 30-day sensitivity needs no rerun. Results:
 `<data_root>/<run>/npn_fire/clean/` (`plant_years`, `site_years.csv`, `sites.csv`, `effort_eco.csv`,
 `phenophase_map.csv`, `intensity_map.csv`, `clean_summary.csv`); to the laptop with
 `Rscript scripts/91_sync_from_p720.R npn_fire`. `sites.csv` has coordinates: never publish it.
+
+### 03
+
+    Rscript npn_fire/scripts/03_nf_fire.R full                     # P720, minutes
+
+Reads the fire study's tables (60 FPA-FOD, 61 MTBS, 63 VIIRS link flags) and the ecofuel study's
+LANDFIRE fuel-group shares and Level II raster, read-only. Each fire is split over its 4 km cell's
+fuel shares (GR, GS, SH, TU, TL, SB, NB; `unmapped` where LANDFIRE maps < half the cell). Output
+`npn_fire/fire/fire_weekly.parquet`: outcome x Level II x year x week x fuel group (outcomes
+`fod_all`, by cause, `fod_cplus`, `fod_cplus_acres`, `mtbs_fires`, `mtbs_km2`, `viirs_px`), plus
+`fire_inventory.csv` (coverage by ecoregion x fuel x outcome) and `fire_year.csv`. Fuel groups are
+matched to NPN plant groups in 05.

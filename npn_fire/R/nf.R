@@ -26,6 +26,27 @@ nf_read_table <- function(path) {
   else utils::read.csv(path, stringsAsFactors = FALSE)
 }
 
+# Tables written by the parent pipeline (fire_write_table: Parquet, else .rds). `stem` has no extension.
+nf_read_parent <- function(stem) {
+  f <- paste0(stem, c(".parquet", ".rds")); f <- f[file.exists(f)]
+  if (!length(f)) stop("no parent table ", stem, ".parquet / .rds")
+  if (grepl("\\.parquet$", f[1])) as.data.frame(arrow::read_parquet(f[1])) else readRDS(f[1])
+}
+
+# Week of year: fixed 7-day blocks from Jan 1, days 365-366 folded into week 52 (same as the fire
+# study's fire_week(), so the two studies' weeks line up).
+nf_week <- function(date) {
+  doy <- as.integer(format(as.Date(date), "%j"))
+  pmin(52L, (doy - 1L) %/% 7L + 1L)
+}
+
+# Unique 375 m pixel-day key: detections snapped to a 375 m sinusoidal grid (sphere R = 6371007.181 m),
+# once per pixel and solar date (same definition as the fire study's fw_pixel_key()).
+nf_pixel_key <- function(lon, lat, date, size = 375, R = 6371007.181) {
+  y <- R * lat * pi / 180; x <- R * lon * pi / 180 * cos(lat * pi / 180)
+  paste(floor(x / size), floor(y / size), format(date))
+}
+
 # Read a CSV written by rnpn: everything as text, then the known numeric columns typed, so every
 # state-year file has the same column types (a column that is all NA in one file would otherwise
 # come back logical there and text elsewhere).

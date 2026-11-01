@@ -62,6 +62,22 @@ default:
       gap_days: 14                        # onset / end accepted when the bracketing "no" is within this (05+; 7 / 30 sensitivity)
       eco_max_km: 25                      # warn for sites farther than this outside every Level II polygon
 
+    # ---- 03: fire tables (read-only inputs from the parent pipeline's data outputs) -------------------
+    fire:
+      fire_study_dir: null                # null = <run_dir>/fire_study (60 fod, 61 mtbs, 63 link)
+      ecofuel_dir: null                   # null = <run_dir>/ecofuel (70: fuel_groups.tif, eco_l2.tif + lookup)
+      grid_mask: null                     # null = <run_dir>/static/grid_mask.tif (alignment check only)
+      years: {start: 2001, end: 2024}     # FPA-FOD / MTBS; VIIRS below
+      min_size_ac: 10                     # C+ outcome; all-size outcome has no minimum
+      mtbs_wildfire_types: [Wildfire, Wildland Fire Use]
+      mtbs_complete_end: 2023             # 2024 MTBS mapping unfinished: kept, flagged in the inventory
+      viirs: {primary: VIIRS_SNPP, fill: VIIRS_NOAA20, years: {start: 2012, end: 2024}}   # 63 `keep` detections; NOAA-20 fills whole UTC days with no S-NPP data
+      # LANDFIRE FBFM40 groups (ecofuel 70); each fire is split over its 4 km cell's shares of these,
+      # plus NB (nonburnable land: ag, urban, barren, snow); cells mapped < min_mapped -> "unmapped"
+      fuel_groups: [GR, GS, SH, TU, TL, SB]
+      nonburnable: [NB_ag, NB_urban, NB_barren, NB_snow]
+      min_mapped: 0.5
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

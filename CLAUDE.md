@@ -1032,3 +1032,24 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   (not <step>/years/) to <data_root>/full/npn_fire/; npn_fire/logs/*.log to npn_fire/logs/p720/.
   01 full run (P720, Nov 1, 244 min): 784 state-years, 0 failed, 29.4 M plant status records 2009-2024; plants
   observed ~2,100 (2009) -> 14,700-16,900 / yr from 2018; sites peak ~2,600 (2020-21), 1,773 in 2024.
+  02a additions (Nov 1): "Shrub, Tree" broadleaf species split by PLANTS mature height (PlantCharacteristics;
+  >= 20 ft tree, config groups: height_tree_ft; cached heights.rds): 86 tree, 50 shrub, 82 without a height;
+  data/nf_species_groups_manual.csv (in git) sets 30 most-observed review species by hand (mesquites,
+  paloverdes, Joshua tree -> shrub, marked CHECK); data/nf_species_groups_review.csv lists the rest (local).
+  02b combine re-joins groups from the current nf_species_groups.csv. Onset-ok plant-years (gap <= 14 d):
+  deciduous tree 222 k, deciduous shrub 75 k, forb 48 k, evergreen shrub 19 k, conifer 16 k, grass 13 k,
+  evergreen tree 10 k; leftovers (tree_shrub, unknown) < 3 k. Intensity dates (down50 / up50) from 2011 only.
+  Lesson (Nov 1): a bridge copy once delivered the previous version of 02b; check laptop file sizes after
+  every delivery.
+- `npn_fire/scripts/03_nf_fire.R [profile]` (P720, minutes; arrow, terra; built Nov 1): fire activity by
+  Level II x year x week x LANDFIRE fuel group (decided Nov 1: ecofuel fuel_groups.tif; FPA-FOD all sizes and
+  C+; VIIRS from 63's CONUS-wide link flags, no rerun). Reads fire_study/fod, mtbs, link and ecofuel/
+  fuel_groups.tif, eco_l2.tif (+ lookup) read-only; checks fuel_groups.tif against static/grid_mask.tif.
+  Cell weights = shares of GR GS SH TU TL SB and NB (ag, urban, barren, snow) over mapped non-water land
+  (sum 1); mapped < 0.5 -> "unmapped". Outcomes: fod_all (+ _lightning / _human / _unknown), fod_cplus,
+  fod_cplus_acres (discovery week), mtbs_fires / mtbs_km2 (Wildfire + WFU, ignition week, split by burned
+  km2 per cell), viirs_px (63 keep, 375 m sinusoidal pixel-days by solar date, NOAA-20 on whole UTC days
+  without S-NPP data, 2012-24). -> npn_fire/fire/fire_weekly.parquet (long: outcome, eco_l2_code, year, week,
+  fuel, value), fire_inventory.csv, fire_year.csv, fire_filters.csv, cell_weights.csv.gz, viirs_fill.csv.
+  Planted fixture: counts, debris / year / type screens, unmapped and no-ecoregion cells, weeks (Dec 31 -> 52),
+  causes, C+ acres, MTBS area split, pixel-day de-duplication and outage fill all as expected.
