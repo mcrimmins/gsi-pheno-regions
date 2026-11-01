@@ -1,0 +1,9 @@
+"group","label","Leaves","Flowers","Fruits","total"
+"other","Other (cacti, vines, unresolved)",2618,2188,2094,6900
+"evergreen_tree","Evergreen broadleaf trees",5720,2762,1936,10418
+"forb","Forbs",18332,16521,12949,47802
+"grass","Grasses",7168,3891,1522,12581
+"evergreen_shrub","Evergreen shrubs",5783,7076,5886,18745
+"conifer","Conifers",7724,4789,3205,15718
+"deciduous_shrub","Deciduous shrubs",41169,22438,11260,74867
+"deciduous_tree","Deciduous trees",152564,40557,28845,221966
