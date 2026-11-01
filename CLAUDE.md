@@ -992,3 +992,22 @@ climatologies (72+). Defaults used so far: Level II, LF2023, 4 km grid with fuel
 - 79 draws ecofuel_climatology_<scheme folder> for every climatology_* folder and ecofuel_fire_<folder>;
   copies tables ecofuel_<folder>_<units|climatology|ground_summary>_<p>, ecofuel_fire_<folder>_<windows|yty|
   pooled>_<p>, ecofuel_cmp_satellite_oddeven_<p>. Page sections steps 6-8.
+
+## NPN x fire study (started Oct 31 2026) — separate, self-contained study
+Scope and decisions: project doc claude/gsi-npn-fire-scope.md. Own chat thread; code ONLY in the
+self-contained subfolder npn_fire/ (own config.yml, R/nf_setup.R, R/nf.R, scripts/NN_nf_*.R numbered
+on their own, README.md, later report/npn_fire.qmd). Sources no parent code; may read parent data
+outputs (fire_study/fod, mtbs, link, dfm; ecoregion cache) read-only; writes only under
+<run_dir>/npn_fire/ and <data_root>/_shared/raw/npn/. Data root: NF_DATA_ROOT > GSI_DATA_ROOT > config.
+Decided (Mike, Oct 25-31): NPN plant status + intensity records, all plant groups incl. conifers, no
+animals, 2009-2024; EPA Level II ecoregions (Level III check); evaluate FPA-FOD, MTBS and FIRMS
+outcomes; no satellite phenology; onsets / ends by our own rules.
+- `npn_fire/scripts/01_nf_npn_download.R [profile] [years] [states] [force]` (P720, internet, rnpn;
+  built Oct 31): one npn_download_status_data request per state x year with the NPN plant species ids
+  (rnpn >= 1.4 POSTs; older rnpn: config plant_filter after), animals re-dropped after download, site
+  names never requested -> _shared/raw/npn/status/<Y>/npn_status_<S>_<Y>.parquet (.empty marker when
+  none; skipped on rerun), lookups _shared/raw/npn/lookups/ (species, phenophases, pheno_classes,
+  datasets, plant_types), <run_dir>/npn_fire/download/requests.csv + download_summary.csv. Tested in
+  the cloud workspace with mocked NPN services (plants-only filter, site-name drop, empty / failed
+  requests, resume, test profile, force). additional_fields names unverified until the first real run
+  (the log lists what came back).

@@ -1,0 +1,57 @@
+# NPN x fire study: configuration (self-contained; does not read the parent repo's config.yml).
+# Scope: project doc claude/gsi-npn-fire-scope.md (31 Oct 2026).
+# Scripts take the profile as their first argument (`Rscript npn_fire/scripts/01_nf_npn_download.R full`).
+# Profiles inherit from `default`; `test` is a one-state, one-year smoke test.
+#
+# Paths are chosen by OS. Overrides (first set wins): NF_DATA_ROOT, GSI_DATA_ROOT (already set on
+# the P720 in ~/.Renviron), then data_root below.
+# Outputs: <data_root>/<run_name>/npn_fire/. Raw downloads (shared by profiles, never re-fetched):
+# <data_root>/_shared/raw/npn/.
+# This study may READ data outputs of the parent pipeline on disk (fire_study/fod, mtbs, link, dfm;
+# ecoregion polygons) but never sources the parent's code and never writes outside npn_fire/.
+
+default:
+  run_name: full
+  data_root:
+    windows: "C:/Users/Crimmins/data/gsi-pheno-regions"
+    linux: "~/data/gsi-pheno-regions"
+
+  npn_fire:
+    years: {start: 2009, end: 2024}       # Nature's Notebook era; fire data end 2024
+    # CONUS + DC (NPN `state` codes)
+    states: [AL, AZ, AR, CA, CO, CT, DE, DC, FL, GA, ID, IL, IN, IA, KS, KY, LA, ME, MD, MA, MI, MN,
+             MS, MO, MT, NE, NV, NH, NJ, NM, NY, NC, ND, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VT,
+             VA, WA, WV, WI, WY]
+
+    # ---- 01: NPN status and intensity download (rnpn::npn_download_status_data) ----------------
+    download:
+      request_source: "Mike Crimmins, University of Arizona (gsi-pheno-regions npn_fire)"
+      email: null                         # optional; sent with each request if set
+      # Plants only (decided 31 Oct: all plant groups incl. conifers, no animals). Requests list the
+      # NPN plant species ids (kingdom Plantae, minus drop_functional_types) when rnpn >= 1.4
+      # (POST requests); older rnpn sends GET, so the filter is applied after download instead.
+      drop_functional_types: [Algae]
+      plant_filter: auto                  # auto | species_ids | after
+      # Extra fields beyond the defaults (site, lat/lon, elevation, state, species, kingdom,
+      # individual, phenophase, date, status, intensity category / value, abundance).
+      # 01 logs which ones came back; edit here if a name is rejected. Never Site_Name (yards).
+      additional_fields: [ObservedBy_Person_ID, Partner_Group, Dataset_ID,
+                          Observed_Status_Conflict_Flag, Species_Functional_Type, Phenophase_Category]
+      drop_columns: [site_name, plant_nickname, observation_comments]   # safety net
+      sleep_sec: 2                        # pause between requests
+      max_errors: 25                      # stop the run after this many failed requests (rerun resumes)
+
+  # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
+  # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
+  ecoregions:
+    level: 2
+    url: "https://dmap-prod-oms-edc.s3.us-east-1.amazonaws.com/ORD/Ecoregions/cec_na/na_cec_eco_l2.zip"
+
+full:
+  run_name: full
+
+test:
+  run_name: test
+  npn_fire:
+    years: {start: 2023, end: 2023}
+    states: [AZ]

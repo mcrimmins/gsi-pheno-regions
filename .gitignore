@@ -65,3 +65,12 @@ npn_study/logs/
 npn_study/report/*.html
 npn_study/report/*_files/
 npn_study/report/.quarto/
+
+# ---- NPN x fire study subfolder (npn_fire/, self-contained) ----
+# Small tables in npn_fire/data/ are committed one by one when they exist; NPN raw data never is.
+!npn_fire/data/
+npn_fire/data/*
+npn_fire/logs/
+npn_fire/report/*.html
+npn_fire/report/*_files/
+npn_fire/report/.quarto/
