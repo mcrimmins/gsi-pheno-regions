@@ -220,8 +220,15 @@ Sx$eco_nearest <- NA; Sx$eco_dist_km <- NA_real_
 Sx$eco_l2_code[ok] <- as.character(E$NA_L2CODE[i]); Sx$eco_l2_name[ok] <- as.character(E$NA_L2NAME[i])
 Sx$eco_l1_code[ok] <- as.character(E$NA_L1CODE[i]); Sx$eco_l1_name[ok] <- as.character(E$NA_L1NAME[i])
 Sx$eco_nearest[ok] <- near; Sx$eco_dist_km[ok] <- round(dist, 1)
-far <- Sx$eco_dist_km > (cc$eco_max_km %||% 25) & !is.na(Sx$eco_dist_km)
-if (any(far)) log_warn(sum(far), " sites more than ", cc$eco_max_km %||% 25, " km outside every Level II polygon (kept, flagged)")
+# Bad coordinates (Nov 1: e.g. an AZ site 5,100 km from CONUS, KY sites in the Taiga Shield): sites
+# outside the CONUS box or farther than eco_max_km from every Level II polygon get no ecoregion
+# (kept in sites.csv, flagged; left out of every ecoregion table)
+far <- (Sx$eco_dist_km > (cc$eco_max_km %||% 25) & !is.na(Sx$eco_dist_km)) |
+  !(Sx$longitude >= -125.5 & Sx$longitude <= -66.5 & Sx$latitude >= 24 & Sx$latitude <= 49.6) %in% TRUE
+Sx$bad_coords <- far
+Sx[far, c("eco_l2_code", "eco_l2_name", "eco_l1_code", "eco_l1_name")] <- NA
+if (any(far)) log_warn(sum(far), " sites with bad coordinates (outside CONUS or > ", cc$eco_max_km %||% 25,
+                       " km from every Level II polygon): no ecoregion")
 log_msg(sprintf("sites: %d | %d Level II ecoregions | %d by nearest polygon", nrow(Sx), length(unique(stats::na.omit(Sx$eco_l2_code))), sum(near)))
 
 # ---- write combined tables and effort ---------------------------------------------------------------

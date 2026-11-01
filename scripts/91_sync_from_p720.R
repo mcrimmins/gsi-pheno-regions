@@ -16,7 +16,8 @@
 #              per-year pieces in <step>/years/), into <data_root>/full/npn_fire/<step>/; the P720's
 #              npn_fire/logs/*.log into npn_fire/logs/p720/. Raw NPN downloads stay on the P720.
 #   render    quarto render every page: report/index.qmd, npn_study/report/npn_study.qmd (NPN
-#              curing study, its own subfolder), report/fire_study.qmd and report/ecofuel.qmd
+#              curing study, its own subfolder), report/fire_study.qmd, report/ecofuel.qmd and
+#              npn_fire/report/npn_fire.qmd (NPN x fire study, its own subfolder)
 #              -> <page>.html next to its .qmd
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
 #              invalidation). Never runs unless asked for ("publish" or "all").
@@ -180,10 +181,10 @@ if ("npn_fire" %in% what) {
 }
 
 # ---- render -------------------------------------------------------------------------------
-pages <- c("index", "npn_study", "fire_study", "ecofuel")          # <page>.qmd -> <page>.html
+pages <- c("index", "npn_study", "fire_study", "ecofuel", "npn_fire")   # <page>.qmd -> <page>.html
 # Folder of each page: report/, except the NPN study, which lives in npn_study/report/ (moved Oct 18
 # 2026 so it can become its own repo). All pages still publish to the same S3 folder.
-page_dir <- function(pg) if (pg == "npn_study") here::here("npn_study", "report") else here::here("report")
+page_dir <- function(pg) if (pg %in% c("npn_study", "npn_fire")) here::here(pg, "report") else here::here("report")
 pages <- pages[file.exists(vapply(pages, function(pg) file.path(page_dir(pg), paste0(pg, ".qmd")), ""))]
 html <- here::here("report", "index.html")
 find_quarto <- function() {

@@ -1,0 +1,241 @@
+---
+title: "Plant phenology and the fire season: what USA-NPN observations can tell wildfire managers"
+subtitle: "A CONUS study of ground phenology and fire activity: approach, decisions and preliminary results"
+author: "Mike Crimmins, University of Arizona Cooperative Extension"
+date: last-modified
+date-format: "MMMM D, YYYY"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    theme: cosmo
+    fontsize: "1rem"
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    css: styles.css
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# Figures and tables come from npn_fire/scripts/90_nf_figs.R (figs/<figure>_<profile>.png +
+# manifest.csv; tables/*.csv). Everything on this page is summarised to EPA Level II ecoregions.
+figs <- if (file.exists("figs/manifest.csv")) {
+  utils::read.csv("figs/manifest.csv", stringsAsFactors = FALSE)
+} else data.frame(figure = character(), profile = character())
+
+show_fig <- function(name, caption, alt = caption) {
+  m <- figs[figs$figure == name, , drop = FALSE]
+  pick <- intersect(c("full", "dev"), m$profile)
+  pick <- pick[file.exists(sprintf("figs/%s_%s.png", name, pick))]
+  if (!length(pick)) {
+    cat(sprintf('\n::: {.callout-note appearance="simple"}\n## Figure pending\n%s\n:::\n\n', caption))
+    return(invisible())
+  }
+  r <- m[m$profile == pick[1], ][1, ]
+  note <- sprintf("[%s &middot; %s &middot; figure made %s]{.fig-meta}", r$extent, r$years, r$made)
+  cat(sprintf('\n![%s %s](figs/%s_%s.png){#fig-%s fig-alt="%s" .column-page-right}\n\n',
+              caption, note, name, pick[1], gsub("_", "-", name), alt))
+}
+tab <- function(f) { p <- file.path("tables", f); if (file.exists(p)) utils::read.csv(p, stringsAsFactors = FALSE, check.names = FALSE) else NULL }
+fmt <- function(x, d = 0) format(round(x, d), big.mark = ",", nsmall = d, trim = TRUE)
+RY <- tab("nf_record_years.csv"); GR <- tab("nf_groups.csv"); INV <- tab("nf_inventory_sites.csv")
+n_rec <- if (!is.null(RY)) fmt(sum(RY$records) / 1e6, 1) else "29.4"
+n_py <- if (!is.null(RY)) fmt(sum(RY$plant_years) / 1e6, 2) else "1.38"
+n_ok <- if (!is.null(RY)) fmt(sum(RY$usable_onsets)) else "409,000"
+yr_rng <- if (!is.null(RY)) paste0(min(RY$year), "&ndash;", max(RY$year)) else "2009&ndash;2024"
+```
+
+::: {.callout-important appearance="simple"}
+## Work in progress
+This page is updated as the analysis runs. Results are preliminary and will change. The study stands
+on its own (its own data, units and code). Related pages: the [NPN grass curing study](npn_study.html),
+the [fire activity study](fire_study.html) (satellite curing and fire in six pilot regions) and the
+[fuel phenology regions](index.html).
+:::
+
+## At a glance
+
+**The question.** Do the seasons that USA National Phenology Network (NPN) observers record on the
+ground (leaf-out, flowering, leaf color and leaf fall, grass and forb green-up and drying) line up with
+when fire seasons open and close? Where the record is deep enough, do early and late phenology years
+shift fire activity? And, as a result in its own right: **where across the contiguous U.S. do NPN
+observations and fire activity overlap** in place, season and year, so that NPN could inform wildfire
+management, and where would more monitoring help?
+
+**Why it matters.** Fire managers judge live fuels by eye and by fixed calendars; satellite and
+weather indices stand in for plants that are rarely observed. NPN is the largest ground record of plant
+seasons in the country, collected by volunteers, partner organizations and NEON. Its value for fire has
+not been assessed across fuel types and regions. This study does that with the fire records already
+assembled for the project.
+
+**Approach, simplest first.**
+
+1. **Where they align (inventory).** NPN sites and usable dates by EPA Level II ecoregion, plant group,
+   phenophase and year; fire activity by ecoregion, fuel type, week and year. Where do both exist in the
+   same seasons and years? This decides which tests below are possible anywhere.
+2. **Seasonal alignment.** In each ecoregion, does the weekly fire curve in a fuel type change at the
+   typical date of the matching phenophase (e.g. fewer fires in deciduous forest after leaf-out), beyond
+   the seasonal cycle of dryness?
+3. **Year to year, where the record allows.** In ecoregions with enough sites each year, does an early
+   or late phenology year shift fire activity after a dryness baseline? Expected to be possible in only a
+   few places; reported as feasibility and as the monitoring it would take.
+
+**No satellite phenology** is used: this is a test of the ground record. Satellite fire detections
+appear only as a fire outcome.
+
+**Status (`r format(Sys.Date(), "%B %-d, %Y")`).** The NPN record is downloaded and cleaned
+(`r n_rec` million status records, `r yr_rng`), plants are grouped, and fire activity is tabulated by
+ecoregion and fuel type. Next: the dryness baseline, then the inventory (step 1).
+
+## Data and methods
+
+### Data
+
+- **NPN observations.** Every plant status and intensity record for the contiguous U.S., 2009–2024
+  (the Nature's Notebook era), downloaded from the NPN data service. On each visit an observer records,
+  for a tagged plant and each of its phenophases, whether the phase is present (yes / no) and, for many
+  phases, how much (an intensity class: percent of the canopy full, percent of leaves colored, percent
+  of a grass still green, or counts of buds, flowers and fruits). All plant groups are included,
+  conifers too; animals are not. NEON (National Ecological Observatory Network) records are part of the
+  same data set and are tracked separately.
+- **Plant groups.** NPN's functional type gives grasses, forbs, conifers and cacti. Broadleaf woody
+  species are split into trees and shrubs from USDA PLANTS growth habit; species PLANTS lists as both
+  are split by mature height (20 ft and taller: tree). The 30 most-observed species still unresolved
+  (cultivars, genus-only names, desert trees) were assigned by hand.
+- **Fire.** Three records assembled for the [fire activity study](fire_study.html):
+  **FPA-FOD** (7th edition), wildfire starts of all sizes 2001–2024 with debris and open burning removed;
+  **MTBS** large-fire perimeters (wildfire and wildland fire use) 2001–2024 (2024 not yet complete);
+  **VIIRS** 375 m active-fire detections 2012–2024 linked to reported wildfires, with cropland and
+  unlinked detections removed.
+- **Fuels.** LANDFIRE 2023 fire behavior fuel models (Scott and Burgan 40), grouped into grass,
+  grass-shrub, shrub, timber-understory, timber litter and slash, as shares of each 4 km cell.
+- **Units.** EPA / CEC Level II ecoregions (CEC 1997); Level III as a check where the record is dense.
+- **Weather.** PRISM daily precipitation and temperature, for a 60-day water balance (precipitation
+  minus potential evapotranspiration) as the dryness baseline (in progress).
+
+### Methods
+
+- **Dates.** For each tagged plant, phenophase and year: the **onset** is the first "yes" and the
+  **end** the last "yes". An onset counts as *usable* when the previous visit, at most 14 days before,
+  recorded "no" (7- and 30-day versions as checks); the same rule applies to ends. Phenophases are
+  grouped across NPN protocols into NPN's 13 plant phenophase classes (initial growth, young leaves,
+  leaves, colored leaves, falling leaves, flowers, open flowers, pollen, end of flowering, fruits,
+  unripe fruits, ripe fruits, fruit drop).
+- **Intensity dates.** Percent classes are converted to their midpoints (a "no" counts as 0 %). Two
+  dates per plant-year: the first reading at or above 50 % (e.g. canopy half full) and the first
+  reading below 50 % after the season's peak (e.g. a grass half cured). NPN intensity starts in 2011.
+- **Cleaning.** Uncertain readings are dropped; repeat visits on one day are merged (yes if any
+  observer said yes; highest intensity). Sites whose coordinates fall outside the contiguous U.S. or
+  far from any ecoregion are left out of the ecoregion tables.
+- **Year departures** (step 3) will be measured from each plant's own typical date and averaged to
+  the ecoregion and year, weighting sites, not plants, so that changes in who observes don't read as
+  changes in the plants.
+- **Fire by fuel type.** Each fire is split over the LANDFIRE fuel-group shares of its 4 km cell (MTBS:
+  of every burned cell, by burned area). Plant groups are matched to fuel groups in step 1 (deciduous
+  and conifer trees with timber fuels, shrubs with shrub fuels, grasses and forbs with grass fuels).
+  Weeks are fixed 7-day blocks from January 1, as in the fire activity study.
+- **Which fire record leads** is set before any test is run: in each ecoregion and fuel type, the
+  outcome with the best coverage in the inventory is reported first, the others as checks.
+
+## The NPN record
+
+The download holds `r n_rec` million plant status records from `r yr_rng`. Cleaned to one row per plant,
+phenophase and year, that is `r n_py` million plant-years, of which `r n_ok` have a usable onset. The
+record grew quickly after 2011 and has held at about 15,000 plants a year since 2017, while the number
+of sites peaked in 2020–21 and has fallen since: fewer sites, observed more often.
+
+```{r fig-record}
+#| results: asis
+show_fig("nf_record", "The NPN plant record by year: status records, plants observed (with the range of sites a year) and usable onsets.")
+```
+
+```{r fig-groups}
+#| results: asis
+show_fig("nf_groups", "Usable onsets by plant group, split by kind of phenophase. Deciduous trees dominate the record; grasses, the fuel the other studies centre on, are a small part.")
+```
+
+```{r tbl-groups}
+#| tbl-cap: "Usable onsets by plant group and kind of phenophase, all years."
+if (!is.null(GR)) {
+  d <- GR[order(-GR$total), c("label", "Leaves", "Flowers", "Fruits", "total")]
+  names(d) <- c("Plant group", "Leaves", "Flowers", "Fruits", "Total")
+  for (k in 2:5) d[[k]] <- fmt(d[[k]])
+  knitr::kable(d, row.names = FALSE, align = "lrrrr")
+}
+```
+
+## Where the record is
+
+Sites with at least one usable leaf-out-type onset (initial growth, young leaves or leaves), by
+ecoregion and plant group, over the whole record:
+
+```{r fig-effort-map}
+#| results: asis
+show_fig("nf_effort_map", "Level II ecoregions shaded by the number of sites with a usable leaf-out-type onset, per plant group (numbers shown where 5 or more).")
+```
+
+Deciduous trees and shrubs are observed almost everywhere, and densely across the East. Conifers and
+evergreen shrubs have a moderate record in the West and Northeast. Grasses are thin everywhere, with no
+more than about 20 sites in any ecoregion over the whole record, the same limit the
+[NPN grass curing study](npn_study.html) found.
+
+Year-to-year tests need sites every year, not only over the whole record:
+
+```{r fig-effort-years}
+#| results: asis
+show_fig("nf_effort_years", "Sites with a usable onset of any kind, by ecoregion and year. The NPN curing study found that about 10 sites give a reliable regional mean for a year.")
+```
+
+```{r tbl-inventory}
+#| tbl-cap: "Sites with a usable leaf-out-type onset by ecoregion and plant group, whole record (ecoregions with 20 or more sites in a group)."
+if (!is.null(INV)) {
+  lab <- c(deciduous_tree = "Decid. tree", deciduous_shrub = "Decid. shrub", conifer = "Conifer", evergreen_shrub = "Evergr. shrub",
+           grass = "Grass", forb = "Forb", evergreen_tree = "Evergr. tree", other = "Other")
+  W <- stats::reshape(INV[, c("eco_l2_code", "eco_l2_name", "group", "sites")], idvar = c("eco_l2_code", "eco_l2_name"), timevar = "group", direction = "wide")
+  names(W) <- sub("^sites\\.", "", names(W))
+  cols <- intersect(names(lab), names(W)); W[cols][is.na(W[cols])] <- 0
+  W <- W[apply(W[cols], 1, max) >= 20, ]
+  o <- order(as.numeric(sub("\\..*", "", W$eco_l2_code)), as.numeric(sub("^\\d+\\.", "", W$eco_l2_code))); W <- W[o, ]
+  nm <- gsub("\\bUsa\\b", "USA", tools::toTitleCase(tolower(W$eco_l2_name)))
+  d <- data.frame(Ecoregion = paste(W$eco_l2_code, nm), W[cols], check.names = FALSE)
+  names(d)[-1] <- lab[cols]
+  knitr::kable(d, row.names = FALSE)
+}
+```
+
+## Fire activity by fuel type
+
+```{r fig-fire}
+#| results: asis
+show_fig("nf_fire_fuel", "Fire activity per year by ecoregion, split by LANDFIRE fuel group: FPA-FOD wildfires of all sizes (2001&ndash;2024) and VIIRS active-fire pixel-days (2012&ndash;2024).")
+```
+
+## Next steps
+
+1. **Dryness baseline:** the 60-day PRISM water balance by ecoregion and day, and its weekly climatology.
+2. **Inventory (step 1):** match plant groups to fuel groups and count, for each ecoregion, plant group
+   and phenophase, the years and weeks where usable NPN dates and fires coincide; pick the lead fire
+   record for each.
+3. **Seasonal alignment (step 2)** wherever the inventory allows it; **year to year (step 3)** in the
+   few ecoregions with enough sites each year.
+
+## Decisions
+
+| Date | Decision |
+|---|---|
+| Oct 25 | A separate study of NPN's potential for wildfire applications across CONUS, without satellite phenology |
+| Oct 31 | All NPN plant status and intensity records (conifers included, no animals); EPA Level II ecoregions; evaluate FPA-FOD, MTBS and VIIRS; self-contained code |
+| Nov 1 | Broadleaf trees vs shrubs from USDA PLANTS growth habit, then mature height (20 ft); 30 species by hand |
+| Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
+
+## Changelog
+
+| Date | Change |
+|---|---|
+| Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |

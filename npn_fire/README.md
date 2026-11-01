@@ -69,3 +69,14 @@ fuel shares (GR, GS, SH, TU, TL, SB, NB; `unmapped` where LANDFIRE maps < half t
 `fod_all`, by cause, `fod_cplus`, `fod_cplus_acres`, `mtbs_fires`, `mtbs_km2`, `viirs_px`), plus
 `fire_inventory.csv` (coverage by ecoregion x fuel x outcome) and `fire_year.csv`. Fuel groups are
 matched to NPN plant groups in 05.
+
+## Study page
+
+`report/npn_fire.qmd` (-> `npn_fire.html`), rendered and published with the other project pages by
+`scripts/91_sync_from_p720.R render publish`. Figures and tables come from `scripts/90_nf_figs.R`
+(laptop, after `91 ... npn_fire`): `report/figs/<figure>_full.png` + `manifest.csv` and
+`report/tables/*.csv`, both in git. Everything on the page is summarised to Level II ecoregions:
+no site names or site locations. Missing figures show as "Figure pending".
+
+    Rscript npn_fire/scripts/90_nf_figs.R full
+    Rscript scripts/91_sync_from_p720.R render publish

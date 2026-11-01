@@ -1053,3 +1053,13 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   fuel, value), fire_inventory.csv, fire_year.csv, fire_filters.csv, cell_weights.csv.gz, viirs_fill.csv.
   Planted fixture: counts, debris / year / type screens, unmapped and no-ecoregion cells, weeks (Dec 31 -> 52),
   causes, C+ acres, MTBS area split, pixel-day de-duplication and outage fill all as expected.
+- `npn_fire/scripts/90_nf_figs.R [profile] [figure ...]` (laptop; maps, sf, arrow; built Nov 1): page figures
+  nf_record, nf_groups, nf_effort_map (Level II shaded by sites with a usable leaf-out-type onset, per plant
+  group; ecoregion layer = the NPN study's cached l2_conus_plot.rds, else built once into
+  <run>/npn_fire/ecoregions/), nf_effort_years, nf_fire_fuel (03's fire_inventory.csv) -> npn_fire/report/figs/
+  (+ manifest.csv) and npn_fire/report/tables/ (nf_record_years, nf_groups, nf_inventory_sites, nf_effort_years,
+  nf_fire_inventory): ecoregion level only, in git. Groups always re-joined from data/nf_species_groups.csv.
+  Page npn_fire/report/npn_fire.qmd (-> npn_fire.html; same header / show_fig() / styles.css as the NPN study
+  page; R chunks ASCII only, HTML entities for dashes, after a C-locale render showed <U+2013>); rendered and
+  published by 91 (pages list + page_dir: npn_fire/report). 02b (Nov 1): sites outside the CONUS box or > 25 km
+  from every Level II polygon get no ecoregion (bad_coords; 5 sites, e.g. an AZ site 5,100 km away).

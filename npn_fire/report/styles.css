@@ -1,0 +1,7 @@
+/* Small additions to the cosmo theme for the project pages (same as the NPN study page). */
+.fig-meta { color: #6c6b67; font-size: 0.85em; }
+figure img, .quarto-figure img { border: 1px solid #e4e3df; border-radius: 4px; }
+.table { font-size: 0.92em; }
+.callout { margin-top: 1.25rem; margin-bottom: 1.25rem; }
+.species-table { overflow-x: auto; font-size: 0.8em; }
+.species-table table { white-space: nowrap; }
