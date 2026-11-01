@@ -53,6 +53,7 @@ default:
                         "https://plants.usda.gov/DocumentLibrary/Txt/plantlst.txt"]
       plants_api: "https://plantsservices.sc.egov.usda.gov/api"
       plants_sleep_sec: 0.3
+      height_tree_ft: 20                  # "Shrub, Tree" broadleaf species: PLANTS mature height >= this -> tree (decided 1 Nov)
 
     # ---- 02b: cleaning -------------------------------------------------------------------------------
     clean:

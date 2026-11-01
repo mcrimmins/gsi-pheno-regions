@@ -12,6 +12,8 @@
 #        broadleaf) or evergreen (Evergreen broadleaf, Semi-evergreen broadleaf); form from PLANTS
 #        habits: Tree only -> tree; Shrub / Subshrub only -> shrub; both -> tree_shrub;
 #        Vine only -> vine; no PLANTS habit -> unknown
+#   3b. "Shrub, Tree" broadleaf species: PLANTS mature height (PlantCharacteristics) >= height_tree_ft
+#      (20) -> tree, below -> shrub, none -> stays tree_shrub (cached in heights.rds)
 #   4. Manual values in data/nf_species_groups_manual.csv (species_id, group[, note]) override.
 # Output data/nf_species_groups.csv (in git): species_id, genus, species, common_name,
 # functional_type, usda_symbol, symbol_match, growth_habit, plants_duration, group, group_rule.
@@ -87,7 +89,8 @@ for (i in seq_along(syms)) {
   pr <- tryCatch(jsonlite::fromJSON(sprintf("%s/PlantProfile?symbol=%s", api, s), simplifyVector = TRUE),
                  error = function(e) { n_fail <<- n_fail + 1; NULL })
   if (!is.null(pr)) prof[[s]] <- list(habit = paste(unlist(pr$GrowthHabits), collapse = ", "),
-                                      duration = paste(unlist(pr$Durations), collapse = ", "))
+                                      duration = paste(unlist(pr$Durations), collapse = ", "),
+                                      id = if (length(pr$Id)) pr$Id[1] else NA)
   if (i %% 100 == 0) { saveRDS(prof, cache); log_msg(sprintf("  %d / %d profiles (%d failed)", i, length(syms), n_fail)) }
   if (n_fail >= 25 && n_fail == i) stop("PLANTS service not answering (", n_fail, " failures); try later")
   Sys.sleep(gc$plants_sleep_sec %||% 0.3)
@@ -106,12 +109,54 @@ form <- ifelse(has("tree") & (has("shrub") | has("subshrub")), "tree_shrub",
         ifelse(has("vine"), "vine", "unknown"))))
 leaf <- ifelse(ft %in% unlist(gc$deciduous_broadleaf), "deciduous",
         ifelse(ft %in% unlist(gc$evergreen_broadleaf), "evergreen", NA))
+
+# ---- mature height for broadleaf species PLANTS lists as both tree and shrub (decided 1 Nov) -------
+# PLANTS "Shrub, Tree" covers sugar maple as well as manzanita, so the habit alone can't split them:
+# height >= height_tree_ft -> tree, below -> shrub, no height -> stays tree_shrub (manual list).
+# PlantCharacteristics needs the PLANTS record id; profiles cached before ids were kept are refetched.
+cut_ft <- gc$height_tree_ft %||% 20
+need <- !is.na(leaf) & form == "tree_shrub" & !is.na(sp$usda_symbol)
+hsyms <- unique(sp$usda_symbol[need])
+ccache <- file.path(pdir, "heights.rds")
+hts <- if (file.exists(ccache) && !force) readRDS(ccache) else list()
+todo <- setdiff(hsyms, names(hts))
+log_msg(sprintf("mature height: %d tree_shrub symbols, %d cached, %d to fetch (cutoff %s ft)", length(hsyms),
+                length(hsyms) - length(todo), length(todo), cut_ft))
+h_fail <- 0
+for (i in seq_along(todo)) {
+  s <- todo[i]
+  id <- prof[[s]]$id %||% NA
+  if (is.na(id)) {
+    pr <- tryCatch(jsonlite::fromJSON(sprintf("%s/PlantProfile?symbol=%s", api, s), simplifyVector = TRUE), error = function(e) NULL)
+    if (!is.null(pr) && length(pr$Id)) { id <- pr$Id[1]; prof[[s]]$id <- id }
+    Sys.sleep(gc$plants_sleep_sec %||% 0.3)
+  }
+  if (is.na(id)) { h_fail <- h_fail + 1; next }                      # not cached: retried on the next run
+  ch <- tryCatch(jsonlite::fromJSON(sprintf("%s/PlantCharacteristics/%s", api, id), simplifyVector = TRUE),
+                 error = function(e) { h_fail <<- h_fail + 1; NULL })
+  if (!is.null(ch)) {
+    v <- if (is.data.frame(ch) && all(c("PlantCharacteristicName", "PlantCharacteristicValue") %in% names(ch)))
+      ch$PlantCharacteristicValue[grepl("^Height, Mature \\(feet\\)", ch$PlantCharacteristicName)] else character()
+    hts[[s]] <- if (length(v)) suppressWarnings(as.numeric(v[1])) else NA_real_   # NA = PLANTS has no height
+  }
+  if (i %% 50 == 0) { saveRDS(hts, ccache); saveRDS(prof, cache); log_msg(sprintf("  %d / %d heights", i, length(todo))) }
+  Sys.sleep(gc$plants_sleep_sec %||% 0.3)
+}
+saveRDS(hts, ccache); saveRDS(prof, cache)
+if (h_fail) log_warn(h_fail, " height lookups failed (rerun to retry)")
+sp$height_ft <- vapply(sp$usda_symbol, function(s) if (!is.na(s) && !is.null(hts[[s]])) hts[[s]] else NA_real_, 0)
+by_h <- need & !is.na(sp$height_ft)
+form[by_h] <- ifelse(sp$height_ft[by_h] >= cut_ft, "tree", "shrub")
+log_msg(sprintf("tree_shrub split by height: %d tree, %d shrub, %d without a PLANTS height (stay tree_shrub)",
+                sum(by_h & form == "tree"), sum(by_h & form == "shrub"), sum(need & !by_h)))
+
 sp$group <- ifelse(ft %in% unlist(gc$grass), "grass",
             ifelse(ft %in% unlist(gc$forb), "forb",
             ifelse(ft %in% unlist(gc$conifer), "conifer",
             ifelse(ft %in% unlist(gc$cactus), "cactus",
             ifelse(!is.na(leaf), paste(leaf, form, sep = "_"), "other")))))
-sp$group_rule <- ifelse(!is.na(leaf), paste0("NPN ", ft, " + PLANTS habit (", ifelse(nzchar(h), sp$growth_habit, "none"), ")"),
+sp$group_rule <- ifelse(!is.na(leaf), paste0("NPN ", ft, " + PLANTS habit (", ifelse(nzchar(h), sp$growth_habit, "none"), ")",
+                                              ifelse(by_h, sprintf(" + height %g ft", sp$height_ft), "")),
                         paste0("NPN ", ft))
 
 mf <- nf_path("data", "nf_species_groups_manual.csv")
@@ -124,6 +169,12 @@ if (file.exists(mf)) {
 sp <- sp[order(sp$group, sp$genus, sp$species), ]
 dir.create(nf_path("data"), showWarnings = FALSE)
 utils::write.csv(sp, nf_path("data", "nf_species_groups.csv"), row.names = FALSE)
+# species still needing a hand decision (tree_shrub without a height; unknown): fill a group into
+# data/nf_species_groups_manual.csv (species_id, group, note) and rerun
+rv <- sp[grepl("_(tree_shrub|unknown)$", sp$group), c("species_id", "genus", "species", "common_name", "functional_type",
+                                                      "symbol_match", "growth_habit", "group")]
+utils::write.csv(rv, nf_path("data", "nf_species_groups_review.csv"), row.names = FALSE)
+log_msg(sprintf("for review: %d species -> npn_fire/data/nf_species_groups_review.csv", nrow(rv)))
 tb <- table(sp$group)
 for (g in names(tb)) log_msg(sprintf("  %-22s %4d species", g, tb[[g]]))
 log_msg("=== done | npn_fire/data/nf_species_groups.csv | log: ", log_file)
