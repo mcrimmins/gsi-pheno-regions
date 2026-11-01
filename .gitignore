@@ -70,6 +70,8 @@ npn_study/report/.quarto/
 # Small tables in npn_fire/data/ are committed one by one when they exist; NPN raw data never is.
 !npn_fire/data/
 npn_fire/data/*
+!npn_fire/data/nf_species_groups.csv
+!npn_fire/data/nf_species_groups_manual.csv
 npn_fire/logs/
 npn_fire/report/*.html
 npn_fire/report/*_files/

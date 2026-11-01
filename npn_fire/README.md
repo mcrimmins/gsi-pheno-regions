@@ -24,8 +24,9 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 
 | Script | Runs on | Does | Status |
 |---|---|---|---|
-| 01_nf_npn_download.R | P720 (internet) | NPN status + intensity, plants, CONUS, state x year, resumable; lookups | built 31 Oct |
-| 02_nf_npn_clean.R | laptop / P720 | plant groups, Level II / III per site, onsets / ends per plant-year, effort | next |
+| 01_nf_npn_download.R | P720 (internet) | NPN status + intensity, plants, CONUS, state x year, resumable; lookups | run 1 Nov: 29.4 M records |
+| 02a_nf_species_groups.R | laptop (internet) | plant group per species (NPN type + PLANTS growth habit) -> data/nf_species_groups.csv | built 1 Nov |
+| 02b_nf_npn_clean.R | P720 | onset / end / intensity-threshold dates per plant x phenophase x year; sites, Level II, effort | built 1 Nov |
 | 03_nf_fire.R | P720 | FPA-FOD, MTBS, FIRMS -> Level II x fuel class x week x year | planned |
 | 04_nf_prism.R | P720 | ppet60 by Level II x day | planned |
 | 05_nf_inventory.R | laptop | Tier 1 alignment; outcome choice | planned |
@@ -44,3 +45,15 @@ existing files are skipped, so rerunning retries only failed requests. Lookups (
 phenophases, pheno classes, datasets) in `_shared/raw/npn/lookups/`. Per-request log
 `npn_fire/download/requests.csv`; by-year `download_summary.csv`. The log lists which
 `additional_fields` came back; fix names in config if any are reported missing.
+
+### 02a / 02b
+
+    Rscript npn_fire/scripts/02a_nf_species_groups.R full          # laptop: PLANTS lookups, ~10 min first time
+    Rscript npn_fire/scripts/02b_nf_npn_clean.R full               # P720: all years, then combine + ecoregions
+
+02b writes one row per plant x phenophase x year with dates and the gaps to the bracketing "no"
+readings (`onset_gap`, `end_gap`, `up50_gap`, `down50_gap`); the 14-day rule is applied when the
+tables are read, so 7 / 30-day sensitivity needs no rerun. Results:
+`<data_root>/<run>/npn_fire/clean/` (`plant_years`, `site_years.csv`, `sites.csv`, `effort_eco.csv`,
+`phenophase_map.csv`, `intensity_map.csv`, `clean_summary.csv`); to the laptop with
+`Rscript scripts/91_sync_from_p720.R npn_fire`. `sites.csv` has coordinates: never publish it.

@@ -40,6 +40,28 @@ nf_read_npn_csv <- function(path) {
   df
 }
 
+# NPN intensity values are text classes. Type: "percent" ("25-49%", "Less than 5%", "95% or more"),
+# "count" ("3 to 10", "Less than 3", "More than 10,000"), else "qualitative" ("Little", "Some", "Lots").
+nf_intensity_type <- function(v) {
+  v <- as.character(v)
+  ifelse(grepl("%", v), "percent",
+  ifelse(grepl("^\\s*(less than|more than)?\\s*[0-9,]+(\\s*to\\s*[0-9,]+)?\\s*$", v, ignore.case = TRUE), "count",
+  "qualitative"))
+}
+# Midpoint (%) of a percent class: "a-b%" -> (a + b) / 2; "Less than a%" -> a / 2;
+# "a% or more" -> (a + 100) / 2; a bare "a%" -> a. NA for anything else.
+nf_pct_mid <- function(v) {
+  v <- tolower(gsub("\\s+", " ", trimws(as.character(v))))
+  num <- function(re) suppressWarnings(as.numeric(sub(re, "\\1", v)))
+  out <- rep(NA_real_, length(v))
+  r <- grepl("^[0-9.]+ ?- ?[0-9.]+ ?%$", v)
+  if (any(r)) { a <- as.numeric(sub("^([0-9.]+).*", "\\1", v[r])); b <- as.numeric(sub("^[0-9.]+ ?- ?([0-9.]+).*", "\\1", v[r])); out[r] <- (a + b) / 2 }
+  r <- grepl("^less than [0-9.]+ ?%$", v); if (any(r)) out[r] <- num("^less than ([0-9.]+).*")[r] / 2
+  r <- grepl("^[0-9.]+ ?% or more$", v); if (any(r)) out[r] <- (num("^([0-9.]+).*")[r] + 100) / 2
+  r <- grepl("^[0-9.]+ ?%$", v); if (any(r)) out[r] <- num("^([0-9.]+).*")[r]
+  out
+}
+
 # Parse "2015", "2015:2018", "2015,2017" -> integer years; "AZ,NM" -> states. NULL if empty.
 nf_parse_years <- function(x) {
   if (is.null(x) || is.na(x) || !nzchar(x)) return(NULL)

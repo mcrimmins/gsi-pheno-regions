@@ -11,7 +11,11 @@
 #              (default fod), into <data_root>/full/fire_study/<step>/ on the laptop
 #   ecofuel    ecoregion x fuel type work (70-79): <remote run dir>/ecofuel/*.tif, *.csv and
 #              ecofuel/inventory/* into <data_root>/full/ecofuel/ on the laptop (rasters are 4 km, small)
-#   render     quarto render every page: report/index.qmd, npn_study/report/npn_study.qmd (NPN
+#   npn_fire   NPN x fire study (npn_fire/ subfolder): every <remote run dir>/npn_fire/<step>/*.csv
+#              (and <step>/lookups/*.csv), the combined tables <step>/*.parquet / *.csv.gz (not the
+#              per-year pieces in <step>/years/), into <data_root>/full/npn_fire/<step>/; the P720's
+#              npn_fire/logs/*.log into npn_fire/logs/p720/. Raw NPN downloads stay on the P720.
+#   render    quarto render every page: report/index.qmd, npn_study/report/npn_study.qmd (NPN
 #              curing study, its own subfolder), report/fire_study.qmd and report/ecofuel.qmd
 #              -> <page>.html next to its .qmd
 #   publish    upload report/<page>.html (all pages, same folder) to S3 with the AWS CLI (optional CloudFront
@@ -33,17 +37,17 @@
 #   GSI_AWS_PROFILE=name                  optional AWS CLI profile
 #   GSI_CF_DIST=E123ABC                   optional CloudFront distribution to invalidate
 #
-# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [fire] [ecofuel] [render] [publish] [all]
+# Usage: Rscript scripts/91_sync_from_p720.R [figs] [summaries] [logs] [fire] [ecofuel] [npn_fire] [render] [publish] [all]
 #   RStudio: gsi_sync <- "all"; source("scripts/91_sync_from_p720.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 what <- if (length(args)) args else if (exists("gsi_sync", envir = globalenv())) {
   base::get("gsi_sync", envir = globalenv())
 } else c("figs", "render")
-what <- match.arg(what, c("figs", "summaries", "logs", "fire", "ecofuel", "render", "publish", "all"),
+what <- match.arg(what, c("figs", "summaries", "logs", "fire", "ecofuel", "npn_fire", "render", "publish", "all"),
                   several.ok = TRUE)
 if ("all" %in% what) what <- unique(c(setdiff(what, "all"), "figs", "render", "publish"))
-need_ssh <- any(c("figs", "summaries", "logs", "fire", "ecofuel") %in% what)
+need_ssh <- any(c("figs", "summaries", "logs", "fire", "ecofuel", "npn_fire") %in% what)
 
 source(here::here("R", "config.R"))
 source(here::here("R", "log.R"))
@@ -151,6 +155,28 @@ if ("ecofuel" %in% what) {
   if (any(got)) log_msg("ecofuel: ", paste(basename(list.files(leco, "\\.(tif|csv)$")), collapse = ", "))
   if (inv) log_msg("ecofuel/inventory: ", paste(basename(list.files(file.path(leco, "inventory"))), collapse = ", "))
   if (!any(got) && !inv) log_warn("no ecofuel results on the P720 (", reco, ")")
+}
+
+# ---- NPN x fire study (npn_fire/ subfolder) ------------------------------------------------------
+if ("npn_fire" %in% what) {
+  rnf <- file.path(remote_run, "npn_fire"); lnf <- file.path(cfg$run_dir, "npn_fire")
+  ls <- run("ssh", c("-o", "BatchMode=yes", host, q(paste0("ls -1d ", rnf, "/*/"))))
+  steps <- if (ls$ok) basename(sub("/+$", "", ls$out[nzchar(ls$out)])) else character()
+  if (!length(steps)) log_warn("no npn_fire results on the P720 (", rnf, ")")
+  for (st in steps) {
+    ldir <- file.path(lnf, st)
+    tb <- run("ssh", c("-o", "BatchMode=yes", host, q(paste0("ls -1 ", rnf, "/", st, "/*.csv ", rnf, "/", st, "/*.parquet ",
+                                                             rnf, "/", st, "/*.csv.gz ", rnf, "/", st, "/lookups/*.csv 2>/dev/null"))))
+    fs <- tb$out[grepl("\\.(csv|parquet|csv\\.gz)$", tb$out)]
+    for (f in fs) {
+      dest <- if (grepl("/lookups/[^/]+$", f)) file.path(ldir, "lookups") else ldir
+      scp_get(f, dest)
+    }
+    if (length(fs)) log_msg(sprintf("npn_fire/%s: %d files (%.0f MB)", st, length(fs),
+                                    sum(file.size(list.files(ldir, recursive = TRUE, full.names = TRUE)), na.rm = TRUE) / 2^20))
+  }
+  if (scp_get(file.path(remote_repo, "npn_fire", "logs", "*.log"), here::here("npn_fire", "logs", "p720")))
+    log_msg("npn_fire logs -> npn_fire/logs/p720")
 }
 
 # ---- render -------------------------------------------------------------------------------

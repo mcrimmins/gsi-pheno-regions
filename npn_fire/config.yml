@@ -41,6 +41,26 @@ default:
       sleep_sec: 2                        # pause between requests
       max_errors: 25                      # stop the run after this many failed requests (rerun resumes)
 
+    # ---- 02a: plant groups (NPN functional type; PLANTS growth habit splits broadleaf trees / shrubs)
+    groups:
+      grass: [Graminoid]
+      forb: [Forb, Semi-evergreen forb, Evergreen forb]
+      conifer: [Evergreen conifer, Pine, Deciduous conifer]
+      cactus: [Cactus]
+      deciduous_broadleaf: [Deciduous broadleaf, Drought deciduous broadleaf]
+      evergreen_broadleaf: [Evergreen broadleaf, Semi-evergreen broadleaf]
+      plants_list_url: ["https://plants.sc.egov.usda.gov/DocumentLibrary/Txt/plantlst.txt",
+                        "https://plants.usda.gov/DocumentLibrary/Txt/plantlst.txt"]
+      plants_api: "https://plantsservices.sc.egov.usda.gov/api"
+      plants_sleep_sec: 0.3
+
+    # ---- 02b: cleaning -------------------------------------------------------------------------------
+    clean:
+      pheno_classes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]   # NPN plant pheno classes
+      pct_threshold: 50                   # up50 / down50 dates on percent-class intensities (% green, % canopy ...)
+      gap_days: 14                        # onset / end accepted when the bracketing "no" is within this (05+; 7 / 30 sensitivity)
+      eco_max_km: 25                      # warn for sites farther than this outside every Level II polygon
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

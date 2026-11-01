@@ -1011,3 +1011,24 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   the cloud workspace with mocked NPN services (plants-only filter, site-name drop, empty / failed
   requests, resume, test profile, force). additional_fields names unverified until the first real run
   (the log lists what came back).
+- `npn_fire/scripts/02a_nf_species_groups.R [profile] [force]` (laptop, internet; built Nov 1): plant group per
+  NPN plant species -> npn_fire/data/nf_species_groups.csv (in git). NPN functional type for grass / forb /
+  conifer / cactus; broadleaf types split deciduous / evergreen x tree / shrub / tree_shrub / vine / unknown by
+  USDA PLANTS growth habit (checklist + PlantProfile, cached in _shared/raw/plants/; config npn_fire: groups);
+  data/nf_species_groups_manual.csv (species_id, group) overrides. Tested with a stand-in checklist and service.
+- `npn_fire/scripts/02b_nf_npn_clean.R [profile] [years] [force]` (P720, seconds per state-year; arrow, sf;
+  built Nov 1): per year (clean/years/, resumable) plant pheno classes 1-13 only, status -1 dropped, same-day
+  visits merged (yes if any; highest intensity); one row per individual x phenophase x year (plant_years):
+  n_obs, n_yes, first / last obs, onset_doy + onset_gap (days since the previous "no"; NA = none that year),
+  end_doy + end_gap, n_cycles, last_onset_doy / gap, and for percent-class intensities ("no" = 0 %) peak_pct /
+  peak_doy, up50 and down50 (first reading >= / after the peak < config clean: pct_threshold) with gaps. Gaps are
+  stored, not filtered (05+ apply gap_days 14; 7 / 30 sensitivity). Also site_years (dates, plants, species,
+  observers, NEON share = dataset 6 / 16 or NEON partner group), sites (median lat / lon; never published),
+  Level II per site (point in polygon, else nearest, flagged), effort_eco (eco x year x group x pheno class:
+  plant-years, plants, sites, onset ok, NEON share), phenophase_map, intensity_map (type percent / count /
+  qualitative, percent midpoints), clean_summary. Checked on the real AZ 2023 file (241k records, 7,756
+  plant-years) against an independent Python recomputation: all 15 date / gap / intensity fields agree 100 %.
+- `91_sync_from_p720.R npn_fire` (Nov 1): <run>/npn_fire/<step>/*.csv, lookups, combined *.parquet / *.csv.gz
+  (not <step>/years/) to <data_root>/full/npn_fire/; npn_fire/logs/*.log to npn_fire/logs/p720/.
+  01 full run (P720, Nov 1, 244 min): 784 state-years, 0 failed, 29.4 M plant status records 2009-2024; plants
+  observed ~2,100 (2009) -> 14,700-16,900 / yr from 2018; sites peak ~2,600 (2020-21), 1,773 in 2024.
