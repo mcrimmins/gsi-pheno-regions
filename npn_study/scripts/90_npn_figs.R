@@ -42,6 +42,9 @@
 #                    change against VPD and rain anomalies (58i)
 #   npn_lfmc         NPN study sites and herbaceous live fuel moisture sites (Globe-LFMC 2.0), distance to
 #                    the nearest one, and paired readings where they meet (59d)
+#   npn_gsi          NFDRS v4 GSI at the NPN sites: threshold sweep, date error by model against the
+#                    typical date, observed vs GSI dates (59e; exploratory)
+#   npn_gsi_params   GSI input ramps, default vs tuned to the NPN record (all, C3, C4) (59e)
 #   npn_repr            how the record covers U.S. grass fuels: LANDFIRE grass and grass-shrub fuel
 #                       models with the sites, and shares by ecoregion (59c)
 #
@@ -56,7 +59,7 @@ all_figs <- c("npn_sites", "npn_dates", "npn_ladder", "npn_variance", "npn_signa
               "npn_species_sites", "npn_species_spread", "npn_fuelmodels",
               "npn_lter_c3c4", "npn_lter_agree", "npn_lter_weather", "npn_scale", "npn_power", "npn_repr",
               "npn_regions", "npn_region_dates", "npn_region_variance", "npn_region_c3c4",
-              "npn_inseason", "npn_lfmc")
+              "npn_inseason", "npn_lfmc", "npn_gsi", "npn_gsi_params")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -957,6 +960,77 @@ if (do("npn_lfmc") && !is.null(TY) && have(ls_csv, co_csv)) {
       mtext("Where they meet", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
       mtext(sprintf("%d pairs at %d site(s), +/- 7 days; Spearman r %.2f; orange: same species", nrow(PA), length(unique(PA$site_id)), r), side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
     }
+  })
+}
+
+# ---- NPN study: the operational GSI against the ground record (59e; exploratory) -------------------------
+gs_dir <- file.path(npn_dir, "gsi")
+if (do("npn_gsi") && have(file.path(gs_dir, "scores.csv"), file.path(gs_dir, "sweep.csv"), file.path(gs_dir, "series_years.csv"))) {
+  S <- utils::read.csv(file.path(gs_dir, "scores.csv"), stringsAsFactors = FALSE); SW <- utils::read.csv(file.path(gs_dir, "sweep.csv"), stringsAsFactors = FALSE)
+  Y <- utils::read.csv(file.path(gs_dir, "series_years.csv"), stringsAsFactors = FALSE)
+  thr120 <- 0.2 + 0.8 * 90 / 220
+  plot_png("npn_gsi", "NFDRS v4 GSI and NPN series-years", 2900, 1000, function() {
+    layout(matrix(1:3, 1), widths = c(1, 1.15, 1.25)); par(mar = c(4.4, 4.6, 3.8, 1), oma = c(2, 0, 0, 0))
+    # A: sweep
+    plot(NA, xlim = c(0.1, 0.9), ylim = c(0, max(90, min(150, max(SW$mae[SW$set %in% c("C3", "C4") & SW$target != "cured"], na.rm = TRUE)))), xlab = "GSI threshold (relative GSI)", ylab = "mean absolute date error (days)", bty = "n", cex.axis = 0.85)
+    abline(v = c(0.2, thr120), col = "#d6d5d0", lty = 2); text(c(0.2, thr120), par("usr")[4], c("GU", "LFM 120 %"), pos = 4, cex = 0.65, col = ink2, xpd = NA)
+    for (pw in c("C3", "C4")) for (tg in c("greenup", "curing")) { d <- SW[SW$set == pw & SW$target == tg, ]; d <- d[order(d$thr), ]
+      lines(d$thr, d$mae, col = pw_col[[pw]], lwd = 2.5, lty = if (tg == "greenup") 1 else 2)
+      ty <- S$mae_typical[S$model == "v4 default" & S$set == pw & S$target == tg][1]; segments(0.1, ty, 0.9, ty, col = grDevices::adjustcolor(pw_col[[pw]], 0.4), lty = if (tg == "greenup") 1 else 2, lwd = 1) }
+    legend("bottomright", bty = "n", cex = 0.72, text.col = ink2, lwd = c(2.5, 2.5, 1), lty = c(1, 2, 1), col = c(ink2, ink2, "#b8b7b2"),
+           legend = c("green-up (GSI onset)", "50 % curing (GSI end)", "thin: typical-date error"))
+    mtext("Does any single GSI threshold work?", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("NFDRS v4 inputs; blue C3, orange C4; a missed event counts 60 days", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    # B: error by model
+    mods <- unique(S$model); mods <- mods[!grepl("^tuned on (C3|C4)", mods)]
+    rows <- expand.grid(model = mods, target = c("greenup", "curing"), stringsAsFactors = FALSE)
+    par(mar = c(4.4, 15, 3.8, 1))
+    lab <- c(rbind(sprintf("%s: %s", c(greenup = "Green-up", curing = "Curing")[rows$target], rows$model)))
+    n <- nrow(rows); y <- rev(seq_len(n))
+    plot(NA, xlim = c(0, 70), ylim = c(0.5, n + 1.5), yaxt = "n", xlab = "mean absolute date error (days), all grasses", ylab = "", bty = "n", cex.axis = 0.85)
+    axis(2, at = y, labels = lab, las = 1, tick = FALSE, cex.axis = 0.62)
+    for (i in seq_len(n)) { r <- S[S$model == rows$model[i] & S$target == rows$target[i] & S$set == "all", ][1, ]; if (is.na(r$mae)) next
+      segments(0, y[i], r$mae, y[i], col = "#d6d5d0", lwd = 6); points(r$mae, y[i], pch = 16, col = ink, cex = 1.1)
+      points(r$mae_typical, y[i], pch = 124, col = aqua_col, cex = 1.4) }
+    legend("topright", bty = "n", cex = 0.72, text.col = ink2, pch = c(16, 124), col = c(ink, aqua_col), legend = c("GSI", "typical date (other years)"), horiz = TRUE)
+    mtext("GSI dates against the typical date", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("tuned models scored on held-out years", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    # C: observed vs v4 default dates
+    par(mar = c(4.4, 4.6, 3.8, 1))
+    plot(NA, xlim = c(1, 366), ylim = c(1, 366), xaxt = "n", yaxt = "n", xlab = "NPN date (series-year)", ylab = "GSI date, NFDRS v4 default", bty = "n")
+    mon_axis(1, 0.8); mon_axis(2, 0.8); abline(0, 1, col = "#d6d5d0")
+    for (pw in c("C3", "C4")) { d <- Y[Y$pathway == pw, ]
+      points(d$obs_greenup, d$v4_up, pch = 16, cex = 0.6, col = grDevices::adjustcolor(pw_col[[pw]], 0.45))
+      points(d$obs_curing, d$v4_dn, pch = 1, cex = 0.6, col = grDevices::adjustcolor(pw_col[[pw]], 0.45)) }
+    mtext("Where the default GSI puts the season", side = 3, line = 2, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("filled: green-up (GU); open: curing (LFM 120 %)", side = 3, line = 0.6, adj = 0, cex = 0.7, col = ink2)
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, pch = 16, col = pw_col, legend = c("cool-season (C3)", "warm-season (C4)"))
+  })
+}
+if (do("npn_gsi_params") && have(file.path(gs_dir, "params.csv"))) {
+  P <- utils::read.csv(file.path(gs_dir, "params.csv"), stringsAsFactors = FALSE)
+  P <- P[P$model %in% c("v4 default", "tuned on all", "tuned on C3", "tuned on C4"), ]
+  pc <- c(`v4 default` = ink, `tuned on all` = "#9c9b96", `tuned on C3` = terra_col, `tuned on C4` = aqua_col)
+  ramp <- function(lo, hi, xs, dec = FALSE) { y <- pmin(1, pmax(0, (xs - lo) / (hi - lo))); if (dec) 1 - y else y }
+  plot_png("npn_gsi_params", "GSI inputs, default and tuned", 2900, 820, function() {
+    par(mfrow = c(1, 5), mar = c(4.4, 4.2, 3.8, 1), oma = c(2, 0, 0, 0))
+    pan <- list(list("Minimum temperature", "Tmin (C)", seq(-15, 25, 0.1), "tmin_lo_C", "tmin_hi_C", FALSE),
+                list("VPD (daily maximum)", "VPD (kPa)", seq(0, 8, 0.01), "vpd_lo_kPa", "vpd_hi_kPa", TRUE),
+                list("Daylength", "daylength (h)", seq(8, 16, 0.01), "daylength_lo_h", "daylength_hi_h", FALSE),
+                list("Rain over the window", "rain (mm)", seq(0, max(40, ceiling(max(P$precip_hi_mm) * 1.5)), 0.1), NA, "precip_hi_mm", FALSE))
+    for (q in pan) {
+      plot(NA, xlim = range(q[[3]]), ylim = c(0, 1), xlab = q[[2]], ylab = "sub-index", bty = "n", cex.axis = 0.8)
+      for (i in seq_len(nrow(P))) { lo <- if (is.na(q[[4]])) 0 else P[[q[[4]]]][i]; lines(q[[3]], ramp(lo, P[[q[[5]]]][i], q[[3]], q[[6]]), col = pc[[P$model[i]]], lwd = 2.5) }
+      mtext(q[[1]], side = 3, line = 1.6, adj = 0, cex = 0.9, font = 2, col = ink)
+      if (is.na(q[[4]])) mtext(sprintf("window: %s days", paste(sprintf("%s %d", c("v4", "all", "C3", "C4")[seq_len(nrow(P))], as.integer(P$precip_window_d)), collapse = ", ")), side = 3, line = 0.4, adj = 0, cex = 0.55, col = ink2)
+    }
+    plot(NA, xlim = c(0, 1), ylim = c(0.5, nrow(P) + 0.5), axes = FALSE, xlab = "", ylab = "")
+    mtext("Smoothing and thresholds", side = 3, line = 1.6, adj = 0, cex = 0.9, font = 2, col = ink)
+    y <- rev(seq_len(nrow(P)))
+    text(0, y, sprintf("%s\nsmoothing %d d; green-up at %.2f, curing at %.2f", P$model, as.integer(P$smoothing_d), P$thr_greenup, P$thr_curing), adj = 0, cex = 0.75, col = pc[P$model])
+    par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+    legend("bottom", horiz = TRUE, bty = "n", text.col = ink2, cex = 0.9, lwd = 2.5, col = pc, legend = c("NFDRS v4 default", "tuned on all NPN grasses", "tuned on cool-season (C3)", "tuned on warm-season (C4)"))
   })
 }
 

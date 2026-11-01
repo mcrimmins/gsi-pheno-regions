@@ -1075,6 +1075,90 @@ if (file.exists(pf)) {
   in a region, with a few plants of the main species at each, read through the end of the season
   for many years; adding plants at existing sites buys little.
 
+## Exploratory: the operational GSI at NPN sites
+
+::: {.callout-warning appearance="simple"}
+## Under consideration for the paper
+This section tests the operational index against the ground record. It may or may not go in the
+paper.
+:::
+
+NFDRS version 4 turns the Growing Season Index (GSI) into herbaceous live fuel moisture: GSI is the
+product of minimum temperature, daily maximum VPD, daylength and 28-day rain ramps, averaged over
+28 days, and herbaceous moisture rises from 30 % at the green-up threshold (GU = 0.2) to 250 % at
+GSI 1 (Jolly et al. 2024). The project's GSI code was run with the published v4 parameters at every
+NPN site on daily PRISM, and its dates were set against the median NPN date of each series-year:
+GSI onset at GU against 50 % green-up; GSI falling through 0.527 (herbaceous moisture 120 %, where
+NFDRS starts moving herbaceous load to dead) against 50 % curing; GSI falling back to GU (30 %)
+against the cured date. A sweep of thresholds asks whether any single GSI level works. A tuned GSI
+refits the same model's ramps, windows and thresholds to the NPN dates (all grasses, and cool- and
+warm-season grasses separately), scored on held-out years. The bar throughout is the series'
+typical date from its other years.
+
+```{r fig-npn-gsi}
+#| results: asis
+show_fig("npn_gsi",
+  "Left: date error of GSI events against NPN series-years at each GSI threshold, NFDRS v4 inputs (solid: green-up; dashed: 50 % curing; thin lines: error of the typical date). Middle: date error by model, all grasses; the orange tick is the typical date's error on the same series-years. Right: NPN dates against NFDRS v4 default GSI dates.",
+  "Line chart of date error by GSI threshold, a dot chart of error by model against the typical date, and a scatter of observed against GSI dates.")
+```
+
+```{r fig-npn-gsi-params}
+#| results: asis
+show_fig("npn_gsi_params",
+  "The GSI's input ramps as published (black) and as refitted to the NPN record: all grasses (gray), cool-season (blue), warm-season (orange); with the smoothing window and the green-up and curing thresholds.",
+  "Five panels of ramp lines for minimum temperature, VPD, daylength and rain, and a list of smoothing windows and thresholds.")
+```
+
+```{r gsi-bullets}
+#| results: asis
+gs_f <- "tables/npn_gsi_scores.csv"; gp_f <- "tables/npn_gsi_params.csv"; gb_f <- "tables/npn_gsi_binding.csv"; gt_f <- "tables/npn_gsi_status.csv"; gw_f <- "tables/npn_gsi_sweep.csv"
+if (file.exists(gs_f) && file.exists(gp_f)) {
+  S <- utils::read.csv(gs_f, stringsAsFactors = FALSE); P <- utils::read.csv(gp_f, stringsAsFactors = FALSE)
+  g <- function(model, target, set, k) { v <- S[[k]][S$model == model & S$target == target & S$set == set]; if (length(v)) v[1] else NA }
+  d <- function(target, set) sprintf("%.0f days (typical date %.0f; median bias %+.0f days)", g("v4 default", target, set, "mae"), g("v4 default", target, set, "mae_typical"), g("v4 default", target, set, "bias"))
+  cat(sprintf("- **%s** Its green-up comes within a mean %s of NPN 50 %% green-up, its fall through 120 %% herbaceous moisture %s of 50 %% curing, and its return to the 30 %% minimum %s of the cured date (all grasses).\n",
+    if (g("v4 default", "greenup", "all", "mae") > g("v4 default", "greenup", "all", "mae_typical") && g("v4 default", "curing", "all", "mae") > g("v4 default", "curing", "all", "mae_typical")) "The default GSI misses the ground season." else "The default GSI against the ground season.",
+    d("greenup", "all"), d("curing", "all"), d("cured", "all")))
+  cat(sprintf("- **One curve for two grass types.** For cool-season grasses the default errs by %.0f days at green-up and %.0f at curing (typical date %.0f and %.0f); for warm-season grasses %.0f and %.0f (typical %.0f and %.0f). At sites with both types, the same GSI curve is %+.0f days off cool-season curing and %+.0f days off warm-season curing.\n",
+    g("v4 default", "greenup", "C3", "mae"), g("v4 default", "curing", "C3", "mae"), g("v4 default", "greenup", "C3", "mae_typical"), g("v4 default", "curing", "C3", "mae_typical"),
+    g("v4 default", "greenup", "C4", "mae"), g("v4 default", "curing", "C4", "mae"), g("v4 default", "greenup", "C4", "mae_typical"), g("v4 default", "curing", "C4", "mae_typical"),
+    g("v4 default", "curing", "C3_at_both", "bias"), g("v4 default", "curing", "C4_at_both", "bias")))
+  if (file.exists(gw_f)) { W <- utils::read.csv(gw_f, stringsAsFactors = FALSE); b <- function(tg, st) { x <- W[W$target == tg & W$set == st, ]; x[which.min(x$mae), ] }
+    bu <- b("greenup", "all"); bc <- b("curing", "all")
+    cat(sprintf("- **%s** The best single GSI level for green-up (%.2f) still errs by %.0f days and the best for curing (%.2f) by %.0f days, against %.0f and %.0f for the typical date; the best levels differ between cool- and warm-season grasses.\n",
+      if (bu$mae > g("v4 default", "greenup", "all", "mae_typical") && bc$mae > g("v4 default", "curing", "all", "mae_typical")) "No single threshold fixes it." else "The best single threshold.",
+      bu$thr, bu$mae, bc$thr, bc$mae, g("v4 default", "greenup", "all", "mae_typical"), g("v4 default", "curing", "all", "mae_typical"))) }
+  tm <- grep("^tuned by grass type", unique(S$model), value = TRUE)[1]; ta <- grep("^tuned on all", unique(S$model), value = TRUE)[1]
+  if (!is.na(ta)) cat(sprintf("- **%s** Refitted to the NPN record and scored on held-out years, the GSI errs by %.0f days at green-up and %.0f at curing (all grasses together)%s; the typical date errs by %.0f and %.0f.\n",
+    { tu <- g(ta, "greenup", "all", "mae"); tc <- g(ta, "curing", "all", "mae")
+      if (tu < g(ta, "greenup", "all", "mae_typical") && tc < g(ta, "curing", "all", "mae_typical")) "Tuned, the GSI beats the typical date."
+      else if (tu < g("v4 default", "greenup", "all", "mae") || tc < g("v4 default", "curing", "all", "mae")) "Tuning helps, but not past the typical date." else "Tuning does not help." },
+    g(ta, "greenup", "all", "mae"), g(ta, "curing", "all", "mae"),
+    if (!is.na(tm)) sprintf(", and %.0f and %.0f with separate cool- and warm-season fits", g(tm, "greenup", "all", "mae"), g(tm, "curing", "all", "mae")) else "",
+    g(ta, "greenup", "all", "mae_typical"), g(ta, "curing", "all", "mae_typical")))
+  cat(sprintf("- **Year to year.** Departures of the default GSI's dates from their series mean correlate with the observed departures at r %+.2f for green-up and %+.2f for curing%s.\n",
+    g("v4 default", "greenup", "all", "dep_r"), g("v4 default", "curing", "all", "dep_r"),
+    if (!is.na(ta)) sprintf(" (tuned: %+.2f and %+.2f)", g(ta, "greenup", "all", "dep_r"), g(ta, "curing", "all", "dep_r")) else ""))
+  if (file.exists(gt_f)) { T <- utils::read.csv(gt_f, stringsAsFactors = FALSE); t1 <- T[T$set == "all" & T$model == "v4 default", ]
+    cat(sprintf("- **Status.** On the same days, the default GSI and series percent green have a rank correlation of %.2f, but their weekly anomalies correlate at %+.2f. On %.0f %% of dates when the grasses were at least 50 %% green the GSI sat below GU (herbaceous moisture at its 30 %% minimum), and on %.0f %% of dates when they were under 25 %% green it put herbaceous moisture at 120 %% or more.\n\n",
+      t1$r_level, t1$r_weekly_anomaly, 100 * t1$share_green_gsi_below_gu, 100 * t1$share_brown_gsi_above_120)) }
+  # parameter table
+  K <- P[P$model %in% c("v4 default", "tuned on all", "tuned on C3", "tuned on C4"), ]
+  T2 <- data.frame(GSI = K$model, `Tmin ramp (°C)` = sprintf("%.1f to %.1f", K$tmin_lo_C, K$tmin_hi_C), `VPD ramp (kPa)` = sprintf("%.2f to %.2f", K$vpd_lo_kPa, K$vpd_hi_kPa),
+    `Daylength ramp (h)` = sprintf("%.1f to %.1f", K$daylength_lo_h, K$daylength_hi_h), `Rain (days, mm)` = sprintf("%d d, %.0f mm", as.integer(K$precip_window_d), K$precip_hi_mm),
+    `Smoothing (days)` = as.integer(K$smoothing_d), `Green-up / curing threshold` = sprintf("%.2f / %.2f", K$thr_greenup, K$thr_curing), check.names = FALSE)
+  print(knitr::kable(T2, format = "pipe", row.names = FALSE, align = c("l", rep("r", 6))))
+  cat("\n\n: GSI inputs as published (NFDRS v4) and refitted to the NPN record (fitted on all years; held-out scores above) {.striped}\n\n")
+  if (file.exists(gb_f)) { B <- utils::read.csv(gb_f, stringsAsFactors = FALSE)
+    T3 <- data.frame(GSI = B$model, Date = B$target, Type = B$pathway, Tmin = sprintf("%.0f %%", 100 * B$tmin), VPD = sprintf("%.0f %%", 100 * B$vpd),
+      Daylength = sprintf("%.0f %%", 100 * B$photo), Rain = sprintf("%.0f %%", 100 * B$precip), `GSI on the observed date` = sprintf("%.2f", B$gsi_at_obs_median), check.names = FALSE)
+    cat('::: {.callout-note collapse="true" appearance="simple"}\n## Which input limits the GSI around the observed dates (click to open)\n\n')
+    cat("Share of days within 14 days of each observed green-up or 50 % curing date on which each sub-index is the smallest (the one that sets the product), and the median GSI on the observed date.\n\n")
+    print(knitr::kable(T3, format = "pipe", row.names = FALSE, align = c("l", "l", "l", rep("r", 5))))
+    cat("\n\n: Limiting GSI input around the ground dates {.striped}\n\n:::\n\n") }
+} else cat('\n::: {.callout-note appearance="simple"}\n## Results pending\nRun npn_study/scripts/59e_npn_gsi.R.\n:::\n\n')
+```
+
 ## What it means so far
 
 On the ground, the typical date is the baseline to beat, and so far nothing beats it. The typical date itself is
@@ -1160,6 +1244,7 @@ co-authors (USA-NPN; NEON?), PhenoCam in or out.
 
 | Date | Change |
 |---|---|
+| 2026-10-27 | Exploratory: the operational NFDRS v4 GSI at NPN sites, default and tuned to the ground record (59e) |
 | 2026-10-25 | In-season status: reversible dips and weekly greenness change vs weather (58i); sustained curing date (58f); NPN against measured herbaceous fuel moisture, Globe-LFMC 2.0 (59d); paper outline reframed |
 | 2026-10-23 | Maps of the Level II ecoregions with the sites, typical dates, warm- minus cool-season timing and the year-to-year variance partition by ecoregion (53b); ecoregion outlines on the grass fuel map |
 | 2026-10-23 | How the record covers U.S. grass fuels: LANDFIRE grass fuel area by ecoregion and fuel model (59c) |
@@ -1183,6 +1268,9 @@ co-authors (USA-NPN; NEON?), PhenoCam in or out.
 
 ## Data sources and references
 
+- Jolly, W. M., Freeborn, P. H., Bradshaw, L. S., Wallace, J. and Brittain, S. (2024). Modernizing the US National Fire Danger Rating System (version 4). *Environmental Modelling & Software* 181, 106181.
+- Jolly, W. M., Nemani, R. and Running, S. W. (2005). A generalized, bioclimatic index to predict foliar phenology in response to climate. *Global Change Biology* 11, 619–632.
+- Yebra, M. et al. (2024). Globe-LFMC 2.0, an enhanced and updated dataset for live fuel moisture content research. *Scientific Data* 11, 332.
 - USA National Phenology Network (2026). Plant and animal phenology data, status and
   intensity observations, <https://www.usanpn.org>.
 - National Ecological Observatory Network (NEON). Plant phenology observations, contributed

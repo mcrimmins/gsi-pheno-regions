@@ -64,6 +64,7 @@ Rscript npn_study/scripts/59b_npn_fuelmodels.R full        # LANDFIRE fuel model
 Rscript npn_study/scripts/59c_npn_representativeness.R full  # the record against U.S. grass fuel area (LANDFIRE GR/GS cells by Level II ecoregion)
 Rscript npn_study/scripts/59d_npn_lfmc.R full                # NPN vs measured herbaceous fuel moisture (Globe-LFMC 2.0 from the GSI study tables)
 Rscript npn_study/scripts/58i_npn_inseason.R full             # in-season status: reversible dips, weekly greenness change vs VPD / rain (after 50)
+Rscript npn_study/scripts/59e_npn_gsi.R full                 # exploratory: NFDRS v4 GSI at NPN sites, default and tuned (R/gsi_nfdrs.R; ~20-40 min)
 Rscript npn_study/scripts/58c_npn_species.R full           # species list for the page (report/tables/npn_species.csv)
 Rscript npn_study/scripts/90_npn_figs.R full             # figures for the page
 ```
