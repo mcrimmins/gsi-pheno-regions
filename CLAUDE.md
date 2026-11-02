@@ -1063,3 +1063,10 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   page; R chunks ASCII only, HTML entities for dashes, after a C-locale render showed <U+2013>); rendered and
   published by 91 (pages list + page_dir: npn_fire/report). 02b (Nov 1): sites outside the CONUS box or > 25 km
   from every Level II polygon get no ecoregion (bad_coords; 5 sites, e.g. an AZ site 5,100 km away).
+- `npn_fire/scripts/04_nf_prism.R [profile] [force]` (P720, minutes; terra, arrow; built Nov 1): ppet60 = 60-day
+  rain minus Hargreaves PET (as the fire study's decision 21) by Level II x day from <run>/prism_daily, 2001-2024.
+  Uses linearity: ecoregion mean of the 60-day sum = 60-day sum of the daily weighted mean, so per year (forked,
+  config prism: workers) only daily weighted sums of ppt and PET per ecoregion are kept (prism/years/<Y>.rds).
+  Weights from 03's cell_weights.csv.gz: all, herb (GR+GS), shrub (SH), timber (TU+TL). -> npn_fire/prism/
+  eco_daily.parquet, eco_weekly.csv (fire weeks), eco_climatology.csv (week median / p10 / p90 / mean).
+  Fixture check: per-cell brute force (own Ra, Hargreaves, 60-d sum, weighted mean) within rounding (0.005 mm).

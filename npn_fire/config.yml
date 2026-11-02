@@ -78,6 +78,16 @@ default:
       nonburnable: [NB_ag, NB_urban, NB_barren, NB_snow]
       min_mapped: 0.5
 
+    # ---- 04: PRISM dryness baseline (60-day rain minus Hargreaves PET) by Level II x day --------------
+    prism:
+      prism_daily_dir: null               # null = <run_dir>/prism_daily (<var>/prism_<var>_<year>.tif, band names = ISO dates)
+      years: {start: 2001, end: 2024}     # first 59 days of the first year have no 60-day value
+      ppet_days: 60
+      # weights per cell (from 03's cell_weights.csv.gz): all land cells, and LANDFIRE fuel shares
+      weights: {herb: [GR, GS], shrub: [SH], timber: [TU, TL]}
+      workers: 8                          # years in parallel (forked on Linux; sequential on Windows)
+      block_rows: 40                      # grid rows read at a time
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:
