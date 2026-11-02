@@ -394,7 +394,7 @@ if (any(c("nf_seasonal_curves", "nf_seasonal_matrix") %in% want) && have(sres_f,
       ex <- c(down = "(fewer)", up = "(more)", none = "")[ev_expected(evs)]
       axis(2, at = seq_along(evs), labels = paste(ev_label(evs), ex), tick = FALSE, cex.axis = 0.66, col.axis = ink)
       mtext("Seasonal test: ecoregions passing / tested, by phenophase event and plant group", side = 3, line = 4.6, adj = 0, cex = 0.95, font = 2, col = ink)
-      mtext("pass = fire-rate change at the typical date beyond 90 % of placebo dates, in the expected direction (in brackets) or either way if none",
+      mtext("pass = fire-rate change at the typical date outside the middle 90 % of placebo dates, on the expected side (in brackets) or either side if none",
             side = 3, line = 3.6, adj = 0, cex = 0.62, col = ink2)
       par(xpd = NA)
       legend("bottom", inset = c(0, -0.6 / length(evs) * 2), horiz = TRUE, bty = "n", fill = seqc, border = "#d6d5d1", cex = 0.66, text.col = ink2,

@@ -1099,5 +1099,9 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   run ~1.5 h on the laptop (1621 cases). -> npn_fire/seasonal/results.csv, curves.csv (rel rate by week),
   summary.csv. Planted fixture: step x0.5 on a flat season -> 0.53 [0.45, 0.60], passes; smooth season only ->
   1.53, fails placebo; dryness only -> dryness coef recovered (-0.82 vs -0.80), ratio 0.91, fails. 90 figures
-  nf_seasonal_curves, nf_seasonal_matrix (events x groups, pass / tested) + tables nf_seasonal_summary / nf_seasonal_results; page section
+  nf_seasonal_curves, nf_seasonal_matrix (events x groups, pass / tested). FIRST FULL RUN (laptop, Nov 1, 52.6 min,
+  1621 cases, lead fod_all 1611): pass = outside middle 90 % of placebos (5 % chance directed, 10 % none). Low tail
+  (fewer after) 18 % vs 5 % chance, high tail 2 %; carried by Apr-Sep dates (East / prairies); fire peaks 1-2 wk
+  before first initial growth; end-of-green-up events pass most (initial_growth_end 32 %, young_leaves_down50 43 %).
+  Flowering up only in 11.1 (ratios 1.4-1.8, 45 % of flowering cases pass) and 7.1; autumn ratios > 1 but no step + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

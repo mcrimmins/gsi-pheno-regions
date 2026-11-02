@@ -157,7 +157,7 @@ default:
       dryness_weight: {deciduous_tree: timber, evergreen_tree: timber, conifer: timber, deciduous_shrub: shrub,
                        evergreen_shrub: shrub, grass: herb, forb: herb}
       placebo_min_shift: 5                # placebo dates: every other week of the year at least this far from the real one
-      pass_tail: 0.05                     # pass: real ratio beyond 90 % of placebo ratios, in the expected tail (two-sided if none)
+      pass_tail: 0.05                     # pass: real ratio outside the middle 90 % of placebo ratios, on the expected side (either side if none)
       bootstrap: {B: 200, level: 0.90, outcomes: lead}   # years resampled; intervals for the lead record only
       # expected directions: per event in inventory: events (one list for 05 and 06)
       seed: 20261101

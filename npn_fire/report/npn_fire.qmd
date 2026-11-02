@@ -100,8 +100,10 @@ appear only as a fire outcome.
 
 **Status (`r format(Sys.Date(), "%B %-d, %Y")`).** The NPN record is downloaded and cleaned
 (`r n_rec` million status records, `r yr_rng`), plants are grouped, fire activity and the dryness baseline are tabulated by
-ecoregion and fuel type, and the inventory (step 1) shows where the tests are possible. Next: the
-seasonal test (step 2).
+ecoregion and fuel type, and the inventory (step 1) shows where the tests are possible. The seasonal
+test (step 2, all 36 phenophase events) has run: spring and summer green-up dates mark the end of the
+spring fire season across much of the East and the prairies, and in Mediterranean California flowering is
+followed by more fires. Next: year to year (step 3).
 
 ## Data and methods
 
@@ -345,10 +347,11 @@ results are reported and judged in either direction.
 
 A ratio can differ from 1 just because the fire season is rising or falling at that time of year for
 other reasons. So each ratio is also computed at every other week of the year (placebo dates, at least
-five weeks from the real one); a case **passes** when its ratio lies beyond 90 % of the placebo ratios
-in the expected direction (either direction where none is expected). With 36 events, seven plant groups and
-up to 20 ecoregions, single cases are expected to pass by chance now and then; the evidence is in how
-consistently an event passes across ecoregions and plant groups.
+five weeks from the real one); a case **passes** when its ratio lies outside the middle 90 % of the placebo ratios, on the expected
+side (either side where none is expected). By chance alone, 5 % of cases with an expected direction would
+pass, and 10 % of those without. With 36 events, seven plant groups and up to 20 ecoregions, single cases
+pass by chance now and then; the evidence is in how consistently an event passes across ecoregions and
+plant groups.
 
 ```{r fig-seas-curves}
 #| results: asis
@@ -362,6 +365,38 @@ show_fig("nf_seasonal_matrix", "Seasonal test by phenophase event and plant grou
 
 Of `r n_case` cases, `r n_dir` have an expected direction; the ratio goes that way in `r n_dirok`, and
 `r n_pass` also pass the placebo check.
+
+### What step 2 shows (first run, November 1)
+
+- **Spring and summer phenology marks the end of a fire season, not the start.** Across all events,
+  18 % of cases show a drop in fires after the typical date sharper than at placebo dates, against 5 %
+  by chance; only 2 % show a rise sharper than placebo dates (also 5 % by chance). Counting each
+  ecoregion, plant group and typical week once (many events share a date), the shares are the same
+  (17 % and 3 % of 1,021). Events with typical dates in April&ndash;June (median ratio 0.66) and
+  July&ndash;September (0.72) carry the drops; events in winter and autumn almost never pass.
+- **The spring fire peak sits just before green-up.** Fire in the matched fuel peaks one to two weeks
+  before the typical first initial growth in every plant group and falls through leaf-out (first figure).
+  The clearest passes are the dates that close green-up: last initial growth (32 % of cases pass), young
+  leaves dropping below 50 % as they mature (43 %), last flowers or buds (21 %), open flowers below 50 %
+  (22 %), last pollen (29 %) and ripe fruits below 50 % (31 %), all well above the 10 % expected by chance.
+  The leaf-out events expected to bring fewer fires go that way in 64&ndash;74 % of cases and pass in
+  8&ndash;23 %. Grasses: leaves first seen passes in 4 of 8 ecoregions and leaves reaching 50 % in 3 of 5.
+  The pattern is strongest in the East and the prairies (Southeastern USA Plains, Ozark/Ouachita-Appalachian
+  Forests, Temperate and South Central Semiarid Prairies, Atlantic Highlands; median ratios 0.4&ndash;0.7).
+- **Flowering and fire: a western signal.** Nationally, flowering and fruit onsets mostly come with fewer
+  fires (median ratios 0.66&ndash;0.77; 0&ndash;8 % pass on the expected side), because in the East they
+  fall during the spring decline. In **Mediterranean California** the expected rise appears: flowering,
+  open flowers and pollen (typical dates late March to April) are followed by 1.4&ndash;1.8 times more
+  fires, and 45 % of the flowering cases there pass. The **Marine West Coast Forest** shows the same for
+  conifer and deciduous-tree flowering (1.8 times). This fits the research on fuel moisture falling after
+  flowering, in the climates where the dry season starts after flowering.
+- **Autumn: more fires after, but no step.** Leaf color, leaf fall and leaves dropping below 50 % are
+  followed by more fires as expected (median ratios 1.1&ndash;1.5), but almost none pass: the autumn rise
+  is gradual and no sharper at the phenology date than at other weeks.
+- **What this does and does not show.** It shows alignment: in much of the country NPN green-up dates
+  mark when spring fire activity ends, and in California flowering marks when it builds. It does not show
+  that the plants cause the change, and a fixed calendar date near the same week might do as well. Step 3
+  (year to year) asks whether the phenology date adds anything over the calendar.
 
 ```{r tbl-seas}
 #| tbl-cap: "Seasonal test by plant group and event, where 5 or more ecoregions were tested (FPA-FOD wildfires): cases, median ratio, cases in the expected direction and cases passing the placebo check, with the ecoregions that pass."
@@ -380,6 +415,8 @@ if (!is.null(SS)) {
    the window around it, beyond the dryness baseline?
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
+3. A fixed-calendar comparison for step 2: does the ecoregion's phenology date line up with the fire
+   change better than the same calendar week in other ecoregions or groups? (to discuss)
 
 ## Decisions
 
@@ -398,6 +435,7 @@ if (!is.null(SS)) {
 | Date | Change |
 |---|---|
 | Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |
+| Nov 1, 2026 | Step 1 (inventory) and step 2 (seasonal test) for all 36 phenophase events; first step 2 results |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |
