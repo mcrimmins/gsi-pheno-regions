@@ -1073,12 +1073,31 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   04 run (Nov 1, 4.5 min): 20 ecoregions x 4 weights, 2001-2024; driest weekly medians -50 (8.5) to -393 mm (10.2).
 - `npn_fire/scripts/05_nf_inventory.R [profile]` (laptop, ~1 min; built Nov 1; rules config npn_fire: inventory, FIXED
   before testing): match (DECIDED Nov 1, Mike) trees / conifers -> TU+TL, shrubs -> SH+GS, grass / forb -> GR+GS;
-  mesquites, paloverdes, Joshua tree stay shrubs. Events: leafout (class 1 onset), above50 (class 3 up50), flowering
-  (class 7 onset), leaf_color (4), leaf_fall (5), leaves_end (3 end), below50 (class 3 down50). Usable = gap <= 14 d;
+  mesquites, paloverdes, Joshua tree stay shrubs. Events (ALL PHENOPHASES, Nov 1, Mike: research says fuel moisture
+  drops after flowering): config inventory: events = 36 entries {pheno_class, date, expected}, named
+  <class>_<onset|end|up50|down50>: onset + end for all 13 plant pheno classes, up50 + down50 for the 5 percent
+  classes (young_leaves, leaves, colored_leaves, open_flowers, ripe_fruits). leaves_down50 = curing (herbs) /
+  leaf-off (woody). Usable = gap <= 14 d;
   site-year date = median over plants; ecoregion typical = median of site typicals; fire window typical week +-4
   (clipped). Covered year: >= 10 events of the outcome in the matched fuel in the window. Lead outcome = most
   covered NPN-overlap years, ties fod_all > viirs_px > fod_cplus > mtbs_fires. Tier 2: >= 10 sites and >= 5 covered
   years; Tier 3: >= 8 years with >= 10 sites that are covered. -> npn_fire/inventory/site_dates.parquet (06/07
-  input), events.csv, coverage.csv, inventory.csv, fire_nonburnable.csv. First run on real tables: 647 rows, Tier 2
-  340, Tier 3 116, lead fod_all 338 / viirs_px 2; grasses Tier 2 in 8 ecoregions, Tier 3 nowhere. 90 figure
+  input), events.csv, coverage.csv, inventory.csv, fire_nonburnable.csv. First run (7 events): 647 rows, Tier 2
+  340, Tier 3 116, lead fod_all 338 / viirs_px 2; 36 events: 3116 rows, Tier 2 1621, Tier 3 483, lead fod_all 1611; grasses Tier 2 in 8 ecoregions, Tier 3 nowhere. 90 figure
   nf_inventory + tables nf_inventory_tiers / nf_inventory_tier3; page section "Where NPN and fire line up".
+- `npn_fire/scripts/06_nf_seasonal.R [profile]` (laptop, ~15-30 min; MASS; built Nov 1; design APPROVED Nov 1 by Mike,
+  config npn_fire: seasonal, fixed before results): cases = 05 tier2_ok rows; records = lead + others with >= 5
+  covered years. Window typical week -8..+7 on a continuous weekly axis (crosses Dec / Jan); fires (matched fuel)
+  ~ factor(window-year) + ppet60 (matched-fuel weight: timber / shrub / herb, per 100 mm) + after (rel >= 0),
+  MASS::glm.nb; ratio = exp(after). Placebo: same model with theta fixed (glm.fit on model.matrix, fast path) at
+  every typical-week shift |k| >= 5 (cyclic); placebo_pct = share of placebo ratios below the real one; pass =
+  expected tail beyond 90 % (down <= 0.05, up >= 0.95, none = either tail). Bootstrap (lead record): window-years
+  resampled B = 200, 90 % percentile interval. Expected (per event in config inventory: events, set Nov 1
+  before results): onset down for initial_growth / young_leaves / leaves, up for classes 4-13 (leaf color, leaf
+  fall, flowering, fruit); end up for leaves, open_flowers; up50 down for young_leaves / leaves, up for
+  colored_leaves / open_flowers / ripe_fruits; down50 up for leaves; others none (5 down, 16 up, 15 none). Full
+  run ~1.5 h on the laptop (1621 cases). -> npn_fire/seasonal/results.csv, curves.csv (rel rate by week),
+  summary.csv. Planted fixture: step x0.5 on a flat season -> 0.53 [0.45, 0.60], passes; smooth season only ->
+  1.53, fails placebo; dryness only -> dryness coef recovered (-0.82 vs -0.80), ratio 0.91, fails. 90 figures
+  nf_seasonal_curves, nf_seasonal_matrix (events x groups, pass / tested) + tables nf_seasonal_summary / nf_seasonal_results; page section
+  "Do fire seasons change at the phenology dates?".

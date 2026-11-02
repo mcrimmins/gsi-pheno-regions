@@ -5,3 +5,5 @@
 "nf_groups","full","CONUS","2009-2024","2026-11-01"
 "nf_inventory","full","CONUS","2009-2024","2026-11-01"
 "nf_record","full","CONUS","2009-2024","2026-11-01"
+"nf_seasonal_curves","full","CONUS","FPA-FOD lead record, 2001-2024","2026-11-01"
+"nf_seasonal_matrix","full","CONUS","FPA-FOD lead record, 2001-2024","2026-11-01"

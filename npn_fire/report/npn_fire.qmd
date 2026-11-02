@@ -49,6 +49,15 @@ n_rec <- if (!is.null(RY)) fmt(sum(RY$records) / 1e6, 1) else "29.4"
 n_py <- if (!is.null(RY)) fmt(sum(RY$plant_years) / 1e6, 2) else "1.38"
 n_ok <- if (!is.null(RY)) fmt(sum(RY$usable_onsets)) else "409,000"
 yr_rng <- if (!is.null(RY)) paste0(min(RY$year), "&ndash;", max(RY$year)) else "2009&ndash;2024"
+cls_lab <- c(initial_growth = "initial growth", young_leaves = "young leaves", leaves = "leaves", colored_leaves = "colored leaves",
+             falling_leaves = "falling leaves", flowers = "flowers or buds", open_flowers = "open flowers", pollen = "pollen release",
+             end_flowering = "end of flowering", fruits = "fruits", unripe_fruits = "unripe fruits", ripe_fruits = "ripe fruits",
+             fruit_drop = "fruit or seed drop")
+date_lab <- c(onset = "first", end = "last", up50 = "reaches 50 %", down50 = "below 50 % after peak")
+ev_label <- function(ev) vapply(ev, function(e) { d <- sub("^.*_", "", e); c0 <- sub("_[^_]*$", "", e)
+  paste0(if (is.na(cls_lab[c0])) c0 else cls_lab[[c0]], ": ", if (is.na(date_lab[d])) d else date_lab[[d]]) }, "")
+glab <- c(deciduous_tree = "Deciduous trees", conifer = "Conifers", evergreen_tree = "Evergreen broadleaf trees",
+          deciduous_shrub = "Deciduous shrubs", evergreen_shrub = "Evergreen shrubs", grass = "Grasses", forb = "Forbs")
 ```
 
 ::: {.callout-important appearance="simple"}
@@ -255,11 +264,14 @@ n_eco <- if (!is.null(TT)) length(unique(TT$eco_l2_code)) else NA
 
 Each plant group is matched to the fuels its fires burn in: trees and conifers to timber-understory
 and timber-litter fuels; shrubs to shrub and grass-shrub fuels; grasses and forbs to grass and
-grass-shrub fuels. For seven events (leaf-out or initial growth; canopy or green share reaching 50 %;
-open flowers; colored leaves; falling leaves; last leaves; and dropping below 50 % after the peak, which is
-curing for grasses and forbs and leaf-off for woody plants), each ecoregion gets a typical date (the
-median of its sites' own typical dates) and a fire window of four weeks either side of it. The rules
-below were fixed before any test was run:
+grass-shrub fuels. Every phenophase NPN records is tested: for each of NPN's 13 plant phenophase classes
+(initial growth, young leaves, leaves, colored leaves, falling leaves, flowers or buds, open flowers,
+pollen release, end of flowering, fruits, unripe fruits, ripe fruits, fruit or seed drop), the first and
+the last date it is seen; and for the five classes recorded as a percentage (young leaves, leaves,
+colored leaves, open flowers, ripe fruits), the date it reaches 50 % and the date it drops below 50 % after
+its peak (for grasses and forbs, the drop in leaves below 50 % green is curing). That makes 36 events. For
+each, every ecoregion gets a typical date (the median of its sites' own typical dates) and a fire window of
+four weeks either side of it. The rules below were fixed before any test was run:
 
 - **Usable date:** bracketed by a "no" (or, for intensity dates, a reading on the other side of 50 %)
   within 14 days; a site's date for a year is the median over its plants.
@@ -272,7 +284,7 @@ below were fixed before any test was run:
 
 ```{r fig-inventory}
 #| results: asis
-show_fig("nf_inventory", "The furthest test the record supports, by ecoregion and plant group. Numbers: events (of seven) where the seasonal test is possible; where the year-to-year test is possible, events at that level / events at the seasonal level.")
+show_fig("nf_inventory", "The furthest test the record supports, by ecoregion and plant group. Numbers: events (of 36) where the seasonal test is possible; where the year-to-year test is possible, events at that level / events at the seasonal level.")
 ```
 
 Of the `r n_eco` ecoregions with NPN dates, the seasonal test is possible for at least one plant group and
@@ -288,22 +300,86 @@ but the year-to-year test in none, the same limit the NPN curing study found for
 if (!is.null(TT)) {
   d <- TT[TT$best_tier == 3, ]
   o <- order(as.numeric(sub("\\..*", "", d$eco_l2_code)), as.numeric(sub("^\\d+\\.", "", d$eco_l2_code)), d$group); d <- d[o, ]
-  glab <- c(deciduous_tree = "Deciduous trees", conifer = "Conifers", evergreen_tree = "Evergreen broadleaf trees",
-            deciduous_shrub = "Deciduous shrubs", evergreen_shrub = "Evergreen shrubs", grass = "Grasses", forb = "Forbs")
-  elab <- c(leafout = "leaf-out", above50 = "50 % green", flowering = "flowers", leaf_color = "leaf color",
-            leaf_fall = "leaf fall", leaves_end = "last leaves", below50 = "below 50 %")
-  ev <- vapply(strsplit(d$tier3_events, ", "), function(x) paste(elab[x], collapse = ", "), "")
+  ev <- vapply(strsplit(d$tier3_events, ", "), function(x) paste(ev_label(x), collapse = "; "), "")
   nm <- gsub("\\bUsa\\b", "USA", tools::toTitleCase(tolower(d$eco_l2_name)))
   knitr::kable(data.frame(Ecoregion = paste(d$eco_l2_code, nm), `Plant group` = glab[d$group], Events = ev, check.names = FALSE), row.names = FALSE)
 }
 ```
 
+## Do fire seasons change at the phenology dates? (step 2)
+
+```{r seas-setup}
+#| include: false
+SS <- tab("nf_seasonal_summary.csv"); SRt <- tab("nf_seasonal_results.csv")
+n_case <- if (!is.null(SRt)) nrow(SRt) else NA
+n_dir <- if (!is.null(SRt)) sum(SRt$expected != "none") else NA
+n_dirok <- if (!is.null(SRt)) sum(SRt$expected != "none" & ((SRt$expected == "down" & SRt$ratio < 1) | (SRt$expected == "up" & SRt$ratio > 1))) else NA
+n_pass <- if (!is.null(SRt)) sum(SRt$pass %in% TRUE & SRt$expected != "none") else NA
+```
+
+For each case where the inventory allows it, the weekly fire rate in the matched fuel is compared before
+and after the event's typical date, within eight weeks either side, with the year and the week's
+dryness (the 60-day water balance where that fuel grows) held fixed. The **ratio** is the fire rate from
+the typical date on, relative to before. Expected directions were set in advance (1 November 2026, before
+any result of this test was seen):
+
+| Phenophase class | First seen | Last seen | Reaches 50 % | Below 50 % after peak |
+|---|---|---|---|---|
+| Initial growth | fewer fires | &ndash; | | |
+| Young leaves | fewer | &ndash; | fewer | &ndash; |
+| Leaves (incl. grass % green) | fewer | more | fewer | more |
+| Colored leaves | more | &ndash; | more | &ndash; |
+| Falling leaves | more | &ndash; | | |
+| Flowers or buds | more | &ndash; | | |
+| Open flowers | more | more | more | &ndash; |
+| Pollen release | more | &ndash; | | |
+| End of flowering | more | &ndash; | | |
+| Fruits, unripe fruits | more | &ndash; | | |
+| Ripe fruits | more | &ndash; | more | &ndash; |
+| Fruit or seed drop | more | &ndash; | | |
+
+Leaf-out stages are expected to bring fewer fires as live foliage replaces dry fuel; leaf color, leaf fall and
+curing more. Flowering and the fruit stages are expected to bring more fires, following research reporting
+that live fuel moisture falls after flowering. "&ndash;" marks events with no expected direction: their
+results are reported and judged in either direction.
+
+A ratio can differ from 1 just because the fire season is rising or falling at that time of year for
+other reasons. So each ratio is also computed at every other week of the year (placebo dates, at least
+five weeks from the real one); a case **passes** when its ratio lies beyond 90 % of the placebo ratios
+in the expected direction (either direction where none is expected). With 36 events, seven plant groups and
+up to 20 ecoregions, single cases are expected to pass by chance now and then; the evidence is in how
+consistently an event passes across ecoregions and plant groups.
+
+```{r fig-seas-curves}
+#| results: asis
+show_fig("nf_seasonal_curves", "Fire rate by week from each event's typical date: median over ecoregions of the weekly fire rate in the matched fuel, relative to the window's mean (FPA-FOD wildfires).")
+```
+
+```{r fig-seas-matrix}
+#| results: asis
+show_fig("nf_seasonal_matrix", "Seasonal test by phenophase event and plant group: ecoregions passing the placebo-date check out of those tested (FPA-FOD wildfires). Expected direction in brackets.")
+```
+
+Of `r n_case` cases, `r n_dir` have an expected direction; the ratio goes that way in `r n_dirok`, and
+`r n_pass` also pass the placebo check.
+
+```{r tbl-seas}
+#| tbl-cap: "Seasonal test by plant group and event, where 5 or more ecoregions were tested (FPA-FOD wildfires): cases, median ratio, cases in the expected direction and cases passing the placebo check, with the ecoregions that pass."
+if (!is.null(SS)) {
+  SS <- SS[SS$cases >= 5, ]
+  d <- data.frame(`Plant group` = glab[SS$group], Event = ev_label(SS$event), Expected = c(down = "fewer", up = "more", none = "&ndash;")[SS$expected],
+                  Cases = SS$cases, `Median ratio` = SS$median_ratio, `Expected direction` = ifelse(SS$expected == "none", "&ndash;", SS$expected_direction),
+                  Pass = SS$pass, `Passing ecoregions` = SS$pass_ecoregions, check.names = FALSE)
+  knitr::kable(d, row.names = FALSE, escape = FALSE)
+}
+```
+
 ## Next steps
 
-1. **Seasonal alignment (step 2)** in every ecoregion × group × event where the inventory allows it: the
-   weekly fire curve in the matched fuel around the typical date, against the seasonal cycle of dryness
-   (60-day PRISM water balance, now computed by ecoregion and fuel type).
-2. **Year to year (step 3)** where the inventory allows it.
+1. **Year to year (step 3)** where the inventory allows it: does an early or late event year shift fire in
+   the window around it, beyond the dryness baseline?
+2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
+   fires, and the 7- and 30-day date rules.
 
 ## Decisions
 
@@ -314,6 +390,8 @@ if (!is.null(TT)) {
 | Nov 1 | Broadleaf trees vs shrubs from USDA PLANTS growth habit, then mature height (20 ft); 30 species by hand |
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
+| Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 1 | All 13 NPN plant phenophase classes tested (36 events); flowering and fruit stages expected to bring more fires (fuel moisture drops after flowering); set before any step 2 result was seen |
 
 ## Changelog
 
@@ -322,3 +400,4 @@ if (!is.null(TT)) {
 | Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
+| Nov 1, 2026 | Step 2 seasonal test |

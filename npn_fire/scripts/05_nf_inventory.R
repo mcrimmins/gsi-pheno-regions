@@ -5,6 +5,8 @@
 #
 # Inputs (synced from the P720): clean/plant_years (02b), fire/fire_weekly (03); groups re-joined from
 # data/nf_species_groups.csv (02a).
+#   Events: config inventory: events (36 since 1 Nov: onset and end of all 13 NPN plant pheno classes, and
+#   up50 / down50 of the 5 percent classes).
 #   1. Usable dates: plant-year date of the event with its bracketing gap <= gap_days. Site-year date =
 #      median over the site's plants; site typical = median of its site-years (circular-safe: dates are
 #      within one year). Ecoregion typical = median of site typicals (sites weighted equally).

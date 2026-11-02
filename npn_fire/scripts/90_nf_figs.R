@@ -12,6 +12,8 @@
 #   nf_effort_years ecoregion x year: sites with any usable onset (02b)
 #   nf_fire_fuel   fire by LANDFIRE fuel group per ecoregion: FPA-FOD all sizes and VIIRS pixel-days (03)
 #   nf_inventory   Tier 1: furthest test the record supports per ecoregion x plant group (05)
+#   nf_seasonal_curves  Tier 2: median fire rate by week from the typical date, per plant group, four events (06)
+#   nf_seasonal_matrix  Tier 2: ecoregions passing / tested per phenophase event x plant group (06)
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -23,7 +25,8 @@ nf_root <- if (dir.exists(here::here("npn_fire", "R"))) here::here("npn_fire") e
 source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "nf.R"))
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
-all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory")
+all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
+              "nf_seasonal_curves", "nf_seasonal_matrix")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -289,8 +292,17 @@ if (do("nf_fire_fuel") && have(fi_f)) {
 }
 # ---- Tier 1 inventory: furthest test possible per ecoregion x plant group (05) ------------------------------
 inv_f <- file.path(cfg$out_dir, "inventory", "inventory.csv")
-ev_lab <- c(leafout = "leaf-out / initial growth", above50 = "canopy or green 50 %", flowering = "open flowers", leaf_color = "colored leaves",
-            leaf_fall = "falling leaves", leaves_end = "last leaves", below50 = "below 50 % (curing / leaf-off)")
+# event labels (05 / 06 events: <class>_<date>, config inventory: events)
+cls_lab <- c(initial_growth = "Initial growth", young_leaves = "Young leaves", leaves = "Leaves", colored_leaves = "Colored leaves",
+             falling_leaves = "Falling leaves", flowers = "Flowers or buds", open_flowers = "Open flowers", pollen = "Pollen release",
+             end_flowering = "End of flowering", fruits = "Fruits", unripe_fruits = "Unripe fruits", ripe_fruits = "Ripe fruits",
+             fruit_drop = "Fruit or seed drop")
+date_lab <- c(onset = "first", end = "last", up50 = "reaches 50 %", down50 = "below 50 % after peak")
+ev_cfg <- cfg$npn_fire$inventory$events
+ev_order <- names(ev_cfg)
+ev_label <- function(ev) vapply(ev, function(e) { d <- sub("^.*_", "", e); c0 <- sub("_[^_]*$", "", e)
+  sprintf("%s: %s", cls_lab[[c0]] %||% c0, date_lab[[d]] %||% d) }, "")
+ev_expected <- function(ev) vapply(ev, function(e) ev_cfg[[e]]$expected %||% "none", "")
 if (do("nf_inventory") && have(inv_f)) {
   IV <- utils::read.csv(inv_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
   IV$tier <- ifelse(IV$tier3_ok, 3L, ifelse(IV$tier2_ok, 2L, 1L))
@@ -324,6 +336,71 @@ if (do("nf_inventory") && have(inv_f)) {
     legend("bottom", inset = c(0, -0.085), horiz = TRUE, bty = "n", fill = tcol, border = "#d6d5d1", cex = 0.72, text.col = ink2,
            legend = c("no usable dates", "inventory only", "seasonal test (events)", "year to year (events / seasonal)"))
   })
+}
+
+# ---- Tier 2 seasonal test (06): composite curves and the pass matrix ---------------------------------------
+sres_f <- file.path(cfg$out_dir, "seasonal", "results.csv"); scur_f <- file.path(cfg$out_dir, "seasonal", "curves.csv")
+if (any(c("nf_seasonal_curves", "nf_seasonal_matrix") %in% want) && have(sres_f, scur_f)) {
+  SR <- utils::read.csv(sres_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
+  SC <- utils::read.csv(scur_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
+  lead_k <- paste(SR$eco_l2_code, SR$group, SR$event, SR$outcome)[SR$lead]
+  SC <- SC[paste(SC$eco_l2_code, SC$group, SC$event, SC$outcome) %in% lead_k, ]
+  SR <- SR[SR$lead, ]
+  gg <- c("deciduous_tree", "conifer", "evergreen_tree", "deciduous_shrub", "evergreen_shrub", "grass", "forb")
+  ST <- do.call(rbind, lapply(split(SR, paste(SR$group, SR$event)), function(d) data.frame(group = d$group[1], event = d$event[1],
+    expected = d$expected[1], cases = nrow(d), median_ratio = round(stats::median(d$ratio), 2),
+    expected_direction = sum(d$expected_direction %in% TRUE), pass = sum(d$pass %in% TRUE),
+    pass_ecoregions = paste(d$eco_l2_code[d$pass %in% TRUE], collapse = ", "))))
+  ST <- ST[order(match(ST$group, names(grp_col)), match(ST$event, ev_order)), ]
+  utils::write.csv(ST, file.path(tab_dir, "nf_seasonal_summary.csv"), row.names = FALSE)
+  utils::write.csv(SR[, c("eco_l2_code", "group", "event", "expected", "ratio", "ratio_lo", "ratio_hi", "placebo_pct", "pass")],
+                   file.path(tab_dir, "nf_seasonal_results.csv"), row.names = FALSE)
+  if (do("nf_seasonal_curves")) {
+    evs <- intersect(c("initial_growth_onset", "open_flowers_onset", "falling_leaves_onset", "leaves_down50"), unique(SR$event))
+    plot_png("nf_seasonal_curves", "FPA-FOD lead record, 2001-2024", 2800, 1250, function() {
+      par(mfrow = c(1, length(evs)), mar = c(4.2, 4, 4.4, 0.8), oma = c(2.4, 0, 0, 0))
+      for (ev in evs) {
+        plot(NA, xlim = c(-8, 7), ylim = c(0.4, 1.8), log = "y", axes = FALSE, xlab = "", ylab = "")
+        abline(h = c(0.5, 1, 1.5), col = "#ecebe7", lwd = 0.8); abline(v = -0.5, col = ink2, lty = 2, lwd = 0.8)
+        for (g in gg) {
+          d <- SC[SC$group == g & SC$event == ev, ]
+          if (length(unique(d$eco_l2_code)) < 2) next
+          m <- tapply(d$rel_rate, d$rel, stats::median, na.rm = TRUE)
+          lines(as.integer(names(m)), m, col = grp_col[[g]], lwd = 2)
+        }
+        axis(1, at = seq(-8, 6, 2), cex.axis = 0.75, col = NA, col.ticks = ink2); axis(2, at = c(0.5, 1, 1.5), cex.axis = 0.75, col = NA)
+        mtext("weeks from the typical date", side = 1, line = 2.4, cex = 0.62, col = ink2)
+        title2(ev_label(ev), sprintf("expected after: %s", c(down = "fewer fires", up = "more fires", none = "no expectation")[[ev_expected(ev)]]), 0.9, 0.68)
+      }
+      par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE); plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+      legend("bottom", horiz = TRUE, bty = "n", col = grp_col[gg], lwd = 2, legend = grp_lab[gg], cex = 0.7, text.col = ink2)
+    })
+  }
+  if (do("nf_seasonal_matrix")) {
+    evs <- ev_order[ev_order %in% SR$event]; gm <- gg[gg %in% SR$group]
+    seqc <- c("#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"); brk <- c(-Inf, 0, 0.2, 0.4, 0.6, 0.8, Inf)
+    plot_png("nf_seasonal_matrix", "FPA-FOD lead record, 2001-2024", 2400, 420 + 58 * length(evs), function() {
+      par(mar = c(3.4, 19, 6.4, 1))
+      plot(NA, xlim = c(0.5, length(gm) + 0.5), ylim = c(length(evs) + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
+      for (i in seq_along(evs)) for (j in seq_along(gm)) {
+        d <- SR[SR$event == evs[i] & SR$group == gm[j], ]
+        if (!nrow(d)) { rect(j - 0.46, i - 0.42, j + 0.46, i + 0.42, col = bg, border = "#ecebe7"); next }
+        sh <- mean(d$pass %in% TRUE); k <- findInterval(sh, brk, left.open = TRUE)
+        if (sum(d$pass %in% TRUE) == 0) k <- 1
+        rect(j - 0.46, i - 0.42, j + 0.46, i + 0.42, col = seqc[k], border = NA)
+        text(j, i, sprintf("%d / %d", sum(d$pass %in% TRUE), nrow(d)), cex = 0.6, col = if (k >= 4) "#ffffff" else ink)
+      }
+      axis(3, at = seq_along(gm), labels = sub(" ", "\n", grp_lab[gm]), tick = FALSE, cex.axis = 0.7, col.axis = ink, line = -0.4, padj = 0)
+      ex <- c(down = "(fewer)", up = "(more)", none = "")[ev_expected(evs)]
+      axis(2, at = seq_along(evs), labels = paste(ev_label(evs), ex), tick = FALSE, cex.axis = 0.66, col.axis = ink)
+      mtext("Seasonal test: ecoregions passing / tested, by phenophase event and plant group", side = 3, line = 4.6, adj = 0, cex = 0.95, font = 2, col = ink)
+      mtext("pass = fire-rate change at the typical date beyond 90 % of placebo dates, in the expected direction (in brackets) or either way if none",
+            side = 3, line = 3.6, adj = 0, cex = 0.62, col = ink2)
+      par(xpd = NA)
+      legend("bottom", inset = c(0, -0.6 / length(evs) * 2), horiz = TRUE, bty = "n", fill = seqc, border = "#d6d5d1", cex = 0.66, text.col = ink2,
+             legend = c("none pass", "< 20 %", "20-39 %", "40-59 %", "60-79 %", "80 %+"))
+    })
+  }
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

@@ -99,16 +99,48 @@ default:
         evergreen_shrub: [SH, GS]
         grass: [GR, GS]
         forb: [GR, GS]
-      # events: NPN pheno class and which 02b date (onset / end = first / last yes; up50 / down50 =
-      # first reading >= 50 % / first reading < 50 % after the peak, percent-class phenophases only)
+      # events (decided 1 Nov, Mike: all 13 NPN plant pheno classes; expected directions fixed before any
+      # Tier 2 result was seen; flowering and fruit stages 'up' after research on fuel moisture dropping
+      # after flowering). date: onset / end = first / last usable yes; up50 = first reading >= 50 %;
+      # down50 = first reading < 50 % after the peak (percent classes 2, 3, 4, 7, 12 only).
+      # expected = fires after the date: down / up / none (none = reported, judged two-sided).
       events:
-        leafout: {pheno_class: 1, date: onset}       # initial growth / breaking leaf buds
-        above50: {pheno_class: 3, date: up50}        # canopy / green share reaches 50 % (leaf-out, grass green-up)
-        flowering: {pheno_class: 7, date: onset}     # open flowers / pollen cones
-        leaf_color: {pheno_class: 4, date: onset}
-        leaf_fall: {pheno_class: 5, date: onset}
-        leaves_end: {pheno_class: 3, date: end}      # last yes for leaves
-        below50: {pheno_class: 3, date: down50}      # below 50 % after the peak (grass / forb curing; tree / shrub leaf-off)
+        initial_growth_onset: {pheno_class: 1, date: onset, expected: down}
+        initial_growth_end: {pheno_class: 1, date: end, expected: none}
+        young_leaves_onset: {pheno_class: 2, date: onset, expected: down}
+        young_leaves_end: {pheno_class: 2, date: end, expected: none}
+        young_leaves_up50: {pheno_class: 2, date: up50, expected: down}
+        young_leaves_down50: {pheno_class: 2, date: down50, expected: none}
+        leaves_onset: {pheno_class: 3, date: onset, expected: down}
+        leaves_end: {pheno_class: 3, date: end, expected: up}
+        leaves_up50: {pheno_class: 3, date: up50, expected: down}
+        leaves_down50: {pheno_class: 3, date: down50, expected: up}
+        colored_leaves_onset: {pheno_class: 4, date: onset, expected: up}
+        colored_leaves_end: {pheno_class: 4, date: end, expected: none}
+        colored_leaves_up50: {pheno_class: 4, date: up50, expected: up}
+        colored_leaves_down50: {pheno_class: 4, date: down50, expected: none}
+        falling_leaves_onset: {pheno_class: 5, date: onset, expected: up}
+        falling_leaves_end: {pheno_class: 5, date: end, expected: none}
+        flowers_onset: {pheno_class: 6, date: onset, expected: up}
+        flowers_end: {pheno_class: 6, date: end, expected: none}
+        open_flowers_onset: {pheno_class: 7, date: onset, expected: up}
+        open_flowers_end: {pheno_class: 7, date: end, expected: up}
+        open_flowers_up50: {pheno_class: 7, date: up50, expected: up}
+        open_flowers_down50: {pheno_class: 7, date: down50, expected: none}
+        pollen_onset: {pheno_class: 8, date: onset, expected: up}
+        pollen_end: {pheno_class: 8, date: end, expected: none}
+        end_flowering_onset: {pheno_class: 9, date: onset, expected: up}
+        end_flowering_end: {pheno_class: 9, date: end, expected: none}
+        fruits_onset: {pheno_class: 10, date: onset, expected: up}
+        fruits_end: {pheno_class: 10, date: end, expected: none}
+        unripe_fruits_onset: {pheno_class: 11, date: onset, expected: up}
+        unripe_fruits_end: {pheno_class: 11, date: end, expected: none}
+        ripe_fruits_onset: {pheno_class: 12, date: onset, expected: up}
+        ripe_fruits_end: {pheno_class: 12, date: end, expected: none}
+        ripe_fruits_up50: {pheno_class: 12, date: up50, expected: up}
+        ripe_fruits_down50: {pheno_class: 12, date: down50, expected: none}
+        fruit_drop_onset: {pheno_class: 13, date: onset, expected: up}
+        fruit_drop_end: {pheno_class: 13, date: end, expected: none}
       gap_days: 14                        # usable date: bracketing "no" (or reading) within this many days
       outcomes: [fod_all, viirs_px, fod_cplus, mtbs_fires]   # candidates; this order breaks ties
       window_weeks: 4                     # fire window: typical week -4 .. +4 (within the year)
@@ -116,6 +148,19 @@ default:
       # Lead outcome (pre-specified): most covered NPN-overlap years; ties by the order above
       tier2: {min_sites: 10, min_covered_years: 5}     # seasonal test possible
       tier3: {min_sites_year: 10, min_years: 8}        # year-to-year test: >= 8 years with >= 10 sites AND covered
+
+    # ---- 06: seasonal test (Tier 2). Approved by Mike 1 Nov, fixed before any result was seen. -------
+    seasonal:
+      window_weeks: 8                     # weeks before (rel -8..-1) and from (rel 0..+7) the typical week
+      # model per case: weekly fires ~ window-year effect + dryness + after (NB; dispersion estimated once on
+      # the real window, reused for placebo and bootstrap fits)
+      dryness_weight: {deciduous_tree: timber, evergreen_tree: timber, conifer: timber, deciduous_shrub: shrub,
+                       evergreen_shrub: shrub, grass: herb, forb: herb}
+      placebo_min_shift: 5                # placebo dates: every other week of the year at least this far from the real one
+      pass_tail: 0.05                     # pass: real ratio beyond 90 % of placebo ratios, in the expected tail (two-sided if none)
+      bootstrap: {B: 200, level: 0.90, outcomes: lead}   # years resampled; intervals for the lead record only
+      # expected directions: per event in inventory: events (one list for 05 and 06)
+      seed: 20261101
 
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
