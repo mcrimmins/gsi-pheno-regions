@@ -90,8 +90,9 @@ assembled for the project.
 appear only as a fire outcome.
 
 **Status (`r format(Sys.Date(), "%B %-d, %Y")`).** The NPN record is downloaded and cleaned
-(`r n_rec` million status records, `r yr_rng`), plants are grouped, and fire activity is tabulated by
-ecoregion and fuel type. Next: the dryness baseline, then the inventory (step 1).
+(`r n_rec` million status records, `r yr_rng`), plants are grouped, fire activity and the dryness baseline are tabulated by
+ecoregion and fuel type, and the inventory (step 1) shows where the tests are possible. Next: the
+seasonal test (step 2).
 
 ## Data and methods
 
@@ -117,7 +118,7 @@ ecoregion and fuel type. Next: the dryness baseline, then the inventory (step 1)
   grass-shrub, shrub, timber-understory, timber litter and slash, as shares of each 4 km cell.
 - **Units.** EPA / CEC Level II ecoregions (CEC 1997); Level III as a check where the record is dense.
 - **Weather.** PRISM daily precipitation and temperature, for a 60-day water balance (precipitation
-  minus potential evapotranspiration) as the dryness baseline (in progress).
+  minus Hargreaves potential evapotranspiration) as the dryness baseline, by ecoregion and fuel type.
 
 ### Methods
 
@@ -242,14 +243,67 @@ What this shows for matching plant groups to fires:
   prescribed or agricultural. FPA-FOD will likely be the lead record in the East; in the West all three
   records have enough fires to compare. The choice is made by the rule set out under Methods.
 
+## Where NPN and fire line up (step 1)
+
+```{r inv-setup}
+#| include: false
+TT <- tab("nf_inventory_tiers.csv"); T3 <- tab("nf_inventory_tier3.csv")
+n_t2 <- if (!is.null(TT)) sum(TT$best_tier >= 2) else NA
+n_t3 <- if (!is.null(TT)) sum(TT$best_tier == 3) else NA
+n_eco <- if (!is.null(TT)) length(unique(TT$eco_l2_code)) else NA
+```
+
+Each plant group is matched to the fuels its fires burn in: trees and conifers to timber-understory
+and timber-litter fuels; shrubs to shrub and grass-shrub fuels; grasses and forbs to grass and
+grass-shrub fuels. For seven events (leaf-out or initial growth; canopy or green share reaching 50 %;
+open flowers; colored leaves; falling leaves; last leaves; and dropping below 50 % after the peak, which is
+curing for grasses and forbs and leaf-off for woody plants), each ecoregion gets a typical date (the
+median of its sites' own typical dates) and a fire window of four weeks either side of it. The rules
+below were fixed before any test was run:
+
+- **Usable date:** bracketed by a "no" (or, for intensity dates, a reading on the other side of 50 %)
+  within 14 days; a site's date for a year is the median over its plants.
+- **Covered year:** a year with NPN dates in which a fire record has at least 10 fires (or pixel-days)
+  in the matched fuel inside the window.
+- **Lead fire record:** the one with the most covered years; ties go to FPA-FOD all sizes, then VIIRS,
+  FPA-FOD 10 acres and up, MTBS.
+- **Seasonal test possible:** 10 or more sites over the record and 5 or more covered years.
+- **Year-to-year test possible:** 8 or more years that each have 10 or more sites and are covered.
+
+```{r fig-inventory}
+#| results: asis
+show_fig("nf_inventory", "The furthest test the record supports, by ecoregion and plant group. Numbers: events (of seven) where the seasonal test is possible; where the year-to-year test is possible, events at that level / events at the seasonal level.")
+```
+
+Of the `r n_eco` ecoregions with NPN dates, the seasonal test is possible for at least one plant group and
+event in `r n_t2` ecoregion × group combinations, and the year-to-year test in `r n_t3`. FPA-FOD wildfires of
+all sizes lead almost everywhere: they are the only record with enough fires near most events, in the
+East especially. The pattern follows the record: **deciduous trees** reach the year-to-year test across
+the forested East, the Northwest, the Cold Deserts and California; **shrubs** in California, the deserts and
+the Southeast; **forbs** in the eastern forests. **Grasses** reach the seasonal test in several ecoregions
+but the year-to-year test in none, the same limit the NPN curing study found for its grass record.
+
+```{r tbl-tier3}
+#| tbl-cap: "Where the year-to-year test is possible: ecoregion, plant group and events."
+if (!is.null(TT)) {
+  d <- TT[TT$best_tier == 3, ]
+  o <- order(as.numeric(sub("\\..*", "", d$eco_l2_code)), as.numeric(sub("^\\d+\\.", "", d$eco_l2_code)), d$group); d <- d[o, ]
+  glab <- c(deciduous_tree = "Deciduous trees", conifer = "Conifers", evergreen_tree = "Evergreen broadleaf trees",
+            deciduous_shrub = "Deciduous shrubs", evergreen_shrub = "Evergreen shrubs", grass = "Grasses", forb = "Forbs")
+  elab <- c(leafout = "leaf-out", above50 = "50 % green", flowering = "flowers", leaf_color = "leaf color",
+            leaf_fall = "leaf fall", leaves_end = "last leaves", below50 = "below 50 %")
+  ev <- vapply(strsplit(d$tier3_events, ", "), function(x) paste(elab[x], collapse = ", "), "")
+  nm <- gsub("\\bUsa\\b", "USA", tools::toTitleCase(tolower(d$eco_l2_name)))
+  knitr::kable(data.frame(Ecoregion = paste(d$eco_l2_code, nm), `Plant group` = glab[d$group], Events = ev, check.names = FALSE), row.names = FALSE)
+}
+```
+
 ## Next steps
 
-1. **Dryness baseline:** the 60-day PRISM water balance by ecoregion and day, and its weekly climatology.
-2. **Inventory (step 1):** match plant groups to fuel groups and count, for each ecoregion, plant group
-   and phenophase, the years and weeks where usable NPN dates and fires coincide; pick the lead fire
-   record for each.
-3. **Seasonal alignment (step 2)** wherever the inventory allows it; **year to year (step 3)** in the
-   few ecoregions with enough sites each year.
+1. **Seasonal alignment (step 2)** in every ecoregion × group × event where the inventory allows it: the
+   weekly fire curve in the matched fuel around the typical date, against the seasonal cycle of dryness
+   (60-day PRISM water balance, now computed by ecoregion and fuel type).
+2. **Year to year (step 3)** where the inventory allows it.
 
 ## Decisions
 
@@ -259,6 +313,7 @@ What this shows for matching plant groups to fires:
 | Oct 31 | All NPN plant status and intensity records (conifers included, no animals); EPA Level II ecoregions; evaluate FPA-FOD, MTBS and VIIRS; self-contained code |
 | Nov 1 | Broadleaf trees vs shrubs from USDA PLANTS growth habit, then mature height (20 ft); 30 species by hand |
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
+| Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 
 ## Changelog
 
@@ -266,3 +321,4 @@ What this shows for matching plant groups to fires:
 |---|---|
 | Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
+| Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |

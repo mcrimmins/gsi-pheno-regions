@@ -11,6 +11,7 @@
 #   nf_effort_map  Level II ecoregions shaded by sites with a usable leaf-type onset, per plant group (02b)
 #   nf_effort_years ecoregion x year: sites with any usable onset (02b)
 #   nf_fire_fuel   fire by LANDFIRE fuel group per ecoregion: FPA-FOD all sizes and VIIRS pixel-days (03)
+#   nf_inventory   Tier 1: furthest test the record supports per ecoregion x plant group (05)
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -22,7 +23,7 @@ nf_root <- if (dir.exists(here::here("npn_fire", "R"))) here::here("npn_fire") e
 source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "nf.R"))
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
-all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel")
+all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -286,4 +287,43 @@ if (do("nf_fire_fuel") && have(fi_f)) {
     legend("bottom", horiz = TRUE, bty = "n", fill = fuel_col, border = NA, legend = fuel_lab, cex = 0.72, text.col = ink2)
   })
 }
+# ---- Tier 1 inventory: furthest test possible per ecoregion x plant group (05) ------------------------------
+inv_f <- file.path(cfg$out_dir, "inventory", "inventory.csv")
+ev_lab <- c(leafout = "leaf-out / initial growth", above50 = "canopy or green 50 %", flowering = "open flowers", leaf_color = "colored leaves",
+            leaf_fall = "falling leaves", leaves_end = "last leaves", below50 = "below 50 % (curing / leaf-off)")
+if (do("nf_inventory") && have(inv_f)) {
+  IV <- utils::read.csv(inv_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
+  IV$tier <- ifelse(IV$tier3_ok, 3L, ifelse(IV$tier2_ok, 2L, 1L))
+  gg <- c("deciduous_tree", "conifer", "evergreen_tree", "deciduous_shrub", "evergreen_shrub", "grass", "forb")
+  codes <- eco_order(IV$eco_l2_code)
+  key <- paste(IV$eco_l2_code, IV$group)
+  T2 <- data.frame(eco_l2_code = rep(codes, each = length(gg)), group = rep(gg, length(codes)), stringsAsFactors = FALSE)
+  k2 <- paste(T2$eco_l2_code, T2$group)
+  T2$best_tier <- as.integer(tapply(IV$tier, key, max)[k2]); T2$best_tier[is.na(T2$best_tier)] <- 0L
+  T2$events_tier2 <- as.integer(tapply(IV$tier >= 2, key, sum)[k2]); T2$events_tier3 <- as.integer(tapply(IV$tier == 3, key, sum)[k2])
+  T2$events_tier2[is.na(T2$events_tier2)] <- 0L; T2$events_tier3[is.na(T2$events_tier3)] <- 0L
+  T2$tier3_events <- vapply(k2, function(k) paste(IV$event[key == k & IV$tier == 3], collapse = ", "), "")
+  T2$eco_l2_name <- unname(eco_name[T2$eco_l2_code])
+  utils::write.csv(T2, file.path(tab_dir, "nf_inventory_tiers.csv"), row.names = FALSE)
+  utils::write.csv(IV[IV$tier3_ok, c("eco_l2_code", "group", "event", "sites", "years_ge10", "typical_doy", "lead_outcome", "lead_window_share", "tier3_years")],
+                   file.path(tab_dir, "nf_inventory_tier3.csv"), row.names = FALSE)
+  tcol <- c(`0` = "#f0efec", `1` = "#cde2fb", `2` = "#5598e7", `3` = "#104281")
+  plot_png("nf_inventory", yrs_label(2009:2024), 2400, 1500, function() {
+    par(mar = c(4.4, 17, 5.6, 1))
+    plot(NA, xlim = c(0.5, length(gg) + 0.5), ylim = c(length(codes) + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
+    for (i in seq_along(codes)) for (j in seq_along(gg)) {
+      r <- T2[T2$eco_l2_code == codes[i] & T2$group == gg[j], ]
+      rect(j - 0.46, i - 0.44, j + 0.46, i + 0.44, col = tcol[[as.character(r$best_tier)]], border = NA)
+      lab <- if (r$best_tier == 3) sprintf("%d / %d", r$events_tier3, r$events_tier2) else if (r$best_tier == 2) as.character(r$events_tier2) else ""
+      if (nzchar(lab)) text(j, i, lab, cex = 0.62, col = if (r$best_tier == 3) "#ffffff" else ink)
+    }
+    axis(3, at = seq_along(gg), labels = sub(" ", "\n", grp_lab[gg]), tick = FALSE, cex.axis = 0.72, col.axis = ink, line = -0.4, padj = 0)
+    axis(2, at = seq_along(codes), labels = eco_lab(codes), tick = FALSE, cex.axis = 0.72, col.axis = ink)
+    mtext("Which tests the record supports, by ecoregion and plant group", side = 3, line = 3.9, adj = 0, cex = 1.0, font = 2, col = ink)
+    par(xpd = NA)
+    legend("bottom", inset = c(0, -0.085), horiz = TRUE, bty = "n", fill = tcol, border = "#d6d5d1", cex = 0.72, text.col = ink2,
+           legend = c("no usable dates", "inventory only", "seasonal test (events)", "year to year (events / seasonal)"))
+  })
+}
+
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

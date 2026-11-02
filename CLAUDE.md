@@ -1070,3 +1070,15 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   Weights from 03's cell_weights.csv.gz: all, herb (GR+GS), shrub (SH), timber (TU+TL). -> npn_fire/prism/
   eco_daily.parquet, eco_weekly.csv (fire weeks), eco_climatology.csv (week median / p10 / p90 / mean).
   Fixture check: per-cell brute force (own Ra, Hargreaves, 60-d sum, weighted mean) within rounding (0.005 mm).
+  04 run (Nov 1, 4.5 min): 20 ecoregions x 4 weights, 2001-2024; driest weekly medians -50 (8.5) to -393 mm (10.2).
+- `npn_fire/scripts/05_nf_inventory.R [profile]` (laptop, ~1 min; built Nov 1; rules config npn_fire: inventory, FIXED
+  before testing): match (DECIDED Nov 1, Mike) trees / conifers -> TU+TL, shrubs -> SH+GS, grass / forb -> GR+GS;
+  mesquites, paloverdes, Joshua tree stay shrubs. Events: leafout (class 1 onset), above50 (class 3 up50), flowering
+  (class 7 onset), leaf_color (4), leaf_fall (5), leaves_end (3 end), below50 (class 3 down50). Usable = gap <= 14 d;
+  site-year date = median over plants; ecoregion typical = median of site typicals; fire window typical week +-4
+  (clipped). Covered year: >= 10 events of the outcome in the matched fuel in the window. Lead outcome = most
+  covered NPN-overlap years, ties fod_all > viirs_px > fod_cplus > mtbs_fires. Tier 2: >= 10 sites and >= 5 covered
+  years; Tier 3: >= 8 years with >= 10 sites that are covered. -> npn_fire/inventory/site_dates.parquet (06/07
+  input), events.csv, coverage.csv, inventory.csv, fire_nonburnable.csv. First run on real tables: 647 rows, Tier 2
+  340, Tier 3 116, lead fod_all 338 / viirs_px 2; grasses Tier 2 in 8 ecoregions, Tier 3 nowhere. 90 figure
+  nf_inventory + tables nf_inventory_tiers / nf_inventory_tier3; page section "Where NPN and fire line up".
