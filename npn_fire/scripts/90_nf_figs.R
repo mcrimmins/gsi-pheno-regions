@@ -14,6 +14,7 @@
 #   nf_inventory   Tier 1: furthest test the record supports per ecoregion x plant group (05)
 #   nf_seasonal_curves  Tier 2: median fire rate by week from the typical date, per plant group, four events (06)
 #   nf_seasonal_matrix  Tier 2: ecoregions passing / tested per phenophase event x plant group (06)
+#   nf_calendar         06b fixed-calendar check: own date vs national date and other ecoregions' dates
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -26,7 +27,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -401,6 +402,39 @@ if (any(c("nf_seasonal_curves", "nf_seasonal_matrix") %in% want) && have(sres_f,
              legend = c("none pass", "< 20 %", "20-39 %", "40-59 %", "60-79 %", "80 %+"))
     })
   }
+}
+
+# ---- 06b fixed-calendar check -------------------------------------------------------------------------------
+cal_f <- file.path(cfg$out_dir, "calendar", "summary.csv")
+if (do("nf_calendar") && have(cal_f)) {
+  CS <- utils::read.csv(cal_f, stringsAsFactors = FALSE); CS <- CS[!is.na(CS$level) & CS$cases > 0, ]
+  utils::write.csv(CS, file.path(tab_dir, "nf_calendar_summary.csv"), row.names = FALSE)
+  rows <- rbind(CS[CS$set == "cases" & CS$level == "all", ], CS[CS$set == "units", ],
+                CS[CS$set == "cases" & CS$level %in% c("Jan-Mar", "Apr-Jun", "Jul-Sep", "Oct-Dec"), ],
+                CS[CS$set == "cases" & CS$level %in% names(grp_lab), ])
+  rows <- rows[match(unique(paste(rows$set, rows$level)), paste(rows$set, rows$level)), ]
+  lab <- ifelse(rows$set == "units", "All, each date counted once", ifelse(rows$level == "all", "All cases",
+           ifelse(rows$level %in% names(grp_lab), grp_lab[rows$level], rows$level)))
+  lab <- sprintf("%s (%d)", lab, rows$cases)
+  n_top <- 2; n_sea <- sum(rows$set == "cases" & rows$level %in% c("Jan-Mar", "Apr-Jun", "Jul-Sep", "Oct-Dec"))
+  plot_png("nf_calendar", "FPA-FOD lead record, 2001-2024", 2600, 300 + 70 * nrow(rows), function() {
+    n <- nrow(rows); par(mfrow = c(1, 2), mar = c(6.4, 1, 5.4, 1.5), oma = c(0, 17, 0, 0))
+    pan <- function(cols, pch, cl, ttl, sub, leg) {
+      plot(NA, xlim = c(0.2, 0.8), ylim = c(n + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
+      abline(v = 0.5, col = ink2, lty = 2, lwd = 0.8); abline(h = c(n_top, n_top + n_sea) + 0.5, col = "#ecebe7")
+      for (k in seq_along(cols)) points(rows[[cols[k]]], seq_len(n), pch = pch[k], col = cl[k], bg = cl[k], cex = 1.2)
+      axis(1, at = seq(0.2, 0.8, 0.1), labels = paste0(seq(20, 80, 10), " %"), cex.axis = 0.7, col = NA, col.ticks = ink2)
+      title2(ttl, sub, 0.9, 0.66)
+      if (!is.null(leg)) { par(xpd = NA); legend("bottom", inset = c(0, -0.19), horiz = TRUE, bty = "n", pch = pch, col = cl, pt.bg = cl,
+                                                 legend = leg, cex = 0.66, text.col = ink2); par(xpd = FALSE) }
+    }
+    pan("beats_national", 21, "#2a78d6", "Own date vs one national date",
+        "share of cases where the change at the ecoregion's own date is stronger (50 % = no better)", NULL)
+    axis(2, at = seq_len(n), labels = lab, tick = FALSE, cex.axis = 0.7, col.axis = ink, outer = TRUE, line = -1)
+    pan(c("mean_donor_pct_near", "mean_donor_pct_mid", "mean_donor_pct_far"), c(21, 22, 24), c("#86b6ef", "#2a78d6", "#0d366b"),
+        "Own date vs other ecoregions' dates", "mean share of other ecoregions' dates with a weaker change (50 % = no better)",
+        c("1-2 weeks away", "3-4 weeks away", "5+ weeks away"))
+  })
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

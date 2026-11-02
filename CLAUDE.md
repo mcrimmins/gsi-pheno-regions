@@ -1103,5 +1103,13 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   1621 cases, lead fod_all 1611): pass = outside middle 90 % of placebos (5 % chance directed, 10 % none). Low tail
   (fewer after) 18 % vs 5 % chance, high tail 2 %; carried by Apr-Sep dates (East / prairies); fire peaks 1-2 wk
   before first initial growth; end-of-green-up events pass most (initial_growth_end 32 %, young_leaves_down50 43 %).
-  Flowering up only in 11.1 (ratios 1.4-1.8, 45 % of flowering cases pass) and 7.1; autumn ratios > 1 but no step + tables nf_seasonal_summary / nf_seasonal_results; page section
+  Flowering up only in 11.1 (ratios 1.4-1.8, 45 % of flowering cases pass) and 7.1; autumn ratios > 1 but no step.
+- `npn_fire/scripts/06b_nf_calendar.R [profile]` (laptop, ~10 min; MASS; built Nov 2, Mike chose this check before
+  step 3; config npn_fire: calendar, fixed before results): 06 cases, lead record, same windows / model; theta from
+  the own-date glm.nb reused (glm.fit) at borrowed dates for the same group x event: national = median typical
+  week over all ecoregions with a date (05 inventory), donors = each other ecoregion's typical week. Strength =
+  b (up), -b (down), |b| (none). own_beats_national; donor_pct = share of donors weaker than own (0.5 = no
+  better), by |week diff| bands 1-2 / 3-4 / 5+. Units = ecoregion x group x week counted once; sign tests in the
+  log. NF_MAX_CASES env = random sample (testing only). -> npn_fire/calendar/results.csv, donors.csv, summary.csv;
+  90 figure nf_calendar + table nf_calendar_summary; page subsection under step 2 + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

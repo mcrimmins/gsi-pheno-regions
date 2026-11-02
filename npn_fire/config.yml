@@ -162,6 +162,11 @@ default:
       # expected directions: per event in inventory: events (one list for 05 and 06)
       seed: 20261101
 
+    # 06b fixed-calendar check (Mike, 2 Nov 2026; fixed before results): lead record, 06 cases, model and
+    # windows; own-date fire change vs the same event's national median week and each other ecoregion's week
+    calendar:
+      bands: {near: [1, 2], mid: [3, 4], far: [5, 26]}   # |weeks from the own date| for donor_pct by distance
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

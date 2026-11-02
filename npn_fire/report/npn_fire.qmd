@@ -398,6 +398,23 @@ Of `r n_case` cases, `r n_dir` have an expected direction; the ratio goes that w
   that the plants cause the change, and a fixed calendar date near the same week might do as well. Step 3
   (year to year) asks whether the phenology date adds anything over the calendar.
 
+### Is it phenology or time of year? (fixed-calendar check)
+
+Many ecoregions share a fire season shape, so a date near the right week might line up with the fire change
+whether or not it is the local phenology date. This check (added November 2, rules fixed before any result)
+refits the step 2 model for each case at two kinds of borrowed dates for the same plant group and event:
+**one national date** (the median typical week over all ecoregions) and **each other ecoregion's typical
+date**. If the ecoregion's own date marks a stronger fire change than the borrowed dates (in the expected
+direction, or either way where none is expected), local phenology adds something beyond the calendar;
+50 % means it does no better. Borrowed dates one or two weeks away are the hardest comparison.
+
+```{r fig-calendar}
+#| results: asis
+show_fig("nf_calendar", "Fixed-calendar check (FPA-FOD wildfires): how often the ecoregion's own phenology date marks a stronger fire change than one national date (left) and than other ecoregions' dates for the same event, by distance from the own date (right). Number of cases in brackets.")
+```
+
+Results of this check will be summarized here after the run.
+
 ```{r tbl-seas}
 #| tbl-cap: "Seasonal test by plant group and event, where 5 or more ecoregions were tested (FPA-FOD wildfires): cases, median ratio, cases in the expected direction and cases passing the placebo check, with the ecoregions that pass."
 if (!is.null(SS)) {
@@ -415,8 +432,7 @@ if (!is.null(SS)) {
    the window around it, beyond the dryness baseline?
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
-3. A fixed-calendar comparison for step 2: does the ecoregion's phenology date line up with the fire
-   change better than the same calendar week in other ecoregions or groups? (to discuss)
+3. The fixed-calendar check above (running).
 
 ## Decisions
 
@@ -428,6 +444,7 @@ if (!is.null(SS)) {
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 2 | Fixed-calendar check before step 3: own phenology date vs one national date and other ecoregions' dates for the same event |
 | Nov 1 | All 13 NPN plant phenophase classes tested (36 events); flowering and fruit stages expected to bring more fires (fuel moisture drops after flowering); set before any step 2 result was seen |
 
 ## Changelog

@@ -31,6 +31,7 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 | 04_nf_prism.R | P720 | ppet60 (60-day rain - Hargreaves PET) by Level II x day, all cells and by fuel weight | built 1 Nov |
 | 05_nf_inventory.R | laptop | Tier 1 (36 events: all 13 plant phenophase classes): usable site-year dates per event, fire in the matched fuel around the typical date, lead fire record, which tests are possible | built 1 Nov |
 | 06_nf_seasonal.R | laptop | Tier 2: fire rate after vs before the typical event date (NB, year + dryness), placebo dates, bootstrap; ~1.5 h | built 1 Nov |
+| 06b_nf_calendar.R | laptop | fixed-calendar check on 06: own date vs national median and other ecoregions' dates (~10 min) | built 2 Nov |
 | 07 | laptop | Tier 3 year to year | planned |
 
 ### 01_nf_npn_download.R
