@@ -9,8 +9,9 @@
 # herb / shrub / timber = that cell's LANDFIRE fuel shares (config npn_fire: prism: weights), i.e. the
 # dryness where each fuel is.
 # Outputs <run_dir>/npn_fire/prism/:
-#   eco_daily.parquet     eco_l2_code, weight, date, p, pet, ppet60 (mm), wsum (sum of weights)
-#   eco_weekly.csv        eco_l2_code, weight, year, week, ppet60 (mean over the week's days)
+#   eco_daily.parquet     eco_l2_code, weight, date, p, pet, ppet60 (mm), tmean (deg C), wsum (sum of weights)
+#   eco_weekly.csv        eco_l2_code, weight, year, week, ppet60, tmean (means over the week's days)
+# tmean (added 2 Nov 2026 for step 07's weather-only comparison): weighted mean of (Tmin + Tmax) / 2.
 #   eco_climatology.csv   eco_l2_code, weight, week, median, p10, p90, mean across years
 #   years/<Y>.rds         per-year daily sums (resume; delete or `force` to recompute)
 # Usage: Rscript npn_fire/scripts/04_nf_prism.R [profile] [force]
@@ -67,7 +68,7 @@ do_year <- function(Y) {
     stop(Y, ": PRISM band names (dates) missing or not the same across variables")
   doy <- as.integer(format(dates, "%j"))
   key <- factor(CW$eco_l2_code, levels = codes)
-  SP <- SE <- array(0, c(length(codes), ncol(WM), length(dates)), dimnames = list(codes, colnames(WM), format(dates)))
+  SP <- SE <- ST <- array(0, c(length(codes), ncol(WM), length(dates)), dimnames = list(codes, colnames(WM), format(dates)))
   WS <- matrix(0, length(codes), ncol(WM), dimnames = list(codes, colnames(WM)))
   br <- as.integer(pc$block_rows %||% 40)
   for (r in R) terra::readStart(r)
@@ -85,12 +86,14 @@ do_year <- function(Y) {
     k <- key[i][ok]; w <- WM[i[ok], , drop = FALSE]
     for (j in seq_len(ncol(WM))) {
       s1 <- rowsum(P * w[, j], k, reorder = TRUE); s2 <- rowsum(PET * w[, j], k, reorder = TRUE)
+      s3 <- rowsum(((TN + TX) / 2) * w[, j], k, reorder = TRUE)
+      ST[rownames(s3), j, ] <- ST[rownames(s3), j, ] + s3
       SP[rownames(s1), j, ] <- SP[rownames(s1), j, ] + s1
       SE[rownames(s2), j, ] <- SE[rownames(s2), j, ] + s2
       WS[rownames(s1), j] <- WS[rownames(s1), j] + rowsum(w[, j], k, reorder = TRUE)[, 1]
     }
   }
-  tmp <- paste0(f, ".tmp"); saveRDS(list(year = Y, dates = dates, SP = SP, SE = SE, WS = WS), tmp); file.rename(tmp, f)
+  tmp <- paste0(f, ".tmp"); saveRDS(list(year = Y, dates = dates, SP = SP, SE = SE, ST = ST, WS = WS), tmp); file.rename(tmp, f)
   f
 }
 nw <- if (.Platform$OS.type == "unix") as.integer(pc$workers %||% 8) else 1L
@@ -105,15 +108,16 @@ Yl <- lapply(yrs, function(Y) readRDS(file.path(ydir, sprintf("%d.rds", Y))))
 dates <- do.call(c, lapply(Yl, `[[`, "dates"))
 if (any(diff(dates) != 1)) stop("PRISM dates are not contiguous")
 WS <- Yl[[1]]$WS
+if (any(vapply(Yl, function(z) is.null(z$ST), TRUE))) stop("yearly sums without tmean (made before 2 Nov): rerun with force")
 bind_days <- function(L) { d <- dim(L[[1]]); array(unlist(L), c(d[1], d[2], sum(vapply(L, function(z) dim(z)[3], 0L)))) }   # days are the last dim
-SP <- bind_days(lapply(Yl, `[[`, "SP")); SE <- bind_days(lapply(Yl, `[[`, "SE"))
+SP <- bind_days(lapply(Yl, `[[`, "SP")); SE <- bind_days(lapply(Yl, `[[`, "SE")); ST <- bind_days(lapply(Yl, `[[`, "ST"))
 roll <- function(x, n) { cs <- cumsum(c(0, x)); out <- rep(NA_real_, length(x)); i <- seq(n, length(x)); out[i] <- cs[i + 1] - cs[i + 1 - n]; out }
 D <- list()
 for (a in seq_along(codes)) for (j in seq_len(ncol(WM))) {
   if (WS[a, j] <= 0) next
-  p <- SP[a, j, ] / WS[a, j]; e <- SE[a, j, ] / WS[a, j]
+  p <- SP[a, j, ] / WS[a, j]; e <- SE[a, j, ] / WS[a, j]; tm <- ST[a, j, ] / WS[a, j]
   D[[length(D) + 1]] <- data.frame(eco_l2_code = codes[a], weight = colnames(WM)[j], date = dates, p = round(p, 3), pet = round(e, 3),
-                                   ppet60 = round(roll(p - e, nd), 2), wsum = round(WS[a, j], 2), stringsAsFactors = FALSE)
+                                   ppet60 = round(roll(p - e, nd), 2), tmean = round(tm, 2), wsum = round(WS[a, j], 2), stringsAsFactors = FALSE)
 }
 D <- do.call(rbind, D)
 invisible(nf_write_table(D, file.path(out, "eco_daily")))
@@ -121,6 +125,7 @@ D$year <- as.integer(format(D$date, "%Y")); D$week <- nf_week(D$date)
 key <- paste(D$eco_l2_code, D$weight, D$year, D$week)
 WK <- D[!duplicated(key), c("eco_l2_code", "weight", "year", "week")]
 WK$ppet60 <- round(as.numeric(tapply(D$ppet60, key, mean)[paste(WK$eco_l2_code, WK$weight, WK$year, WK$week)]), 2)
+WK$tmean <- round(as.numeric(tapply(D$tmean, key, mean)[paste(WK$eco_l2_code, WK$weight, WK$year, WK$week)]), 2)
 utils::write.csv(WK, file.path(out, "eco_weekly.csv"), row.names = FALSE)
 k2 <- paste(WK$eco_l2_code, WK$weight, WK$week)
 CL <- WK[!duplicated(k2), c("eco_l2_code", "weight", "week")]

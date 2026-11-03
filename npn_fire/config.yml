@@ -167,6 +167,19 @@ default:
     calendar:
       bands: {near: [1, 2], mid: [3, 4], far: [5, 26]}   # |weeks from the own date| for donor_pct by distance
 
+    # 07 year-to-year test (Tier 3). Approved by Mike 2 Nov 2026, fixed before any result was seen:
+    # outcome after vs before (weekly fires around the typical date, as 06); step at the calendar date (M0),
+    # at the year's NPN date (M1), at a weather-predicted date (M2: NPN departure ~ temperature anomaly);
+    # LOYO multinomial log-likelihood gain + bootstrap over years; all 36 events where tier3_ok
+    yeartoyear:
+      min_sites: 10                       # sites with a departure in a year (= tier3 min_sites_year)
+      min_site_years: 2                   # a site needs >= 2 years for its own typical date
+      min_years: 8                        # kept years per case (= tier3 min_years)
+      max_shift_weeks: 6                  # NPN / weather step shift clipped to +-6 weeks inside the +-8 week window
+      wx_weeks: 8                         # weather proxy: mean temperature over the 8 weeks before the typical week
+      bootstrap: {B: 1000, level: 0.90}   # held-out years resampled; pass = interval of the gain above 0
+      seed: 20261102
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

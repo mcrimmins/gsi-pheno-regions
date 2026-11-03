@@ -446,10 +446,54 @@ if (!is.null(SS)) {
 }
 ```
 
+## Does an early or late year move the fire change? (step 3)
+
+Steps 2 and 2b show that phenology dates line up with fire seasons, mostly because both follow the time of
+year. The question that matters for using NPN is whether a year's observed timing carries information:
+when leaf-out or flowering comes early, does the fire change come early too? The design was approved on
+November 2 and fixed before any result was seen.
+
+- **Cases:** every ecoregion, plant group and event where the inventory allows a year-to-year test (8 or
+  more years, each with 10 or more sites), all 36 events, FPA-FOD wildfires in the matched fuel.
+- **The year's NPN departure:** each site's date minus that site's own typical date, averaged over sites
+  (sites weighted equally, not plants).
+- **Three ways to place the fire change** in each year's window (the same 8 weeks either side of the
+  typical date as step 2, with the same dryness term): at the typical date every year (the calendar), at the
+  year's NPN date (the calendar date moved by that year's departure), and at a weather-predicted date (the
+  departure predicted from the year's temperature in the 8 weeks before, the question of whether weather
+  alone would do as well).
+- **Test:** leave one year out. Each version is fitted on the other years and scored on how well it
+  describes how the held-out year's fires fall across the weeks. A case **passes** when the NPN date beats
+  the calendar date over the held-out years with a bootstrap 90 % interval above zero, and the fire change
+  goes in the expected direction. It also **beats weather** when it beats the weather-predicted date the same
+  way.
+- **Feasibility:** with at most 16 years and departures of often less than a week, the test can only see a
+  signal where years differ enough. The table gives years, sites per year and the spread of departures, the
+  measure of how much more monitoring a region would need. A planted test (fires stepping down at the
+  year's NPN date) was recovered in the ecoregions with departures of 6 days or more and not where they were
+  3&ndash;5 days; a planted step at the calendar date never passed.
+
+```{r fig-yty}
+#| results: asis
+show_fig("nf_yeartoyear", "Year-to-year test by phenophase event and plant group: ecoregions where placing the fire change at the year's NPN date beats the calendar date in held-out years, out of those tested (FPA-FOD wildfires).")
+```
+
+```{r tbl-yty}
+#| tbl-cap: "Year-to-year test by plant group: cases, ecoregions, typical years and sites per year, spread of the year departures (days), share of case-years where the NPN date moves the fire change by a week or more, and cases where the NPN date beats the calendar (all held-out years; passing) and beats weather."
+YG <- tab("nf_yeartoyear_groups.csv")
+if (!is.null(YG)) {
+  d <- data.frame(`Plant group` = glab[YG$group], Cases = YG$cases, Ecoregions = YG$ecoregions, Years = YG$years_median,
+                  `Sites per year` = YG$sites_median, `Departure spread (d)` = YG$dep_sd_median, `Moved a week or more` = YG$share_shifted,
+                  `NPN better` = YG$gain_positive, Pass = YG$pass, `Beats weather` = YG$beats_weather, check.names = FALSE)
+  knitr::kable(d, row.names = FALSE)
+}
+```
+
+Results of step 3 will be summarized here after the run.
+
 ## Next steps
 
-1. **Year to year (step 3)** where the inventory allows it: does an early or late event year shift fire in
-   the window around it, beyond the dryness baseline?
+1. **Year to year (step 3):** running.
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
 3. Done: the fixed-calendar check above.
@@ -464,6 +508,7 @@ if (!is.null(SS)) {
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 2 | Year-to-year design (step 3) approved and fixed before testing: after vs before outcome; step at the year's NPN date vs the calendar date and a temperature-predicted date; leave-one-year-out with a bootstrap over years; all 36 events |
 | Nov 2 | Fixed-calendar check before step 3: own phenology date vs one national date and other ecoregions' dates for the same event |
 | Nov 1 | All 13 NPN plant phenophase classes tested (36 events); flowering and fruit stages expected to bring more fires (fuel moisture drops after flowering); set before any step 2 result was seen |
 

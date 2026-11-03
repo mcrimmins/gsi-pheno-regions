@@ -15,6 +15,7 @@
 #   nf_seasonal_curves  Tier 2: median fire rate by week from the typical date, per plant group, four events (06)
 #   nf_seasonal_matrix  Tier 2: ecoregions passing / tested per phenophase event x plant group (06)
 #   nf_calendar         06b fixed-calendar check: own date vs national date and other ecoregions' dates
+#   nf_yeartoyear       Tier 3 (07): cases passing / tested per event x plant group, and NPN vs weather
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -27,7 +28,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -434,6 +435,42 @@ if (do("nf_calendar") && have(cal_f)) {
     pan(c("mean_donor_pct_near", "mean_donor_pct_mid", "mean_donor_pct_far"), c(21, 22, 24), c("#86b6ef", "#2a78d6", "#0d366b"),
         "Own date vs other ecoregions' dates", "mean share of other ecoregions' dates with a weaker change (50 % = no better)",
         c("1-2 weeks away", "3-4 weeks away", "5+ weeks away"))
+  })
+}
+
+# ---- Tier 3 year to year (07) -------------------------------------------------------------------------------
+yy_f <- file.path(cfg$out_dir, "yeartoyear", "results.csv")
+if (do("nf_yeartoyear") && have(yy_f)) {
+  YR <- utils::read.csv(yy_f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
+  utils::write.csv(YR[, c("eco_l2_code", "group", "event", "expected", "years", "sites_median", "dep_sd_days", "share_shifted",
+                          "step_ratio_npn", "gain_npn", "gain_npn_lo", "gain_npn_hi", "gain_wx", "gain_npn_vs_wx", "pass", "beats_weather")],
+                   file.path(tab_dir, "nf_yeartoyear_results.csv"), row.names = FALSE)
+  YS <- do.call(rbind, lapply(split(YR, YR$group), function(d) data.frame(group = d$group[1], cases = nrow(d),
+    ecoregions = length(unique(d$eco_l2_code)), years_median = stats::median(d$years), sites_median = stats::median(d$sites_median),
+    dep_sd_median = stats::median(d$dep_sd_days), share_shifted = round(mean(d$share_shifted), 2),
+    gain_positive = sum(d$gain_npn > 0), pass = sum(d$pass), beats_weather = sum(d$beats_weather, na.rm = TRUE))))
+  utils::write.csv(YS[order(match(YS$group, names(grp_col))), ], file.path(tab_dir, "nf_yeartoyear_groups.csv"), row.names = FALSE)
+  gg <- c("deciduous_tree", "conifer", "evergreen_tree", "deciduous_shrub", "evergreen_shrub", "grass", "forb")
+  evs <- ev_order[ev_order %in% YR$event]; gm <- gg[gg %in% YR$group]
+  seqc <- c("#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"); brk <- c(-Inf, 0, 0.2, 0.4, 0.6, 0.8, Inf)
+  plot_png("nf_yeartoyear", "FPA-FOD lead record, NPN years", 2400, 420 + 58 * length(evs), function() {
+    par(mar = c(3.4, 19, 6.4, 1))
+    plot(NA, xlim = c(0.5, length(gm) + 0.5), ylim = c(length(evs) + 0.5, 0.5), axes = FALSE, xlab = "", ylab = "")
+    for (i in seq_along(evs)) for (j in seq_along(gm)) {
+      d <- YR[YR$event == evs[i] & YR$group == gm[j], ]
+      if (!nrow(d)) { rect(j - 0.46, i - 0.42, j + 0.46, i + 0.42, col = bg, border = "#ecebe7"); next }
+      np <- sum(d$pass %in% TRUE); k <- if (np == 0) 1 else findInterval(np / nrow(d), brk, left.open = TRUE)
+      rect(j - 0.46, i - 0.42, j + 0.46, i + 0.42, col = seqc[k], border = NA)
+      text(j, i, sprintf("%d / %d", np, nrow(d)), cex = 0.6, col = if (k >= 4) "#ffffff" else ink)
+    }
+    axis(3, at = seq_along(gm), labels = sub(" ", "\n", grp_lab[gm]), tick = FALSE, cex.axis = 0.7, col.axis = ink, line = -0.4, padj = 0)
+    axis(2, at = seq_along(evs), labels = ev_label(evs), tick = FALSE, cex.axis = 0.66, col.axis = ink)
+    mtext("Year to year: ecoregions where the year's NPN date beats the calendar date / tested", side = 3, line = 4.6, adj = 0, cex = 0.95, font = 2, col = ink)
+    mtext("pass = held-out years' fires fit better with the step at the year's NPN date (90 % interval above 0), step in the expected direction",
+          side = 3, line = 3.6, adj = 0, cex = 0.62, col = ink2)
+    par(xpd = NA)
+    legend("bottom", inset = c(0, -0.6 / length(evs) * 2), horiz = TRUE, bty = "n", fill = seqc, border = "#d6d5d1", cex = 0.66, text.col = ink2,
+           legend = c("none pass", "< 20 %", "20-39 %", "40-59 %", "60-79 %", "80 %+"))
   })
 }
 

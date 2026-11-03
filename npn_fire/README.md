@@ -28,11 +28,11 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 | 02a_nf_species_groups.R | laptop (internet) | plant group per species (NPN type + PLANTS growth habit) -> data/nf_species_groups.csv | built 1 Nov |
 | 02b_nf_npn_clean.R | P720 | onset / end / intensity-threshold dates per plant x phenophase x year; sites, Level II, effort | built 1 Nov |
 | 03_nf_fire.R | P720 | FPA-FOD (all sizes, C+), MTBS, VIIRS -> Level II x year x week x LANDFIRE fuel group | built 1 Nov |
-| 04_nf_prism.R | P720 | ppet60 (60-day rain - Hargreaves PET) by Level II x day, all cells and by fuel weight | built 1 Nov |
+| 04_nf_prism.R | P720 | ppet60 (60-day rain - Hargreaves PET) and tmean by Level II x day, all cells and by fuel weight | built 1 Nov; tmean added 2 Nov (rerun with `force`) |
 | 05_nf_inventory.R | laptop | Tier 1 (36 events: all 13 plant phenophase classes): usable site-year dates per event, fire in the matched fuel around the typical date, lead fire record, which tests are possible | built 1 Nov |
 | 06_nf_seasonal.R | laptop | Tier 2: fire rate after vs before the typical event date (NB, year + dryness), placebo dates, bootstrap; ~1.5 h | built 1 Nov |
 | 06b_nf_calendar.R | laptop | fixed-calendar check on 06: own date vs national median and other ecoregions' dates (~10 min) | built 2 Nov |
-| 07 | laptop | Tier 3 year to year | planned |
+| 07_nf_yeartoyear.R | laptop | Tier 3: step at the year's NPN date vs the calendar date and a temperature-predicted date, leave-one-year-out + bootstrap (minutes) | built 2 Nov |
 
 ### 01_nf_npn_download.R
 

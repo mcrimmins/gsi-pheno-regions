@@ -1111,5 +1111,20 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   b (up), -b (down), |b| (none). own_beats_national; donor_pct = share of donors weaker than own (0.5 = no
   better), by |week diff| bands 1-2 / 3-4 / 5+. Units = ecoregion x group x week counted once; sign tests in the
   log. NF_MAX_CASES env = random sample (testing only). -> npn_fire/calendar/results.csv, donors.csv, summary.csv;
-  90 figure nf_calendar + table nf_calendar_summary; page subsection under step 2 + tables nf_seasonal_summary / nf_seasonal_results; page section
+  90 figure nf_calendar + table nf_calendar_summary; page subsection under step 2. RESULT (Nov 2, 4.8 min): own date beats national 54 %
+  of cases (units 463/844, p 0.005), donor_pct 0.52 (units 0.54); same at every distance and season; 11.1 flowering
+  does not hold (42 %). Reading: step 2 alignment mostly time of year; added value must come from step 3.
+- `npn_fire/scripts/04_nf_prism.R`: tmean (weighted mean of (Tmin + Tmax) / 2) added Nov 2 to eco_daily and
+  eco_weekly for 07's weather comparison; yearly rds without ST stop the combine -> rerun with `force` (P720).
+- `npn_fire/scripts/07_nf_yeartoyear.R [profile]` (laptop, minutes; MASS; built Nov 2; design APPROVED Nov 2 by Mike
+  via questions, config npn_fire: yeartoyear, fixed before results): cases 05 tier3_ok, lead record, >= 8 kept years
+  (>= 10 sites with >= 2 years each). NPN departure = site date - site median, mean over sites. Window as 06; weekly
+  fires ~ factor(wy) + dry + after with the step at M0 typical week / M1 typical + round(dep / 7) (clip +-6) /
+  M2 typical + lm(dep ~ pre-event 8-week tmean anomaly) prediction. LOYO: fit NB on the other years, score the
+  held-out year by multinomial log-likelihood (its total given). gain_npn = sum LL(M1) - LL(M0); bootstrap
+  B = 1000 over held-out years, 90 % interval. Pass = gain > 0, interval above 0, M1 step in the expected
+  direction; beats_weather = also LL(M1) - LL(M2) interval above 0. -> npn_fire/yeartoyear/results.csv, years.csv,
+  summary.csv; 90 figure nf_yeartoyear + tables nf_yeartoyear_results / nf_yeartoyear_groups; page section step 3.
+  Planted: x0.4 step at the year's NPN date recovered (ratios 0.35-0.52), passes where departure SD >= 6 d (3 / 5),
+  not at 3-5 d; step at the calendar date never passes. Without tmean the M2 comparison is skipped (logged). + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".
