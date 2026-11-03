@@ -103,7 +103,9 @@ appear only as a fire outcome.
 ecoregion and fuel type, and the inventory (step 1) shows where the tests are possible. The seasonal
 test (step 2, all 36 phenophase events) has run: spring and summer green-up dates mark the end of the
 spring fire season across much of the East and the prairies, and in Mediterranean California flowering is
-followed by more fires. Next: year to year (step 3).
+followed by more fires. A fixed-calendar check shows these alignments are mostly time of year: the
+ecoregion's own phenology date does only slightly better than a borrowed calendar date. Next: year to year
+(step 3), the test of whether NPN adds information beyond the calendar.
 
 ## Data and methods
 
@@ -389,7 +391,8 @@ Of `r n_case` cases, `r n_dir` have an expected direction; the ratio goes that w
   open flowers and pollen (typical dates late March to April) are followed by 1.4&ndash;1.8 times more
   fires, and 45 % of the flowering cases there pass. The **Marine West Coast Forest** shows the same for
   conifer and deciduous-tree flowering (1.8 times). This fits the research on fuel moisture falling after
-  flowering, in the climates where the dry season starts after flowering.
+  flowering, in the climates where the dry season starts after flowering. (The fixed-calendar check below
+  finds this is mostly the time of year the California fire season builds, not local flowering dates.)
 - **Autumn: more fires after, but no step.** Leaf color, leaf fall and leaves dropping below 50 % are
   followed by more fires as expected (median ratios 1.1&ndash;1.5), but almost none pass: the autumn rise
   is gradual and no sharper at the phenology date than at other weeks.
@@ -413,7 +416,24 @@ direction, or either way where none is expected), local phenology adds something
 show_fig("nf_calendar", "Fixed-calendar check (FPA-FOD wildfires): how often the ecoregion's own phenology date marks a stronger fire change than one national date (left) and than other ecoregions' dates for the same event, by distance from the own date (right). Number of cases in brackets.")
 ```
 
-Results of this check will be summarized here after the run.
+**What it shows (first run, November 2).** Mostly time of year; local timing adds a little.
+
+- Across all 1,621 cases, the ecoregion's own date marks a stronger fire change than the national date in
+  54 % of cases, and beats 52 % of other ecoregions' dates on average. Counting each ecoregion, plant group
+  and week once, the own date beats the national date in 463 of 844 (55 %) and other ecoregions' dates
+  54 % of the time on average. Both are better than chance (sign tests p = 0.005 and p < 0.001), but only
+  slightly.
+- The margin is the same against borrowed dates one or two weeks away as against dates five or more weeks
+  away (52&ndash;53 %), and the same in every season. Half of the ecoregions' typical dates lie within two
+  weeks of the national date, so the borrowed dates are often close.
+- The cases that passed step 2 beat the national date in 72 % of cases, but that is expected for cases
+  picked for a strong change at their own date; the fair comparison is all cases.
+- Where the own date does best: 10.2 Warm Deserts (64 %), 5.2 Mixed Wood Shield
+  (66 %), 9.2 Temperate Prairies (66 %); deciduous shrubs (57 %) and forbs (57 %). The California flowering
+  signal from step 2 does **not** hold up: there the own date beats the national date in 42 % of cases. It
+  reflects when the California fire season builds, not local flowering dates.
+- **Reading.** At the scale of a typical date, NPN phenology marks the fire season about as well as a
+  calendar week does; its added value has to come from year-to-year differences, which step 3 tests.
 
 ```{r tbl-seas}
 #| tbl-cap: "Seasonal test by plant group and event, where 5 or more ecoregions were tested (FPA-FOD wildfires): cases, median ratio, cases in the expected direction and cases passing the placebo check, with the ecoregions that pass."
@@ -432,7 +452,7 @@ if (!is.null(SS)) {
    the window around it, beyond the dryness baseline?
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
-3. The fixed-calendar check above (running).
+3. Done: the fixed-calendar check above.
 
 ## Decisions
 
@@ -453,6 +473,7 @@ if (!is.null(SS)) {
 |---|---|
 | Nov 1, 2026 | Page started: data and methods, the NPN record, where the record is, fire by fuel type |
 | Nov 1, 2026 | Step 1 (inventory) and step 2 (seasonal test) for all 36 phenophase events; first step 2 results |
+| Nov 2, 2026 | Fixed-calendar check on step 2: results |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |
