@@ -1,0 +1,25 @@
+"family","outcome","tests","p05","expected_p05","q_hits","q_hits_expected_dir","q_hits_wrong_dir"
+"size","fod_all after",406,21,20.3,0,0,0
+"size","fod_all total",406,18,20.3,0,0,0
+"size","fod_all_human after",406,26,20.3,0,0,0
+"size","fod_all_human total",406,21,20.3,0,0,0
+"size","fod_all_lightning after",349,11,17.4,0,0,0
+"size","fod_all_lightning total",349,13,17.4,0,0,0
+"size","fod_cplus after",334,16,16.7,0,0,0
+"size","fod_cplus total",334,10,16.7,0,0,0
+"size","fod_cplus_acres after",334,14,14.7,0,0,0
+"size","fod_cplus_acres total",334,14,15.1,0,0,0
+"size","mtbs_fires after",103,7,5.2,0,0,0
+"size","mtbs_fires total",104,3,5.2,0,0,0
+"size","mtbs_km2 after",103,6,4.6,0,0,0
+"size","mtbs_km2 total",104,5,4.6,0,0,0
+"size","viirs_px after",342,19,16.1,0,0,0
+"size","viirs_px total",342,14,16,0,0,0
+"progress","fod_all",406,43,20.3,0,0,0
+"progress","fod_all_human",406,44,20.3,0,0,0
+"progress","fod_all_lightning",349,30,17.4,0,0,0
+"progress","fod_cplus",334,35,16.7,0,0,0
+"progress","fod_cplus_acres",334,7,7.1,0,0,0
+"progress","mtbs_fires",104,7,5.2,0,0,0
+"progress","mtbs_km2",104,2,1.8,0,0,0
+"progress","viirs_px",342,4,10.9,0,0,0

@@ -1,0 +1,7 @@
+"family","outcome","tests","pass","chance","p"
+"rerun_seasonal","fod_all_lightning",1461,134,101.2,0.00105
+"rerun_yeartoyear","fod_all_lightning",349,7,17.4,0.998
+"rerun_seasonal","fod_cplus",1397,236,96.5,3.68e-33
+"rerun_yeartoyear","fod_cplus",334,10,16.7,0.97
+"rerun_yeartoyear","fod_cplus_acres",334,18,16.7,0.407
+"rerun_yeartoyear","mtbs_fires",104,2,5.2,0.966
