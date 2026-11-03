@@ -33,7 +33,9 @@ nf_raw <- function(cfg, ...) { d <- file.path(cfg$raw_dir, ...); dir.create(d, s
 # ---- logging: timestamped lines to the console and npn_fire/logs/<script>_<profile>_<time>.log ---
 log_init <- function(script, profile) {
   dir.create(nf_path("logs"), showWarnings = FALSE)
-  f <- nf_path("logs", sprintf("%s_%s_%s.log", script, profile, format(Sys.time(), "%Y%m%d-%H%M%S")))
+  ov <- sub("^outcome=", "", grep("^outcome=", commandArgs(trailingOnly = TRUE), value = TRUE))   # 06 / 07 exploratory reruns
+  tag <- if (length(ov)) paste0(profile, "_", ov[1]) else profile
+  f <- nf_path("logs", sprintf("%s_%s_%s.log", script, tag, format(Sys.time(), "%Y%m%d-%H%M%S")))
   options(nf.log_file = f)
   f
 }

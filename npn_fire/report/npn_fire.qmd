@@ -106,7 +106,8 @@ spring fire season across much of the East and the prairies, and in Mediterranea
 followed by more fires. A fixed-calendar check shows these alignments are mostly time of year. Year to
 year (step 3), NPN dates beat the calendar only where the record is dense: in the Mixed Wood Plains,
 early leaf-out and flowering years end the spring fire season early. The thinning test puts the
-monitoring need at about 15&ndash;20 sites a year for a decade or more.
+monitoring need at about 15&ndash;20 sites a year for a decade or more. An exploratory search finds the
+same leaf-out signal, as in-season status, in four eastern ecoregions; nothing else stands out.
 
 ## Data and methods
 
@@ -588,14 +589,63 @@ if (!is.null(EH) && nrow(EH)) knitr::kable(data.frame(Family = EH$family, Ecoreg
   Expected = ifelse(EH$expected == "none", "&ndash;", ifelse(EH$expected_direction, "yes", "no")), check.names = FALSE), row.names = FALSE, escape = FALSE)
 ```
 
-Results of the exploratory search will be summarized here after the run.
+**What it shows (November 3; exploratory).** No single test survives the false-discovery-rate check, but
+one pattern stands out across ecoregions, and it agrees with step 3.
+
+- **In-season leaf-out status in the eastern deciduous forests.** When deciduous-tree leaf-out runs ahead of
+  its usual schedule (a larger share of sites already leafed out that week), fires in timber fuels that week
+  are lower: 12&ndash;19 % fewer per 10 percentage points ahead in the Mixed Wood Plains (8.1), Central USA
+  Plains (8.2), Southeastern USA Plains (8.3) and Ozark/Ouachita-Appalachian Forests (8.4). Across all
+  plant groups, events expected to bring fewer fires (leaf-out stages) gave 12 tests with p < 0.05, all
+  in the expected direction, against about 2 expected by chance in that direction; for deciduous-tree
+  leaf-out events, 10 of 42 at p < 0.05, all with fewer fires, none the other way. The same holds for
+  human-caused fires (11 tests) and fires of 10 acres and up (5), more weakly for lightning fires (5 against
+  2). Overall the in-season status family has about twice as many p < 0.05 results as chance for the fire
+  counts (for example 43 against 20 for all fires), and none of these individual results is strong enough
+  to pass the false-discovery-rate check alone. Related events and fire records share data, so the
+  evidence is the agreement across four ecoregions, not the count of tests.
+- **Season size: nothing.** Whether an event is early or late does not change how much fire the season has,
+  for any fire record (p < 0.05 at the chance rate, for example 21 against 20 for all fires).
+- **Burned area and VIIRS: nothing.** Acres, MTBS area and VIIRS detections are at or below chance in both
+  families.
+- **Steps 2 and 3 with other fire records.** Year to year (step 3), lightning fires, fires of 10 acres and
+  up, their acres and MTBS fires all pass at the chance rate or below. Seasonally (step 2), fires of 10 acres
+  and up align with phenology dates more often than all fires (236 cases pass against 97 by chance; spring
+  events with 30 % of cases showing a sharp drop), and lightning fires somewhat more (134 against 101). The
+  fixed-calendar check suggests such seasonal alignment is mostly time of year.
+- **Reading.** Across the exploratory angles, the one consistent NPN signal is the same as in step 3: in the
+  eastern deciduous forests, the year's leaf-out timing tracks when the spring fire season ends. The in-season
+  status measure finds it in four ecoregions where the date-based test found it in one. What remains to check
+  is whether spring temperature alone would explain it as well.
+
+## Is the eastern leaf-out signal just spring temperature? (step 5)
+
+A warm spring brings both early leaf-out and, plausibly, an early end to spring burning, so the exploratory
+leaf-out result could be temperature in disguise. This step tests one thing, fixed on November 3 before its
+result was seen: in the four eastern ecoregions (8.1&ndash;8.4), for deciduous-tree leaf-out (first leaves),
+does the in-season leaf-out status still go with fewer timber fires once the temperature of the previous 8
+weeks is in the model? Leaf-out status is compared across years by shuffling whole years (999 times), and the
+four ecoregions' one-sided results are combined (Fisher's method); combined p < 0.05 counts as NPN adding
+information beyond temperature. Initial growth and young leaves are reported alongside but not part of the
+decision. This tests the temperature explanation on the same years that suggested the pattern; it is not an
+independent replication.
+
+```{r tbl-confirm}
+#| tbl-cap: "Leaf-out status and timber fires given spring temperature: years, fire ratio per 10 points ahead of schedule with temperature in the model (and without), one-sided p from whole-year shuffles, correlation of leaf-out status with temperature, and the fire ratio per 1 deg C warmer."
+CF <- tab("nf_confirm_results.csv")
+if (!is.null(CF)) knitr::kable(data.frame(Ecoregion = CF$eco_l2_code, Event = ev_label(CF$event), Role = CF$role, Years = CF$years,
+  `Ratio given temperature` = CF$ratio_progress_given_temp, `Ratio without` = CF$ratio_progress_alone, p = CF$p_one_sided,
+  `r with temperature` = CF$r_progress_temp, `Temperature ratio` = CF$ratio_temp_given_progress, check.names = FALSE), row.names = FALSE)
+CD <- tab("nf_confirm_decision.csv")
+```
+
+Results of this test will be summarized here after the run.
 
 ## Next steps
 
-1. Done: year to year (step 3) and the thinning test. Running: the exploratory search (step 4).
-2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
-   fires, and the 7- and 30-day date rules.
-3. Done: the fixed-calendar check above.
+1. Done: year to year (step 3), the thinning test and the exploratory search (step 4).
+2. Running: the temperature test of the eastern leaf-out result (step 5).
+3. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
 
 ## Decisions
 
@@ -607,6 +657,7 @@ Results of the exploratory search will be summarized here after the run.
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 3 | Confirmatory test (step 5): deciduous-tree leaf-out status in 8.1&ndash;8.4 given the 8-week temperature anomaly; whole-year shuffles; Fisher-combined one-sided p < 0.05 decides; set before its result |
 | Nov 3 | Exploratory search (step 4): other fire records (lightning, human, large fires, area, VIIRS), season size, in-season progress; false-discovery rate within each family; whole-year shuffles for p < 0.05 |
 | Nov 3 | Thinning test: rerun step 3 with 3&ndash;40 randomly drawn sites a year (20 draws) on the passing cases and the Mixed Wood Plains deciduous-tree spring events |
 | Nov 2 | Year-to-year design (step 3) approved and fixed before testing: after vs before outcome; step at the year's NPN date vs the calendar date and a temperature-predicted date; leave-one-year-out with a bootstrap over years; all 36 events |
@@ -622,6 +673,7 @@ Results of the exploratory search will be summarized here after the run.
 | Nov 2, 2026 | Fixed-calendar check on step 2: results |
 | Nov 3, 2026 | Step 3 (year to year): first results |
 | Nov 3, 2026 | Thinning test: results (sites a year needed) |
+| Nov 3, 2026 | Exploratory search (step 4): results |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |

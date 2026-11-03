@@ -18,6 +18,7 @@
 #   nf_yeartoyear       Tier 3 (07): cases passing / tested per event x plant group, and NPN vs weather
 #   nf_thinning         07b: step 3 signal vs NPN sites per year (random thinning)
 #   nf_explore          08 (tables only): exploratory family summaries, FDR hits, 06 / 07 reruns
+#   nf_confirm          09 (tables only): leaf-out status vs fire given spring temperature
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -30,7 +31,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning", "nf_explore")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning", "nf_explore", "nf_confirm")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -524,6 +525,16 @@ if (do("nf_explore") && have(file.path(ex_d, "summary.csv"))) {
          outcome = character(), expected = character(), years = integer(), effect = numeric(), q = numeric(), expected_direction = logical())
   utils::write.csv(H[order(H$q), ], file.path(tab_dir, "nf_explore_hits.csv"), row.names = FALSE)
   log_msg("wrote nf_explore tables (", nrow(H), " FDR hits)")
+}
+
+# ---- 09 confirmatory: tables only -----------------------------------------------------------------------------
+cf_d <- file.path(cfg$out_dir, "confirm")
+if (do("nf_confirm") && have(file.path(cf_d, "results.csv"))) {
+  utils::write.csv(utils::read.csv(file.path(cf_d, "results.csv"), stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character")),
+                   file.path(tab_dir, "nf_confirm_results.csv"), row.names = FALSE)
+  if (file.exists(file.path(cf_d, "decision.csv")))
+    utils::write.csv(utils::read.csv(file.path(cf_d, "decision.csv"), stringsAsFactors = FALSE), file.path(tab_dir, "nf_confirm_decision.csv"), row.names = FALSE)
+  log_msg("wrote nf_confirm tables")
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

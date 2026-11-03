@@ -199,6 +199,19 @@ default:
       n_perm: 999
       seed: 20261103
 
+    # 09 CONFIRMATORY (Mike, 3 Nov 2026; fixed before its result was seen): does in-season deciduous-tree
+    # leaf-out status (08's pattern) add anything beyond spring temperature? One primary event; decision =
+    # Fisher-combined one-sided permutation p over the four ecoregions < alpha
+    confirm:
+      ecoregions: ["8.1", "8.2", "8.3", "8.4"]
+      group: deciduous_tree
+      primary_event: leaves_onset
+      secondary_events: [initial_growth_onset, young_leaves_onset]
+      temp_weeks: 8                       # temperature anomaly: trailing 8-week mean tmean (timber weight)
+      n_perm: 999
+      alpha: 0.05
+      seed: 20261104
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

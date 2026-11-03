@@ -35,6 +35,7 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 | 07_nf_yeartoyear.R | laptop | Tier 3: step at the year's NPN date vs the calendar date and a temperature-predicted date, leave-one-year-out + bootstrap (minutes) | built 2 Nov |
 | 07b_nf_thinning.R | laptop | step 3 rerun on thinned records (k sites a year, 20 draws): how many sites the signal needs (~30 min) | built 3 Nov |
 | 08_nf_explore.R | laptop | EXPLORATORY: season size and in-season progress vs 8 fire records, FDR; summarizes 06 / 07 reruns (`outcome=<x>`) (~40 min) | built 3 Nov |
+| 09_nf_confirm.R | laptop | CONFIRMATORY: eastern deciduous-tree leaf-out status vs fire given spring temperature (minutes) | built 3 Nov |
 
 ### 01_nf_npn_download.R
 
