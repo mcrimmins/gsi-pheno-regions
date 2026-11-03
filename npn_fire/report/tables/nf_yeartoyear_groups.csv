@@ -1,0 +1,7 @@
+"group","cases","ecoregions","years_median","sites_median","dep_sd_median","share_shifted","gain_positive","pass","beats_weather"
+"deciduous_tree",204,10,11,22,7.65,0.63,94,12,5
+"deciduous_shrub",120,8,11,18.25,10.7,0.66,45,1,1
+"conifer",2,1,8,15.25,9.65,0.88,0,0,0
+"evergreen_shrub",30,3,11,15.75,17.2,0.81,19,0,0
+"forb",32,5,12,27.75,6.3,0.53,13,2,0
+"evergreen_tree",18,1,12,15.25,14,0.85,4,1,0
