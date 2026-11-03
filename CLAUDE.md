@@ -1150,5 +1150,14 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   events -> ahead fewer fires. No Poisson fallback (first draft's Poisson gave absurd p for acres / VIIRS). Tests with
   parametric p < 0.05 re-tested by permuting whole years (999). BH q within family; reruns summarized vs chance
   (Poisson test). -> explore/size.csv, progress.csv, reruns.csv, summary.csv; 90 nf_explore tables only (summary,
-  hits, reruns); page section step 4. + tables nf_seasonal_summary / nf_seasonal_results; page section
+  hits, reruns); page section step 4. RESULT (Nov 3, P720, 46 min): no FDR hit in any family. Pattern: progress family
+  ~2x chance p < 0.05 for counts; dec-tree leaf-out events 10 / 42 p < 0.05 all ratio < 1 (8.1 0.81, 8.2 0.81, 8.3 0.88,
+  8.4 0.87 per 10 pt ahead; 'down' events 12 / 75 p < 0.05 all expected dir). Size, area, VIIRS: chance. Reruns: 07 all
+  chance; 06 cplus 236 vs 97, lightning 134 vs 101 (time of year caveat). 06 / 07 rerun logs now named with the outcome.
+- `npn_fire/scripts/09_nf_confirm.R [profile]` (laptop, ~1 min; built Nov 3, Mike asked; config npn_fire: confirm,
+  fixed before result): 8.1-8.4 deciduous_tree, primary leaves_onset (secondary initial_growth_onset,
+  young_leaves_onset); weekly fires ~ factor(year) + factor(rel) + dry + ta (8-week trailing tmean anomaly, timber
+  weight) + pa (08 progress anomaly); one-sided permutation p (whole years, 999) for pa < 0; decision = Fisher over
+  the 4 ecoregions < 0.05. Same years as the exploratory finding (tests the temperature alternative, not a
+  replication). -> confirm/results.csv, decision.csv; 90 nf_confirm tables; page section step 5. + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

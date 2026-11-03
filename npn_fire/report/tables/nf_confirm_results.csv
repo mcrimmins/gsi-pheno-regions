@@ -1,0 +1,13 @@
+"eco_l2_code","group","event","role","typical_week","years","fires","r_progress_temp","ratio_progress_given_temp","p_one_sided","ratio_progress_alone","ratio_temp_alone","ratio_temp_given_progress"
+"8.1","deciduous_tree","leaves_onset","primary",17,16,17257,0.47,0.755,0.003,0.811,1.148,1.21
+"8.1","deciduous_tree","initial_growth_onset","secondary",16,16,16862,0.52,0.773,0.004,0.877,1.194,1.263
+"8.1","deciduous_tree","young_leaves_onset","secondary",18,16,17678,0.32,0.781,0.007,0.802,1.09,1.115
+"8.2","deciduous_tree","leaves_onset","primary",17,13,1785,0.31,0.901,0.027,0.876,0.893,0.916
+"8.2","deciduous_tree","initial_growth_onset","secondary",16,11,1723,0.31,0.915,0.109,0.896,0.892,0.901
+"8.2","deciduous_tree","young_leaves_onset","secondary",17,13,1785,0.28,0.86,0.011,0.842,0.893,0.909
+"8.3","deciduous_tree","leaves_onset","primary",14,16,35314,0.4,0.914,0.015,0.926,1.025,1.042
+"8.3","deciduous_tree","initial_growth_onset","secondary",14,16,35314,0.51,0.934,0.124,0.951,1.025,1.041
+"8.3","deciduous_tree","young_leaves_onset","secondary",15,16,34171,0.44,0.915,0.006,0.922,1.016,1.03
+"8.4","deciduous_tree","leaves_onset","primary",16,15,26328,0.37,0.962,0.27,0.949,0.959,0.966
+"8.4","deciduous_tree","initial_growth_onset","secondary",14,15,28202,0.34,1.038,0.71,1.033,0.993,0.988
+"8.4","deciduous_tree","young_leaves_onset","secondary",16,15,26328,0.48,0.839,0.008,0.834,0.959,0.986

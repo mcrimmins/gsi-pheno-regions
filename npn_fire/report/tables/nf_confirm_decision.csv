@@ -1,0 +1,4 @@
+"event","role","ecoregions","fewer_fires_when_ahead","combined_p","decision"
+"initial_growth_onset","secondary",4,3,0.00914,"secondary (not decided)"
+"leaves_onset","primary",4,4,0.000224,"NPN adds beyond temperature"
+"young_leaves_onset","secondary",4,4,5.28e-06,"secondary (not decided)"
