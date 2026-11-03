@@ -16,6 +16,7 @@
 #   nf_seasonal_matrix  Tier 2: ecoregions passing / tested per phenophase event x plant group (06)
 #   nf_calendar         06b fixed-calendar check: own date vs national date and other ecoregions' dates
 #   nf_yeartoyear       Tier 3 (07): cases passing / tested per event x plant group, and NPN vs weather
+#   nf_thinning         07b: step 3 signal vs NPN sites per year (random thinning)
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -28,7 +29,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -471,6 +472,35 @@ if (do("nf_yeartoyear") && have(yy_f)) {
     par(xpd = NA)
     legend("bottom", inset = c(0, -0.6 / length(evs) * 2), horiz = TRUE, bty = "n", fill = seqc, border = "#d6d5d1", cex = 0.66, text.col = ink2,
            legend = c("none pass", "< 20 %", "20-39 %", "40-59 %", "60-79 %", "80 %+"))
+  })
+}
+
+# ---- 07b thinning: step 3 signal vs sites per year ------------------------------------------------------------
+th_f <- file.path(cfg$out_dir, "thinning", "curve.csv")
+if (do("nf_thinning") && have(th_f)) {
+  TC <- utils::read.csv(th_f, stringsAsFactors = FALSE)
+  utils::write.csv(TC, file.path(tab_dir, "nf_thinning_curve.csv"), row.names = FALSE)
+  ths <- file.path(cfg$out_dir, "thinning", "summary.csv")
+  if (file.exists(ths)) utils::write.csv(utils::read.csv(ths, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character")),
+                                         file.path(tab_dir, "nf_thinning_summary.csv"), row.names = FALSE)
+  fc <- cfg$npn_fire$thinning$focus
+  plot_png("nf_thinning", "FPA-FOD lead record, NPN years", 2400, 1150, function() {
+    n <- nrow(TC); x <- seq_len(n)
+    par(mfrow = c(1, 2), mar = c(5.6, 4.4, 5, 1))
+    pan <- function(a, b, ttl, sub) {
+      plot(NA, xlim = c(0.7, n + 0.3), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
+      abline(h = seq(0, 1, 0.25), col = "#ecebe7", lwd = 0.8)
+      lines(x, TC[[a]], col = "#2a78d6", lwd = 2); points(x, TC[[a]], pch = 21, bg = "#2a78d6", col = "#2a78d6", cex = 1.1)
+      lines(x, TC[[b]], col = "#eb6834", lwd = 2); points(x, TC[[b]], pch = 22, bg = "#eb6834", col = "#eb6834", cex = 1.1)
+      axis(1, at = x, labels = ifelse(TC$k == "all", "full\nrecord", TC$k), cex.axis = 0.75, col = NA, col.ticks = ink2, padj = 0.5)
+      axis(2, at = seq(0, 1, 0.25), labels = paste0(seq(0, 100, 25), " %"), cex.axis = 0.75, col = NA)
+      mtext("NPN sites per year (random draws)", side = 1, line = 3.6, cex = 0.7, col = ink2)
+      title2(ttl, sub, 0.9, 0.66)
+    }
+    pan("focus_share_gain_pos", "focus_share_pass", sprintf("%s %s, first-half-year events", fc$eco_l2_code, grp_lab[[fc$group]]),
+        "share of draws: NPN date beats the calendar (blue), and passes (orange)")
+    pan("share_gain_pos", "share_pass", "All step 3 passing cases and the focus events",
+        sprintf("cases tested at each count (enough years): %s", paste(TC$cases_tested, collapse = " / ")))
   })
 }
 

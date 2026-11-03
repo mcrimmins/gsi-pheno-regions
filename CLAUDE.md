@@ -1126,5 +1126,14 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   direction; beats_weather = also LL(M1) - LL(M2) interval above 0. -> npn_fire/yeartoyear/results.csv, years.csv,
   summary.csv; 90 figure nf_yeartoyear + tables nf_yeartoyear_results / nf_yeartoyear_groups; page section step 3.
   Planted: x0.4 step at the year's NPN date recovered (ratios 0.35-0.52), passes where departure SD >= 6 d (3 / 5),
-  not at 3-5 d; step at the calendar date never passes. Without tmean the M2 comparison is skipped (logged). + tables nf_seasonal_summary / nf_seasonal_results; page section
+  not at 3-5 d; step at the calendar date never passes. Without tmean the M2 comparison is skipped (logged).
+  RESULT (Nov 3, 16.7 min): 406 fitted (77 short of years); gain > 0 in 43 %, pass 16 (~chance), weather beats
+  calendar 52 %. 8.1 deciduous trees, 14 spring events (wk 16-19, 35-75 sites / yr): NPN beats calendar 13 / 14,
+  beats weather 9 / 14; passes 8.1 x 8, 8.2 x 2, 8.5 x 3, 10.1, 11.1, 7.1. Summer / autumn: nothing.
+- `npn_fire/scripts/07b_nf_thinning.R [profile]` (laptop, ~30 min; built Nov 3, Mike's choice; config npn_fire:
+  thinning, fixed before results): cases = 07 passes + focus (8.1 deciduous_tree, typical week <= 26). k in 3, 5,
+  10, 15, 20, 30, 40, all; years with >= max(k, 10) sites; k sites drawn per year (site departures from their
+  full-record typical), 20 draws; 07's M1 vs M0 LOYO + bootstrap (B 200). -> npn_fire/thinning/draws.csv,
+  summary.csv, curve.csv; 90 figure nf_thinning + tables nf_thinning_curve / nf_thinning_summary. Larger k also
+  means fewer years (confounded; reported). NF_DRAWS env for testing. + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

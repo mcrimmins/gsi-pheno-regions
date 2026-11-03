@@ -511,10 +511,26 @@ if (!is.null(YG)) {
   same test sees nothing. Related events share dates and the 8.1 cases are not independent tests: this is
   one strong regional result, not fourteen.
 
+### How many sites a year does it take? (thinning test)
+
+To turn the Mixed Wood Plains result into a monitoring target, the step 3 test is rerun on thinned
+records (added November 3, rules fixed before any result): in each year, a random 3, 5, 10, 15, 20, 30 or
+40 of the sites are kept, the year's departure is their mean, and the test is repeated over 20 random
+draws. Cases: every step 3 passing case, plus all first-half-year deciduous-tree events in the Mixed Wood
+Plains. Above 10 sites a year, only years with at least that many sites can be used, so the larger counts
+also have fewer years.
+
+```{r fig-thin}
+#| results: asis
+show_fig("nf_thinning", "Step 3 signal against NPN sites per year: share of random draws where the year's NPN date beats the calendar date in held-out years (blue) and passes the test (orange). Left: Mixed Wood Plains deciduous trees, first-half-year events; right: all step 3 passing cases and those events.")
+```
+
+Results of the thinning test will be summarized here after the run.
+
 ## Next steps
 
-1. Done: year to year (step 3). Next candidates: how many sites a year an ecoregion needs for the
-   step 3 signal (thin the 8.1 record and rerun); the other fire records; the 7- and 30-day date rules.
+1. Done: year to year (step 3). Running: the thinning test (sites a year needed). Then: the other fire
+   records; the 7- and 30-day date rules.
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
 3. Done: the fixed-calendar check above.
@@ -529,6 +545,7 @@ if (!is.null(YG)) {
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 3 | Thinning test: rerun step 3 with 3&ndash;40 randomly drawn sites a year (20 draws) on the passing cases and the Mixed Wood Plains deciduous-tree spring events |
 | Nov 2 | Year-to-year design (step 3) approved and fixed before testing: after vs before outcome; step at the year's NPN date vs the calendar date and a temperature-predicted date; leave-one-year-out with a bootstrap over years; all 36 events |
 | Nov 2 | Fixed-calendar check before step 3: own phenology date vs one national date and other ecoregions' dates for the same event |
 | Nov 1 | All 13 NPN plant phenophase classes tested (36 events); flowering and fruit stages expected to bring more fires (fuel moisture drops after flowering); set before any step 2 result was seen |

@@ -180,6 +180,16 @@ default:
       bootstrap: {B: 1000, level: 0.90}   # held-out years resampled; pass = interval of the gain above 0
       seed: 20261102
 
+    # 07b thinning (Mike, 3 Nov 2026; fixed before results): how many sites a year the step 3 signal needs.
+    # Cases: 07 passes + focus ecoregion x group events up to max_week. Per k: draw k sites a year at random
+    # (years with >= max(k, min_sites) sites), rerun 07's M1 vs M0 test; draws per k; 'all' = full record
+    thinning:
+      sites_per_year: [3, 5, 10, 15, 20, 30, 40, all]
+      draws: 20
+      B: 200                              # bootstrap per draw (07 uses 1000)
+      focus: {eco_l2_code: "8.1", group: deciduous_tree, max_week: 26}
+      seed: 20261103
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:
