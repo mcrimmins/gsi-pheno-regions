@@ -17,6 +17,7 @@
 #   nf_calendar         06b fixed-calendar check: own date vs national date and other ecoregions' dates
 #   nf_yeartoyear       Tier 3 (07): cases passing / tested per event x plant group, and NPN vs weather
 #   nf_thinning         07b: step 3 signal vs NPN sites per year (random thinning)
+#   nf_explore          08 (tables only): exploratory family summaries, FDR hits, 06 / 07 reruns
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -29,7 +30,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning", "nf_explore")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -502,6 +503,27 @@ if (do("nf_thinning") && have(th_f)) {
     pan("share_gain_pos", "share_pass", "All step 3 passing cases and the focus events",
         sprintf("cases tested at each count (enough years): %s", paste(TC$cases_tested, collapse = " / ")))
   })
+}
+
+# ---- 08 exploratory: tables only ------------------------------------------------------------------------------
+ex_d <- file.path(cfg$out_dir, "explore")
+if (do("nf_explore") && have(file.path(ex_d, "summary.csv"))) {
+  q <- cfg$npn_fire$explore$fdr_q %||% 0.1
+  utils::write.csv(utils::read.csv(file.path(ex_d, "summary.csv"), stringsAsFactors = FALSE), file.path(tab_dir, "nf_explore_summary.csv"), row.names = FALSE)
+  if (file.exists(file.path(ex_d, "reruns.csv")))
+    utils::write.csv(utils::read.csv(file.path(ex_d, "reruns.csv"), stringsAsFactors = FALSE), file.path(tab_dir, "nf_explore_reruns.csv"), row.names = FALSE)
+  H <- list()
+  for (fam in c("size", "progress")) { f <- file.path(ex_d, paste0(fam, ".csv")); if (!file.exists(f)) next
+    x <- utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character")); x <- x[!is.na(x$q) & x$q < q, ]
+    if (!nrow(x)) next
+    eff <- if (fam == "size") x$ratio_per_week_later else x$ratio_per_10pt_ahead
+    H[[fam]] <- data.frame(family = fam, eco_l2_code = x$eco_l2_code, group = x$group, event = x$event,
+      outcome = if (fam == "size") paste(x$outcome, x$measure) else x$outcome, expected = x$expected, years = x$years,
+      effect = eff, q = x$q, expected_direction = x$expected_direction) }
+  H <- if (length(H)) do.call(rbind, H) else data.frame(family = character(), eco_l2_code = character(), group = character(), event = character(),
+         outcome = character(), expected = character(), years = integer(), effect = numeric(), q = numeric(), expected_direction = logical())
+  utils::write.csv(H[order(H$q), ], file.path(tab_dir, "nf_explore_hits.csv"), row.names = FALSE)
+  log_msg("wrote nf_explore tables (", nrow(H), " FDR hits)")
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

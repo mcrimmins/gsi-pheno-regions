@@ -30,7 +30,12 @@
 # Usage: Rscript npn_fire/scripts/07_nf_yeartoyear.R [profile]
 
 args <- commandArgs(trailingOnly = TRUE)
-profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
+profile <- if (length(args) >= 1 && !grepl("=", args[1])) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
+# Exploratory override (Mike, 3 Nov 2026): outcome=<fire outcome> runs the same test with that outcome in place
+# of the lead record, for the same cases, writing to <out>_<outcome>/ (cases with < 5 years holding >= 3 fires
+# of the outcome, or of its count companion for area outcomes, in the window are skipped)
+ov <- sub("^outcome=", "", grep("^outcome=", args, value = TRUE)); ov <- if (length(ov)) ov[1] else NA_character_
+count_of <- c(fod_cplus_acres = "fod_cplus", mtbs_km2 = "mtbs_fires")
 nf_root <- if (dir.exists(here::here("npn_fire", "R"))) here::here("npn_fire") else here::here()
 source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "nf.R"))
 if (!requireNamespace("MASS", quietly = TRUE)) stop("needs the MASS package")
@@ -42,11 +47,12 @@ W <- as.integer(sc$window_weeks %||% 8); B <- as.integer(yc$bootstrap$B %||% 100
 min_sites <- as.integer(yc$min_sites %||% ic$tier3$min_sites_year %||% 10); min_sy <- as.integer(yc$min_site_years %||% 2)
 max_shift <- as.integer(yc$max_shift_weeks %||% 6); wxw <- as.integer(yc$wx_weeks %||% 8)
 min_years <- as.integer(yc$min_years %||% ic$tier3$min_years %||% 8); n_short <- 0
-out <- nf_out(cfg, "yeartoyear")
+out <- nf_out(cfg, if (is.na(ov)) "yeartoyear" else paste0("yeartoyear_", ov))
 set.seed(yc$seed %||% 20261102)
 t0 <- Sys.time()
 log_msg("=== 07_nf_yeartoyear | profile: ", profile, " | window +-", W, " weeks | >= ", min_sites, " sites / year | LOYO, bootstrap B ", B)
 
+if (!is.na(ov)) log_msg("EXPLORATORY run: outcome ", ov, " in place of the lead record -> ", out)
 INV <- utils::read.csv(file.path(cfg$out_dir, "inventory", "inventory.csv"), stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
 SD <- nf_read_table(nf_table_path(file.path(cfg$out_dir, "inventory", "site_dates"))); SD$eco_l2_code <- as.character(SD$eco_l2_code)
 FW <- nf_read_table(nf_table_path(file.path(cfg$out_dir, "fire", "fire_weekly"))); FW$eco_l2_code <- as.character(FW$eco_l2_code)
@@ -96,7 +102,7 @@ bci <- function(g) { if (length(g) < 3) return(c(NA, NA))
 
 RES <- list(); YRS <- list()
 for (r in seq_len(nrow(cases))) {
-  e <- cases[r, ]; o <- e$lead_outcome
+  e <- cases[r, ]; o <- if (is.na(ov)) e$lead_outcome else ov
   fuels <- unlist(ic$match[[e$group]]); wt <- sc$dryness_weight[[e$group]]
   exp_dir <- ic$events[[e$event]]$expected %||% "none"
   A <- npn_dep(e$eco_l2_code, e$group, e$event)
@@ -104,7 +110,7 @@ for (r in seq_len(nrow(cases))) {
   if (is.null(A)) next
   A <- A[A$year %in% yy_all, ]
   if (nrow(A) < min_years) { n_short <- n_short + 1; next }
-  f <- series(e$eco_l2_code, fuels, o, yy_all); dr <- wk_val(e$eco_l2_code, wt, yy_all, "ppet60") / 100
+  f <- series(e$eco_l2_code, fuels, o, yy_all); if (!is.na(ov)) f <- round(f); dr <- wk_val(e$eco_l2_code, wt, yy_all, "ppet60") / 100
   tm <- if (has_t) wk_val(e$eco_l2_code, wt, yy_all, "tmean") else NULL
   rel <- seq(-W, W - 1); tw <- e$typical_week
   Y <- list()
@@ -116,6 +122,9 @@ for (r in seq_len(nrow(cases))) {
                                wk = tw)
   }
   if (length(Y) < min_years) { n_short <- n_short + 1; next }
+  if (!is.na(ov)) { oc <- if (ov %in% names(count_of)) count_of[[ov]] else ov; fc <- series(e$eco_l2_code, fuels, oc, yy_all)
+    nfy <- vapply(Y, function(z) { i <- match(z$year, yy_all); sum(fc[(i - 1) * 52 + tw + rel]) }, 0)
+    if (sum(nfy >= 3) < 5) { n_short <- n_short + 1; next } }
   yrs <- vapply(Y, `[[`, 0, "year"); dep <- vapply(Y, `[[`, 0, "dep"); wx <- vapply(Y, `[[`, 0, "wx")
   wxa <- wx - mean(wx, na.rm = TRUE)                                   # temperature anomaly (deg C)
   shift <- function(d) pmax(-max_shift, pmin(max_shift, round(d / 7)))

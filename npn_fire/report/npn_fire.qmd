@@ -545,9 +545,54 @@ needs the full record.
   than the calendar; 35 or more sites a year gives clear evidence. Most ecoregions outside the East have
   10&ndash;25 sites a year for any one plant group and event.
 
+## Exploratory search: other ways NPN might relate to fire (step 4)
+
+Steps 2&ndash;3 tested one outcome (all FPA-FOD fires) and one kind of relationship (the timing of the fire
+change). This step looks more widely for any NPN&ndash;fire relationship. It is **exploratory**: many more
+tests are run, so results are flagged with a false-discovery rate (FDR, q < 0.10) within each family and are
+reported as hypotheses to test, not findings. The angles and rules were chosen on November 3 before any
+result was seen.
+
+- **Other fire records:** lightning-caused and human-caused FPA-FOD fires (human ignition calendars may hide
+  a fuel signal), fires of 10 acres and up and their acres, MTBS large fires and burned area, and VIIRS
+  detections. Steps 2 and 3 are also rerun with lightning fires and with fires of 10 acres and up, and step 3
+  with acres and MTBS fires.
+- **Season size, not timing:** in years when an event comes late, is there more or less fire in the weeks
+  after its typical date, or in the whole 16-week window? (yearly totals with a trend and dryness).
+- **In-season status:** each week, the share of the year's sites already past the event (for example, the
+  share of grass sites already cured), compared with the usual share for that week. Is fire higher or lower
+  when phenology runs ahead of schedule?
+- Fires within a year are not independent (one large fire can make many detections), so every test with
+  p < 0.05 is checked again by shuffling whole years.
+
+```{r tbl-explore}
+#| tbl-cap: "Exploratory tests by family and fire record: tests, tests with p < 0.05 (and the number expected by chance), and tests passing the false-discovery-rate threshold, split by whether the effect goes in the expected direction."
+EX <- tab("nf_explore_summary.csv")
+if (!is.null(EX)) knitr::kable(data.frame(Family = EX$family, `Fire record` = gsub("_", " ", EX$outcome), Tests = EX$tests, `p < 0.05` = EX$p05,
+  `By chance` = EX$expected_p05, `FDR hits` = EX$q_hits, `Expected direction` = EX$q_hits_expected_dir, `Other direction` = EX$q_hits_wrong_dir,
+  check.names = FALSE), row.names = FALSE)
+```
+
+```{r tbl-explore-reruns}
+#| tbl-cap: "Steps 2 and 3 rerun with other fire records: cases tested, passing, and the number expected by chance."
+ER <- tab("nf_explore_reruns.csv")
+if (!is.null(ER)) knitr::kable(data.frame(Test = sub("rerun_", "", ER$family), `Fire record` = gsub("_", " ", ER$outcome), Cases = ER$tests,
+  Pass = ER$pass, `By chance` = ER$chance, p = signif(ER$p, 2), check.names = FALSE), row.names = FALSE)
+```
+
+```{r tbl-explore-hits}
+#| tbl-cap: "Exploratory tests passing the false-discovery-rate threshold (q < 0.10). Effect: fire ratio per week later (season size) or per 10 points ahead of schedule (in-season status)."
+EH <- tab("nf_explore_hits.csv")
+if (!is.null(EH) && nrow(EH)) knitr::kable(data.frame(Family = EH$family, Ecoregion = EH$eco_l2_code, `Plant group` = glab[EH$group],
+  Event = ev_label(EH$event), `Fire record` = gsub("_", " ", EH$outcome), Years = EH$years, Effect = round(EH$effect, 2), q = signif(EH$q, 2),
+  Expected = ifelse(EH$expected == "none", "&ndash;", ifelse(EH$expected_direction, "yes", "no")), check.names = FALSE), row.names = FALSE, escape = FALSE)
+```
+
+Results of the exploratory search will be summarized here after the run.
+
 ## Next steps
 
-1. Done: year to year (step 3) and the thinning test.
+1. Done: year to year (step 3) and the thinning test. Running: the exploratory search (step 4).
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
 3. Done: the fixed-calendar check above.
@@ -562,6 +607,7 @@ needs the full record.
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 3 | Exploratory search (step 4): other fire records (lightning, human, large fires, area, VIIRS), season size, in-season progress; false-discovery rate within each family; whole-year shuffles for p < 0.05 |
 | Nov 3 | Thinning test: rerun step 3 with 3&ndash;40 randomly drawn sites a year (20 draws) on the passing cases and the Mixed Wood Plains deciduous-tree spring events |
 | Nov 2 | Year-to-year design (step 3) approved and fixed before testing: after vs before outcome; step at the year's NPN date vs the calendar date and a temperature-predicted date; leave-one-year-out with a bootstrap over years; all 36 events |
 | Nov 2 | Fixed-calendar check before step 3: own phenology date vs one national date and other ecoregions' dates for the same event |

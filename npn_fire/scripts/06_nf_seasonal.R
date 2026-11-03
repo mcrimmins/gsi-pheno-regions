@@ -23,7 +23,12 @@
 # Usage: Rscript npn_fire/scripts/06_nf_seasonal.R [profile]
 
 args <- commandArgs(trailingOnly = TRUE)
-profile <- if (length(args) >= 1) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
+profile <- if (length(args) >= 1 && !grepl("=", args[1])) args[1] else Sys.getenv("R_CONFIG_ACTIVE", "full")
+# Exploratory override (Mike, 3 Nov 2026): outcome=<fire outcome> runs the same test with that outcome in place
+# of the lead record, for the same cases, writing to <out>_<outcome>/ (cases with < 5 years holding >= 3 fires
+# of the outcome, or of its count companion for area outcomes, in the window are skipped)
+ov <- sub("^outcome=", "", grep("^outcome=", args, value = TRUE)); ov <- if (length(ov)) ov[1] else NA_character_
+count_of <- c(fod_cplus_acres = "fod_cplus", mtbs_km2 = "mtbs_fires")
 nf_root <- if (dir.exists(here::here("npn_fire", "R"))) here::here("npn_fire") else here::here()
 source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "nf.R"))
 if (!requireNamespace("MASS", quietly = TRUE)) stop("needs the MASS package")
@@ -33,12 +38,14 @@ log_file <- log_init("06_nf_seasonal", profile)
 ic <- cfg$npn_fire$inventory; sc <- cfg$npn_fire$seasonal
 W <- as.integer(sc$window_weeks %||% 8); tail_p <- sc$pass_tail %||% 0.05; B <- as.integer(sc$bootstrap$B %||% 200)
 lev <- sc$bootstrap$level %||% 0.9
-out <- nf_out(cfg, "seasonal")
+out <- nf_out(cfg, if (is.na(ov)) "seasonal" else paste0("seasonal_", ov))
+if (!is.na(ov)) B <- 0L   # exploratory runs: no bootstrap
 set.seed(sc$seed %||% 20261101)
 t0 <- Sys.time()
 log_msg("=== 06_nf_seasonal | profile: ", profile, " | window +-", W, " weeks | placebo |shift| >= ", sc$placebo_min_shift,
         " | pass tail ", tail_p, " | bootstrap B ", B)
 
+if (!is.na(ov)) log_msg("EXPLORATORY run: outcome ", ov, " in place of the lead record -> ", out)
 INV <- utils::read.csv(file.path(cfg$out_dir, "inventory", "inventory.csv"), stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
 CV <- utils::read.csv(file.path(cfg$out_dir, "inventory", "coverage.csv"), stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
 FW <- nf_read_table(nf_table_path(file.path(cfg$out_dir, "fire", "fire_weekly"))); FW$eco_l2_code <- as.character(FW$eco_l2_code)
@@ -85,12 +92,17 @@ for (r in seq_len(nrow(cases))) {
   e <- cases[r, ]
   fuels <- unlist(ic$match[[e$group]]); wt <- sc$dryness_weight[[e$group]]
   cv <- CV[CV$eco_l2_code == e$eco_l2_code & CV$group == e$group & CV$event == e$event, ]
-  outs <- unique(c(e$lead_outcome, cv$outcome[cv$covered_years >= ic$tier2$min_covered_years]))
+  outs <- if (is.na(ov)) unique(c(e$lead_outcome, cv$outcome[cv$covered_years >= ic$tier2$min_covered_years])) else ov
+  if (!is.na(ov)) e$lead_outcome <- ov
   exp_dir <- ic$events[[e$event]]$expected %||% "none"
   for (o in outs) {
     yy <- oy[[o]]; f <- series(e$eco_l2_code, fuels, o, yy); dr <- dry_series(e$eco_l2_code, wt, yy)
     D <- win_data(f, dr, yy, e$typical_week)
     if (is.null(D) || sum(D$y) <= 0 || length(unique(D$wy)) < 3) next
+    if (!is.na(ov)) { oc <- if (ov %in% names(count_of)) count_of[[ov]] else ov
+      Dc <- if (oc == ov) D else win_data(series(e$eco_l2_code, fuels, oc, yy), dr, yy, e$typical_week)
+      if (is.null(Dc) || sum(tapply(Dc$y, Dc$wy, sum) >= 3) < 5) next
+      D$y <- round(D$y) }
     m <- tryCatch(suppressWarnings(MASS::glm.nb(y ~ wy + dry + after, data = D)), error = function(err) NULL)
     if (is.null(m)) next
     b <- stats::coef(m); theta <- m$theta; fam <- MASS::negative.binomial(theta)

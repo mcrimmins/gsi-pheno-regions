@@ -190,6 +190,15 @@ default:
       focus: {eco_l2_code: "8.1", group: deciduous_tree, max_week: 26}
       seed: 20261103
 
+    # 08 EXPLORATORY (Mike, 3 Nov 2026; angles and rules chosen before results): season size, in-season
+    # progress, other outcomes; 06 / 07 reruns with outcome=<x>; BH false-discovery rate within each family
+    explore:
+      outcomes: [fod_all, fod_all_lightning, fod_all_human, fod_cplus, fod_cplus_acres, mtbs_fires, mtbs_km2, viirs_px]
+      fdr_q: 0.10
+      screen_p: 0.05                      # tests with parametric p < 0.05 re-tested by permuting years (whole yearly blocks)
+      n_perm: 999
+      seed: 20261103
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:

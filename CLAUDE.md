@@ -1135,5 +1135,20 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   10, 15, 20, 30, 40, all; years with >= max(k, 10) sites; k sites drawn per year (site departures from their
   full-record typical), 20 draws; 07's M1 vs M0 LOYO + bootstrap (B 200). -> npn_fire/thinning/draws.csv,
   summary.csv, curve.csv; 90 figure nf_thinning + tables nf_thinning_curve / nf_thinning_summary. Larger k also
-  means fewer years (confounded; reported). NF_DRAWS env for testing. + tables nf_seasonal_summary / nf_seasonal_results; page section
+  means fewer years (confounded; reported). NF_DRAWS env for testing.
+  RESULT (Nov 3, 33 min): 8.1 dec-tree spring events beating calendar in full: share of draws NPN > calendar 59-60 %
+  (3-5 sites / yr), 72 % (10), 80-84 % (15-20), 91 % (30), 100 % full (35-75); strict pass 8-19 % thinned vs 36 % full.
+  Reading: ~15-20 sites / yr for a decade for direction; 35+ for clear evidence.
+- EXPLORATORY (Nov 3, Mike: "keep digging"; angles + FDR chosen via questions before results):
+  06 / 07 take `outcome=<x>` (exploratory override): same cases, that outcome instead of the lead, output to
+  seasonal_<x>/ or yeartoyear_<x>/, 06 without bootstrap; cases with < 5 years holding >= 3 fires (count companion
+  for acres / km2) skipped; values rounded for NB.
+  `npn_fire/scripts/08_nf_explore.R [profile]` (laptop, ~40 min; config npn_fire: explore): tier3 cases x 8
+  outcomes. Family size: yearly fires after (rel 0..7) and window total ~ year trend + dry + departure (per week)
+  NB LR; expected: down events -> later year more fire. Family progress: weekly share of the year's sites past the
+  event minus its mean at that week (per 10 points); weekly fires ~ factor(year) + factor(rel) + dry + anomaly; down
+  events -> ahead fewer fires. No Poisson fallback (first draft's Poisson gave absurd p for acres / VIIRS). Tests with
+  parametric p < 0.05 re-tested by permuting whole years (999). BH q within family; reruns summarized vs chance
+  (Poisson test). -> explore/size.csv, progress.csv, reruns.csv, summary.csv; 90 nf_explore tables only (summary,
+  hits, reruns); page section step 4. + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".
