@@ -105,7 +105,8 @@ test (step 2, all 36 phenophase events) has run: spring and summer green-up date
 spring fire season across much of the East and the prairies, and in Mediterranean California flowering is
 followed by more fires. A fixed-calendar check shows these alignments are mostly time of year. Year to
 year (step 3), NPN dates beat the calendar only where the record is dense: in the Mixed Wood Plains,
-early leaf-out and flowering years end the spring fire season early.
+early leaf-out and flowering years end the spring fire season early. The thinning test puts the
+monitoring need at about 15&ndash;20 sites a year for a decade or more.
 
 ## Data and methods
 
@@ -525,12 +526,28 @@ also have fewer years.
 show_fig("nf_thinning", "Step 3 signal against NPN sites per year: share of random draws where the year's NPN date beats the calendar date in held-out years (blue) and passes the test (orange). Left: Mixed Wood Plains deciduous trees, first-half-year events; right: all step 3 passing cases and those events.")
 ```
 
-Results of the thinning test will be summarized here after the run.
+**What it shows (November 3).** The direction holds from about 15&ndash;20 sites a year; clear evidence
+needs the full record.
+
+- For the Mixed Wood Plains deciduous-tree spring events where the full record beats the calendar, the
+  share of draws in which the thinned record still does so rises with the number of sites: about 60 % with
+  3&ndash;5 sites a year (close to a coin toss), 72 % with 10, 80&ndash;84 % with 15&ndash;20 and 91 % with 30.
+  The full record (35&ndash;75 sites a year) does so for every event.
+- The size of the gain grows the same way (median log-likelihood gain 12 with 3 sites, 38 with 10, 57 with
+  20, 63 with 30, against 111 for the full record). Passing the strict test (interval above zero) is rare in
+  any thinned record (8&ndash;19 % of draws) and needs the full density together with all 13&ndash;16 years.
+- Across all 28 cases tested the curve is the same shape: 54 % of draws beat the calendar with 3 sites a
+  year, 70 % with 10, 75&ndash;79 % with 15&ndash;30.
+- Above 10 sites a year the thinned records also lose years (to 11&ndash;12 years at 30&ndash;40 sites), so
+  part of the flattening at the top reflects fewer years, not fewer sites.
+- **Monitoring reading.** About 15&ndash;20 well-spread sites a year for a phenophase, kept up for a decade
+  or more, is where the year's NPN date starts to place the end of the spring fire season reliably better
+  than the calendar; 35 or more sites a year gives clear evidence. Most ecoregions outside the East have
+  10&ndash;25 sites a year for any one plant group and event.
 
 ## Next steps
 
-1. Done: year to year (step 3). Running: the thinning test (sites a year needed). Then: the other fire
-   records; the 7- and 30-day date rules.
+1. Done: year to year (step 3) and the thinning test.
 2. Checks on step 2: the other fire records (FPA-FOD 10 acres and up, VIIRS, MTBS) where they have enough
    fires, and the 7- and 30-day date rules.
 3. Done: the fixed-calendar check above.
@@ -558,6 +575,7 @@ Results of the thinning test will be summarized here after the run.
 | Nov 1, 2026 | Step 1 (inventory) and step 2 (seasonal test) for all 36 phenophase events; first step 2 results |
 | Nov 2, 2026 | Fixed-calendar check on step 2: results |
 | Nov 3, 2026 | Step 3 (year to year): first results |
+| Nov 3, 2026 | Thinning test: results (sites a year needed) |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |
