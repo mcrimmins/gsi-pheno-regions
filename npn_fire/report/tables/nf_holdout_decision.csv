@@ -1,0 +1,3 @@
+"test","outcome","ecoregions","fewer","combined_p","decision"
+"canopy_fires","fod_all",3,2,2.31e-05,"confirmed on the hold-out years"
+"canopy_size","size",2,2,0.281,"not confirmed"

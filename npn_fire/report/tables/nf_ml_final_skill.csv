@@ -1,0 +1,8 @@
+"model","outcome","skill","skill_lo","skill_hi","decision"
+"all NPN","fod_all",0.0049,-0.0135,0.022,"not shown"
+"targeted","fod_all",-0.0064,-0.0275,0.0138,"not shown"
+"all NPN","fod_all_lightning",0.0667,0.05,0.0822,"NPN improves hold-out prediction"
+"all NPN","fod_cplus",-0.005,-0.0302,0.0178,"not shown"
+"all NPN","viirs_px",0.0867,0.0193,0.1213,"NPN improves hold-out prediction"
+"all NPN","mtbs_fires",-0.006,-0.0222,0.0117,"not shown"
+"all NPN","mtbs_km2",0.0044,-0.039,0.0439,"not shown"
