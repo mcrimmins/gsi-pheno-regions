@@ -98,7 +98,7 @@ assembled for the project.
 **No satellite phenology** is used: this is a test of the ground record. Satellite fire detections
 appear only as a fire outcome.
 
-**Status (`r format(Sys.Date(), "%B %-d, %Y")`).** The NPN record is downloaded and cleaned
+**Status (parked November 4, 2026; see "Where the study stands and open questions" below).** The NPN record is downloaded and cleaned
 (`r n_rec` million status records, `r yr_rng`), plants are grouped, fire activity and the dryness baseline are tabulated by
 ecoregion and fuel type, and the inventory (step 1) shows where the tests are possible. The seasonal
 test (step 2, all 36 phenophase events) has run: spring and summer green-up dates mark the end of the
@@ -108,7 +108,9 @@ year (step 3), NPN dates beat the calendar only where the record is dense: in th
 early leaf-out and flowering years end the spring fire season early. The thinning test puts the
 monitoring need at about 15&ndash;20 sites a year for a decade or more. An exploratory search finds the
 same leaf-out signal, as in-season status, in four eastern ecoregions; nothing else stands out. A test set
-in advance shows the signal is not spring temperature in disguise.
+in advance shows the signal is not spring temperature in disguise. On held-out years (2021&ndash;2024) a fuller-than-usual deciduous canopy
+goes with fewer fires in the Mixed Wood Plains, but not clearly elsewhere; machine learning with all NPN measures
+adds little for all fires, with a consistent few-percent gain for lightning fires.
 
 ## Data and methods
 
@@ -747,15 +749,63 @@ if (!is.null(HF)) d <- rbind(d, data.frame(Test = paste("machine learning,", HF$
 if (!is.null(d)) knitr::kable(d, row.names = FALSE)
 ```
 
-Results of the hold-out check will be summarized here after the run.
+**What it shows (November 4; run once).**
 
-## Next steps
+- **Canopy and fire numbers: confirmed by the rule, but carried by one ecoregion.** Combined one-sided
+  p = 0.00002, so the test passes as written. But the result rests on the Mixed Wood Plains (8.1), where a
+  canopy 10 points fuller than usual goes with 42 % fewer timber fires (p = 0.000002), stronger than in the
+  exploration years (19 %). The Ozark/Ouachita-Appalachian Forests go the same way but weakly (12 % fewer,
+  p = 0.13; 28 % in the exploration years), and the Southeastern USA Plains not at all (4 % more). The coarse
+  year shuffle (24 orders) puts 8.1 at rank 2 of 24. The fair reading: **the canopy signal holds up in the
+  Mixed Wood Plains on new years and does not clearly carry over to the other two ecoregions.**
+- **Canopy and fire size: not confirmed.** Both ecoregions go the expected way (7 % and 3 % fewer fires
+  reaching 10 acres per 10 points) but far from significant (combined p = 0.28).
+- **Machine learning, all fires: not confirmed.** Adding every NPN measure improves hold-out prediction by
+  0.5 % (interval &minus;1.4 to +2.2 %); the targeted eastern-timber model by &minus;0.6 % (&minus;2.8 to +1.4 %).
+- **Machine learning, other fire records (reported, not part of the decision rules).** For **lightning fires**
+  the NPN measures improve prediction in both the validation years (+3.8 %, interval +1.1 to +7.2 %) and the
+  hold-out years (+6.7 %, +5.0 to +8.2 %), the one record where the gain is consistent. VIIRS improves on the
+  hold-out (+8.7 %) but was much worse on the validation years, so it is not a stable result. Large fires and
+  MTBS: no gain.
+- Note: in this final run the NPN feature list was built from all years' NPN data (93 measures instead of 81,
+  because more measures pass the minimum-data rule when the recent, denser years are included); fire data from
+  the hold-out years were used only for scoring.
+- **Reading.** On years never used to find it, the clearest NPN result survives where the record is densest:
+  in the Mixed Wood Plains, a fuller-than-usual deciduous canopy goes with fewer fires. Elsewhere it is weak or
+  absent, matching the thinning result that the signal needs many sites a year. As a general predictor, NPN adds
+  little to weather for all fires, but a consistent few percent for lightning fires, which may deserve a
+  targeted follow-up.
 
-1. Done: year to year (step 3), the thinning test and the exploratory search (step 4).
-2. Done: the temperature test of the eastern leaf-out result (step 5).
-3. Done: intensity tests and machine learning (roadmap phases 2&ndash;3). Running: the one-time check on the
-   held-out years 2021&ndash;2024 (phase 4).
-4. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
+## Where the study stands and open questions (parked November 4)
+
+The study is paused here. All analyses described above have run, and their results are on this page.
+
+**Main findings so far**
+
+1. NPN phenology dates mark when fire seasons change about as well as a calendar week does (steps 2 and 2b).
+2. Their added value is in the eastern deciduous forests. When leaf-out runs early or the canopy is fuller
+   than usual, there are fewer timber fires, beyond what spring temperature explains (steps 3&ndash;5,
+   phase 2). On held-out years (2021&ndash;2024) this holds in the Mixed Wood Plains, the densest record, but not
+   clearly in the other eastern ecoregions (phase 4).
+3. The signal needs about 15&ndash;20 sites a year for a decade, and 35 or more for clear evidence (thinning test).
+4. As a general predictor, NPN adds little to weather, except a consistent few percent for lightning fires
+   (phases 3&ndash;4). Grass curing cannot be tested: too few sites record grass percent green.
+
+**Open questions**
+
+1. **What lies behind the canopy result: fuels or people?** Most eastern spring fires are human-caused. Two
+   checks: split FPA-FOD fires by cause (does the effect hold for debris burning as well as other causes?), and
+   compare with state spring burn-ban dates, which follow the calendar rather than leaf-out.
+2. **Lead time.** Does this week's canopy anomaly predict fire one or two weeks ahead? That is what would make
+   it useful to fire managers.
+3. **Local matching.** Compare fires near active NPN sites with those sites' own status. Is the signal stronger
+   at the local scale, and does ecoregion averaging dilute it elsewhere?
+4. **Lightning fires.** Which phenophases and ecoregions carry the machine-learning gain? Exploratory: the
+   hold-out years are used, so a confirmation needs 2025 or later.
+5. **NPN versus satellite green-up** in the Mixed Wood Plains: does the ground record add anything beyond a
+   satellite measure? (Outside this study's original no-satellite scope.)
+6. **Robustness:** the 7- and 30-day date rules, and Level III ecoregions within the Mixed Wood Plains.
+7. **Independent replication** with 2025 and later years, once the fire records cover them.
 
 ## Decisions
 
@@ -787,6 +837,8 @@ Results of the hold-out check will be summarized here after the run.
 | Nov 3, 2026 | Thinning test: results (sites a year needed) |
 | Nov 3, 2026 | Exploratory search (step 4): results |
 | Nov 3, 2026 | Temperature test (step 5): results; NPN leaf-out status adds beyond temperature |
+| Nov 4, 2026 | Intensity tests, machine learning and the hold-out check (roadmap phases 2&ndash;4): results |
+| Nov 4, 2026 | Study parked: summary of findings and open questions |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |
