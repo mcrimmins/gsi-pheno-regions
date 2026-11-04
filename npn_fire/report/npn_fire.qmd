@@ -695,7 +695,30 @@ if (!is.null(IS)) knitr::kable(data.frame(Measure = IS$family, `Fire record` = g
   `More fires` = IS$p05_more, `By chance (each)` = IS$chance_each_side, `FDR hits` = IS$q_hits, check.names = FALSE), row.names = FALSE)
 ```
 
-Results of these phases will be summarized here after the runs.
+**What they show (November 4; exploration years 2009&ndash;2020 only).**
+
+- **Canopy fullness in the eastern deciduous forests.** When the deciduous-tree canopy is fuller than usual
+  for the week, there are fewer timber fires, with temperature and dryness in the model: Mixed Wood Plains
+  (8.1) 19 % fewer per 10 points of canopy, Ozark/Ouachita-Appalachian Forests (8.4) 28 % fewer, and in 8.4
+  also 40 % fewer fires of 10 acres and up and half the VIIRS detections. **Fires that do start are also
+  less likely to grow:** the share of fires reaching 10 acres drops 20 % per 10 points in 8.4 and 9 % in the
+  Southeastern USA Plains (8.3). These six results pass the false-discovery-rate check; canopy tests at
+  p < 0.05 go 14 to 6 in favour of fewer fires. This agrees with the leaf-out result of steps 3&ndash;5 and
+  adds fire size: a filling canopy goes with fewer fires starting and fewer growing large.
+- **Grass and forb greenness: nothing.** Too few sites record grass percent green (8 ecoregions with 3 or
+  more a week), and the tests are at chance.
+- **Combined green index:** slightly more fewer-fire results than chance for all fires and fires of 10
+  acres and up, none passing the false-discovery-rate check.
+- **Machine learning: no general gain.** Adding all 81 NPN weekly measures to a weather model does not
+  improve prediction of the validation years (2018&ndash;2020) for any fire record: +0.7 % for all fires
+  (interval &minus;1.2 to +2.6 %), +1.7 % for lightning fires, and worse for large fires, burned area and VIIRS
+  (where the extra measures lead the model astray). By ecoregion the gains are mixed: timber fires in the
+  Western Cordillera (+14 %), Central USA Plains (+11 %) and Mixed Wood Plains (+9 %) improve, the
+  Ozark/Ouachita-Appalachian Forests worsen (&minus;9 %). With three validation years these by-ecoregion numbers
+  are noisy. The model leans most on deciduous-tree flowering, ripe fruit, young leaves and leaf color.
+- **Reading.** A targeted measure with a clear mechanism (how far the deciduous canopy has filled) relates
+  to fire; throwing every NPN measure at a general model does not help. The held-out years will test the
+  targeted results once.
 
 ## Next steps
 
