@@ -107,7 +107,8 @@ followed by more fires. A fixed-calendar check shows these alignments are mostly
 year (step 3), NPN dates beat the calendar only where the record is dense: in the Mixed Wood Plains,
 early leaf-out and flowering years end the spring fire season early. The thinning test puts the
 monitoring need at about 15&ndash;20 sites a year for a decade or more. An exploratory search finds the
-same leaf-out signal, as in-season status, in four eastern ecoregions; nothing else stands out.
+same leaf-out signal, as in-season status, in four eastern ecoregions; nothing else stands out. A test set
+in advance shows the signal is not spring temperature in disguise.
 
 ## Data and methods
 
@@ -639,13 +640,34 @@ if (!is.null(CF)) knitr::kable(data.frame(Ecoregion = CF$eco_l2_code, Event = ev
 CD <- tab("nf_confirm_decision.csv")
 ```
 
-Results of this test will be summarized here after the run.
+**What it shows (November 3).** Temperature does not explain it: the leaf-out signal holds with
+temperature in the model.
+
+- **Decision (first leaves):** in all four ecoregions, leaf-out ahead of schedule goes with fewer timber
+  fires once temperature is included; combined one-sided p = 0.0002, so by the rule set in advance **NPN
+  leaf-out status adds information beyond spring temperature.**
+- Per 10 percentage points ahead of schedule: 25 % fewer fires that week in the Mixed Wood Plains (8.1;
+  p = 0.003), 10 % in the Central USA Plains (8.2; p = 0.03), 9 % in the Southeastern USA Plains (8.3;
+  p = 0.015) and 4 % in the Ozark/Ouachita-Appalachian Forests (8.4; p = 0.27, not significant alone).
+- Leaf-out status and temperature are related (correlation 0.3&ndash;0.5: warm springs leaf out early), but
+  adding temperature leaves the leaf-out effect about the same, and in the Mixed Wood Plains makes it
+  stronger (from 19 % to 25 % fewer fires). Temperature itself has no consistent effect: with leaf-out in
+  the model, a warmer week brings more fire in 8.1 (21 % per 1 &deg;C) and slightly less in 8.2.
+- The secondary events agree: young leaves (4 of 4 ecoregions, combined p = 0.000005) and initial growth
+  (3 of 4, p = 0.009).
+- **Reading.** In the eastern deciduous forests, what the trees are doing (how far leaf-out has come) tracks
+  the end of the spring fire season better than the weather that drives leaf-out. This is the study's
+  clearest evidence that NPN observations carry fire-relevant information. It was tested on the same years
+  that suggested it, so an independent check (new years as they come, or another record such as satellite
+  green-up or the fire study's regions) would strengthen it.
 
 ## Next steps
 
 1. Done: year to year (step 3), the thinning test and the exploratory search (step 4).
-2. Running: the temperature test of the eastern leaf-out result (step 5).
-3. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
+2. Done: the temperature test of the eastern leaf-out result (step 5).
+3. An independent check of the leaf-out result: 2025 when the fire records allow, or the same test with a
+   satellite green-up measure in the same ecoregions.
+4. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
 
 ## Decisions
 
@@ -674,6 +696,7 @@ Results of this test will be summarized here after the run.
 | Nov 3, 2026 | Step 3 (year to year): first results |
 | Nov 3, 2026 | Thinning test: results (sites a year needed) |
 | Nov 3, 2026 | Exploratory search (step 4): results |
+| Nov 3, 2026 | Temperature test (step 5): results; NPN leaf-out status adds beyond temperature |
 | Nov 1, 2026 | Fire records tabulated by ecoregion and fuel type (results and figure); 5 NPN sites with bad coordinates left out of the ecoregion tables |
 | Nov 1, 2026 | Dryness baseline computed; step 1 inventory (where NPN and fire line up) |
 | Nov 1, 2026 | Step 2 seasonal test |
