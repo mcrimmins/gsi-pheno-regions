@@ -19,6 +19,7 @@
 #   nf_thinning         07b: step 3 signal vs NPN sites per year (random thinning)
 #   nf_explore          08 (tables only): exploratory family summaries, FDR hits, 06 / 07 reruns
 #   nf_confirm          09 (tables only): leaf-out status vs fire given spring temperature
+#   nf_roadmap          12 / 11 (tables only): intensity tests summary and hits; ML skill, by ecoregion, importance
 # Tables: nf_record_years.csv, nf_inventory_sites.csv, nf_fire_inventory.csv (when 03 is synced).
 #
 # Usage: Rscript npn_fire/scripts/90_nf_figs.R [profile] [figure ...]   (default: all)
@@ -31,7 +32,7 @@ source(file.path(nf_root, "R", "nf_setup.R")); source(file.path(nf_root, "R", "n
 if (!requireNamespace("maps", quietly = TRUE)) stop("needs the maps package: renv::install('maps')")
 
 all_figs <- c("nf_record", "nf_groups", "nf_effort_map", "nf_effort_years", "nf_fire_fuel", "nf_inventory",
-              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning", "nf_explore", "nf_confirm")
+              "nf_seasonal_curves", "nf_seasonal_matrix", "nf_calendar", "nf_yeartoyear", "nf_thinning", "nf_explore", "nf_confirm", "nf_roadmap")
 want <- if (length(args) >= 2) args[-1] else all_figs
 bad <- setdiff(want, all_figs)
 if (length(bad)) stop("unknown figure(s): ", paste(bad, collapse = ", "), "; use: ", paste(all_figs, collapse = ", "))
@@ -535,6 +536,24 @@ if (do("nf_confirm") && have(file.path(cf_d, "results.csv"))) {
   if (file.exists(file.path(cf_d, "decision.csv")))
     utils::write.csv(utils::read.csv(file.path(cf_d, "decision.csv"), stringsAsFactors = FALSE), file.path(tab_dir, "nf_confirm_decision.csv"), row.names = FALSE)
   log_msg("wrote nf_confirm tables")
+}
+
+# ---- roadmap phases 2-3 (12 intensity, 11 machine learning): tables only --------------------------------------
+if (do("nf_roadmap")) {
+  cp_tab <- function(src, dst, cc = NULL) if (file.exists(src)) {
+    x <- if (is.null(cc)) utils::read.csv(src, stringsAsFactors = FALSE) else utils::read.csv(src, stringsAsFactors = FALSE, colClasses = cc)
+    utils::write.csv(x, file.path(tab_dir, dst), row.names = FALSE); TRUE } else FALSE
+  q <- cfg$npn_fire$intensity$fdr_q %||% 0.1
+  cp_tab(file.path(cfg$out_dir, "intensity", "summary.csv"), "nf_intensity_summary.csv")
+  f <- file.path(cfg$out_dir, "intensity", "results.csv")
+  if (file.exists(f)) { x <- utils::read.csv(f, stringsAsFactors = FALSE, colClasses = c(eco_l2_code = "character"))
+    utils::write.csv(x[!is.na(x$q) & x$q < q, ], file.path(tab_dir, "nf_intensity_hits.csv"), row.names = FALSE) }
+  cp_tab(file.path(cfg$out_dir, "ml", "skill.csv"), "nf_ml_skill.csv")
+  cp_tab(file.path(cfg$out_dir, "ml", "skill_eco.csv"), "nf_ml_skill_eco.csv", c(eco_l2_code = "character"))
+  f <- file.path(cfg$out_dir, "ml", "importance.csv")
+  if (file.exists(f)) { x <- utils::read.csv(f, stringsAsFactors = FALSE); x <- do.call(rbind, lapply(split(x, x$outcome), function(d) utils::head(d[order(-d$dev_increase), ], 10)))
+    utils::write.csv(x, file.path(tab_dir, "nf_ml_importance.csv"), row.names = FALSE) }
+  log_msg("wrote roadmap tables (intensity, ml)")
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

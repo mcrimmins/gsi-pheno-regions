@@ -223,6 +223,32 @@ default:
     # 10 weekly status / intensity tables (roadmap phase 1)
     weekly:
       workers: 8
+    # 12 intensity tests (roadmap phase 2; fixed 4 Nov before results): exploration years only
+    intensity:
+      min_sites: 5                        # sites with a reading in the ecoregion-week (woody groups)
+      min_sites_herb: 3                   # grasses / forbs (few percent-green sites: 8 ecoregions reach 3, 2 reach 5)
+      share_years: 0.6                    # weeks with data in >= 60 % of years; years with >= 60 % of those weeks
+      min_years: 6
+      min_weeks: 8
+      temp_weeks: 8
+      screen_p: 0.05
+      n_perm: 999
+      fdr_q: 0.10
+      seed: 20261104
+    # 11 machine learning (roadmap phase 3; fixed 4 Nov before results): weather-only vs weather + NPN
+    ml:
+      train_years: [2009, 2017]
+      valid_years: [2018, 2020]           # hold-out (roadmap holdout_years) scored only with `final`
+      groups: [deciduous_tree, evergreen_tree, conifer, deciduous_shrub, evergreen_shrub, grass, forb]
+      min_sites: 5
+      temp_weeks: 8
+      min_train_fires: 50                 # ecoregion x fuel series kept when the training years hold >= 50 fires
+      params: {eta: 0.05, max_depth: 5, subsample: 0.8, colsample_bytree: 0.8, min_child_weight: 10}
+      max_rounds: 2000
+      early_stopping: 50
+      nthread: 8
+      bootstrap_B: 500
+      seed: 20261104
 
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)

@@ -1159,5 +1159,28 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   young_leaves_onset); weekly fires ~ factor(year) + factor(rel) + dry + ta (8-week trailing tmean anomaly, timber
   weight) + pa (08 progress anomaly); one-sided permutation p (whole years, 999) for pa < 0; decision = Fisher over
   the 4 ecoregions < 0.05. Same years as the exploratory finding (tests the temperature alternative, not a
-  replication). -> confirm/results.csv, decision.csv; 90 nf_confirm tables; page section step 5. + tables nf_seasonal_summary / nf_seasonal_results; page section
+  replication). -> confirm/results.csv, decision.csv; 90 nf_confirm tables; page section step 5. RESULT (Nov 3): leaves_onset 4 / 4 fewer, Fisher p 0.0002 ->
+  NPN adds beyond temperature (8.1 0.755 p 0.003; 8.2 0.901; 8.3 0.914; 8.4 0.962 p 0.27); young leaves p 5e-6.
+- ROADMAP (Nov 3, Mike; project doc claude/gsi-npn-fire-roadmap.md; config npn_fire: roadmap): explore 2009-2020,
+  hold out 2021-2024 (used once, phase 4); xgboost; outcomes fod_all, lightning, cplus, viirs, mtbs fires / km2;
+  fire size given an ignition (cplus / all, binomial).
+- `npn_fire/scripts/10_nf_weekly.R [profile] [years] [force]` (P720, 4 min with 8 workers): raw records -> plant x class
+  x week (yes if any; max pct) -> site x group x class x week (site_weekly, never published) -> eco x group x class x
+  year x week (eco_weekly: sites, plants, share_yes = mean over sites, sites_pct, mean_pct). RUN Nov 4: 625 k eco
+  rows; 227 k eco-weeks >= 5 sites, 87 k >= 5 percent sites. Percent intensity mostly trees / shrubs; grass % green
+  >= 3 sites in 8 ecoregions, >= 5 in 2 (5.3, 9.4); forbs no class-3 percent (use share_yes).
+- `npn_fire/scripts/12_nf_intensity.R [profile]` (P720 or laptop, ~25 min; config npn_fire: intensity): explore years
+  only. Families canopy (class 3 mean_pct, woody), green (grass pct, forb share; >= 3 sites), index (share 3 - 4 - 5).
+  Rows = weeks with data in >= 60 % of years x years with >= 60 % of those weeks; missing anomaly = 0. NB (counts) or
+  binomial with dispersion (size) ~ factor(year) + factor(week) + dry + 8-wk tmean anomaly + anomaly / 10; p < 0.05
+  re-tested by year-relabel permutation (year a gets year b's anomaly week by week); BH per family x outcome type.
+  -> intensity/results.csv, summary.csv. (Fixes in testing: tapply arrays broke glm.nb; unequal year blocks.)
+- `npn_fire/scripts/11_nf_ml.R [profile] [final]` (P720; xgboost; config npn_fire: ml): eco x fuel class (timber
+  TU+TL, shrub SH, herb GR+GS) x year x week; weather features (week, sin / cos, eco one-hot, ppet60 + anomaly,
+  8-wk tmean + anomaly, training-years log mean fire) vs + NPN anomalies (share_yes, mean_pct per group x class,
+  >= 5 sites, training-year weekly means); Poisson; early stopping on 2018-2020, then refit at the best rounds
+  (API-agnostic: evals / watchlist). Skill = 1 - dev ratio on validation; bootstrap over eco-years; grouped
+  permutation importance. `final` refits on 2009-2020 and scores 2021-2024 (phase 4 only). NF_XGB_STUB=1 =
+  GLM stand-in for testing (workspace has no xgboost). -> ml/skill.csv, skill_eco.csv, importance.csv, rows.csv.
+  90 nf_roadmap tables; page section "Intensity measures and machine learning". + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

@@ -661,12 +661,48 @@ temperature in the model.
   that suggested it, so an independent check (new years as they come, or another record such as satellite
   green-up or the fire study's regions) would strengthen it.
 
+## Intensity measures and machine learning (roadmap phases 2&ndash;3)
+
+Steps 1&ndash;5 used the dates NPN observers record. NPN also records how far along a plant is (percent canopy
+fullness, percent of a grass that is green), and the in-season measure was the one that worked. These two
+phases use those weekly values, decided on November 3 before any result was seen. Both use **2009&ndash;2020
+only**: 2021&ndash;2024 are held out, untouched, for one final check of whatever looks promising.
+
+- **Weekly table:** for every ecoregion, plant group, phenophase, year and week, the share of plants in the
+  phase and the mean percent intensity, from all 30 million NPN records. Percent intensity is mostly recorded
+  for trees and shrubs; grass percent green reaches 3 or more sites a week in only 8 ecoregions.
+- **Intensity tests (phase 2):** the step 5 model (with temperature and dryness, years shuffled for
+  significance) with weekly anomalies of canopy fullness, grass and forb greenness, and a combined index
+  (share with green leaves minus share with colored or falling leaves), against every fire record and
+  against fire size given an ignition (the share of fires that reach 10 acres). Exploratory, with a
+  false-discovery rate.
+- **Machine learning (phase 3):** gradient-boosted models of weekly fire by ecoregion and fuel type (timber,
+  shrub, herb), trained on 2009&ndash;2017 and scored on 2018&ndash;2020, with weather only and with weather plus
+  every NPN weekly measure. Skill is how much the NPN measures reduce prediction error on years the model did
+  not see; importance shows which plant group and phenophase carry it.
+
+```{r tbl-ml}
+#| tbl-cap: "Machine learning: validation-year (2018-2020) skill of weather + NPN over weather only (share of prediction error removed; 90 % interval from resampling ecoregion-years)."
+ML <- tab("nf_ml_skill.csv")
+if (!is.null(ML)) knitr::kable(data.frame(`Fire record` = gsub("_", " ", ML$outcome), Skill = ML$skill, `90 % interval` = paste0(ML$skill_lo, " to ", ML$skill_hi),
+  check.names = FALSE), row.names = FALSE)
+```
+
+```{r tbl-intensity}
+#| tbl-cap: "Intensity tests (2009-2020): tests, results with p < 0.05 by direction (and the number expected by chance on each side), and false-discovery-rate hits."
+IS <- tab("nf_intensity_summary.csv")
+if (!is.null(IS)) knitr::kable(data.frame(Measure = IS$family, `Fire record` = gsub("_", " ", IS$outcome), Tests = IS$tests, `Fewer fires` = IS$p05_fewer,
+  `More fires` = IS$p05_more, `By chance (each)` = IS$chance_each_side, `FDR hits` = IS$q_hits, check.names = FALSE), row.names = FALSE)
+```
+
+Results of these phases will be summarized here after the runs.
+
 ## Next steps
 
 1. Done: year to year (step 3), the thinning test and the exploratory search (step 4).
 2. Done: the temperature test of the eastern leaf-out result (step 5).
-3. An independent check of the leaf-out result: 2025 when the fire records allow, or the same test with a
-   satellite green-up measure in the same ecoregions.
+3. Running: intensity tests and machine learning (roadmap phases 2&ndash;3), then one check on the held-out
+   years 2021&ndash;2024 (phase 4).
 4. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
 
 ## Decisions
@@ -679,6 +715,7 @@ temperature in the model.
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 3 | Roadmap: intensity measures and machine learning (xgboost); 2021&ndash;2024 held out; fire records all, lightning, 10 acres and up, VIIRS, MTBS; fire size given an ignition |
 | Nov 3 | Confirmatory test (step 5): deciduous-tree leaf-out status in 8.1&ndash;8.4 given the 8-week temperature anomaly; whole-year shuffles; Fisher-combined one-sided p < 0.05 decides; set before its result |
 | Nov 3 | Exploratory search (step 4): other fire records (lightning, human, large fires, area, VIIRS), season size, in-season progress; false-discovery rate within each family; whole-year shuffles for p < 0.05 |
 | Nov 3 | Thinning test: rerun step 3 with 3&ndash;40 randomly drawn sites a year (20 draws) on the passing cases and the Mixed Wood Plains deciduous-tree spring events |
