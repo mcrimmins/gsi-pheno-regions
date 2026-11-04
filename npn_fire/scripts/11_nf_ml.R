@@ -17,7 +17,9 @@
 #   from a bootstrap over ecoregion-years. Importance: grouped permutation on the validation years (each plant
 #   group x pheno class block shuffled across rows): increase in deviance.
 # HOLD-OUT: 2021-2024 are never scored unless the script is run with `final` (roadmap phase 4, once): then the
-#   models are refitted on 2009-2020 with the validation-chosen rounds and scored on 2021-2024.
+#   models are refitted on 2009-2020 with the validation-chosen rounds and scored on 2021-2024, with a bootstrap
+#   over ecoregion-years; decision = interval above 0. Targeted model (phase 4, fixed 4 Nov): weather + only the
+#   deciduous-tree initial growth / young leaves / leaves blocks, timber fuels in 8.1-8.5 (config ml: targeted).
 # Outputs <run_dir>/npn_fire/ml/: skill.csv (outcome x scope), skill_eco.csv, importance.csv, rows.csv (counts);
 #   final_*.csv in final mode.
 # Usage: Rscript npn_fire/scripts/11_nf_ml.R [profile] [final]
@@ -115,6 +117,15 @@ fit_pred <- function(Xtr, ytr, Xva, yva, Xte = NULL, rounds = NULL) {
   list(rounds = rounds, va = pr(Xva), te = if (is.null(Xte)) NULL else pr(Xte), predict = pr)
 }
 
+# skill of mu_n over mu_w with a bootstrap over ecoregion-years
+skill_boot <- function(y, mu_w, mu_n, blk) {
+  idx <- split(seq_along(y), blk); dw <- vapply(idx, function(i) pdev(y[i], mu_w[i]), 0); dn <- vapply(idx, function(i) pdev(y[i], mu_n[i]), 0)
+  bs <- vapply(seq_len(B), function(i) { s <- sample(length(idx), replace = TRUE); 1 - sum(dn[s]) / sum(dw[s]) }, 0)
+  c(skill = 1 - sum(dn) / sum(dw), lo = unname(stats::quantile(bs, 0.05, na.rm = TRUE)), hi = unname(stats::quantile(bs, 0.95, na.rm = TRUE)))
+}
+tg <- mc$targeted %||% list(outcome = "fod_all", group = "deciduous_tree", classes = list(1, 2, 3), fuel = "timber", ecoregions = list("8.1", "8.2", "8.3", "8.4", "8.5"))
+tg_cols <- unlist(lapply(unlist(tg$classes), function(cl) blocks[[sprintf("%s_c%02d", tg$group, cl)]]))
+TG <- list()
 SK <- list(); SE <- list(); IMP <- list(); RW <- list(); FIN <- list()
 for (o in outs) {
   fo <- FW[FW$outcome == o, ]
@@ -159,8 +170,28 @@ for (o in outs) {
   if (final) {
     trf <- tr | va
     fw2 <- fit_pred(Xw[trf, ], D$y[trf], Xw[te, ], D$y[te], rounds = fw$rounds); fn2 <- fit_pred(Xn[trf, ], D$y[trf], Xn[te, ], D$y[te], rounds = fn$rounds)
-    FIN[[o]] <- data.frame(outcome = o, dev_wx = pdev(D$y[te], fw2$va), dev_npn = pdev(D$y[te], fn2$va), skill = round(1 - pdev(D$y[te], fn2$va) / pdev(D$y[te], fw2$va), 4))
-    log_msg(sprintf("  FINAL %-18s hold-out skill %+.4f", o, FIN[[o]]$skill))
+    sb <- skill_boot(D$y[te], fw2$va, fn2$va, paste(D$eco_l2_code[te], D$year[te]))
+    FIN[[o]] <- data.frame(model = "all NPN", outcome = o, skill = round(sb[["skill"]], 4), skill_lo = round(sb[["lo"]], 4), skill_hi = round(sb[["hi"]], 4),
+                           decision = if (sb[["lo"]] > 0) "NPN improves hold-out prediction" else "not shown")
+    log_msg(sprintf("  FINAL %-18s all NPN: hold-out skill %+.4f [%+.4f, %+.4f] | %s", o, sb[["skill"]], sb[["lo"]], sb[["hi"]], FIN[[o]]$decision))
+  }
+  # targeted model (roadmap phase 4, fixed 4 Nov): weather + the deciduous-tree leaf-out / canopy blocks only, eastern timber
+  if (o == tg$outcome && length(tg_cols)) {
+    sub <- D$fuel == tg$fuel & D$eco_l2_code %in% unlist(tg$ecoregions)
+    Xt <- as.matrix(D[, c(wx_cols, tg_cols)]); st <- sub & tr; sv <- sub & va
+    gw <- fit_pred(Xw[st, ], D$y[st], Xw[sv, ], D$y[sv]); gt <- fit_pred(Xt[st, ], D$y[st], Xt[sv, ], D$y[sv])
+    sbv <- skill_boot(D$y[sv], gw$va, gt$va, paste(D$eco_l2_code[sv], D$year[sv]))
+    TG[[o]] <- data.frame(model = "targeted", outcome = o, years = "validation", skill = round(sbv[["skill"]], 4), skill_lo = round(sbv[["lo"]], 4), skill_hi = round(sbv[["hi"]], 4))
+    log_msg(sprintf("  TARGETED %-15s (%s, %s; %d NPN features) validation skill %+.4f [%+.4f, %+.4f]", o, tg$fuel, paste(unlist(tg$ecoregions), collapse = " "),
+                    length(tg_cols), sbv[["skill"]], sbv[["lo"]], sbv[["hi"]]))
+    if (final) {
+      sf <- sub & (tr | va); se2 <- sub & te
+      gw2 <- fit_pred(Xw[sf, ], D$y[sf], Xw[se2, ], D$y[se2], rounds = gw$rounds); gt2 <- fit_pred(Xt[sf, ], D$y[sf], Xt[se2, ], D$y[se2], rounds = gt$rounds)
+      sbt <- skill_boot(D$y[se2], gw2$va, gt2$va, paste(D$eco_l2_code[se2], D$year[se2]))
+      FIN[["targeted"]] <- data.frame(model = "targeted", outcome = o, skill = round(sbt[["skill"]], 4), skill_lo = round(sbt[["lo"]], 4), skill_hi = round(sbt[["hi"]], 4),
+                                      decision = if (sbt[["lo"]] > 0) "NPN improves hold-out prediction" else "not shown")
+      log_msg(sprintf("  FINAL %-18s targeted: hold-out skill %+.4f [%+.4f, %+.4f] | %s", o, sbt[["skill"]], sbt[["lo"]], sbt[["hi"]], FIN[["targeted"]]$decision))
+    }
   }
 }
 if (!length(SK)) stop("no outcome could be modelled")
@@ -168,6 +199,7 @@ utils::write.csv(do.call(rbind, SK), file.path(out, "skill.csv"), row.names = FA
 utils::write.csv(do.call(rbind, SE), file.path(out, "skill_eco.csv"), row.names = FALSE)
 IM <- do.call(rbind, IMP); IM <- IM[order(IM$outcome, -IM$dev_increase), ]; utils::write.csv(IM, file.path(out, "importance.csv"), row.names = FALSE)
 utils::write.csv(do.call(rbind, RW), file.path(out, "rows.csv"), row.names = FALSE)
+if (length(TG)) utils::write.csv(do.call(rbind, TG), file.path(out, "targeted_validation.csv"), row.names = FALSE)
 if (final) utils::write.csv(do.call(rbind, FIN), file.path(out, "final_skill.csv"), row.names = FALSE)
 for (o in names(IMP)) { x <- IM[IM$outcome == o, ][1:min(8, sum(IM$outcome == o)), ]
   log_msg("  top NPN blocks (", o, "): ", paste(sprintf("%s %+.1f", x$block, x$dev_increase), collapse = "; ")) }

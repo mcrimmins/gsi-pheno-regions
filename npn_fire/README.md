@@ -39,6 +39,7 @@ PRISM ppet60 as the dryness baseline. No satellite phenology.
 | 10_nf_weekly.R | P720 | roadmap phase 1: weekly status share and mean intensity by ecoregion x group x pheno class x year x week (and by site, not published) from the raw records (~1 h) | built 3 Nov |
 | 11_nf_ml.R | P720 | roadmap phase 3: xgboost weekly fire, weather-only vs + NPN, train 2009-2017, validate 2018-2020; `final` scores the hold-out once | built 4 Nov |
 | 12_nf_intensity.R | P720 / laptop | roadmap phase 2: weekly intensity / status anomalies vs fire (2009-2020), FDR | built 4 Nov |
+| 13_nf_holdout.R | laptop / P720 | roadmap phase 4: canopy tests on the held-out 2021-2024, run once (11 `final` does the ML checks) | built 4 Nov |
 
 ### 01_nf_npn_download.R
 

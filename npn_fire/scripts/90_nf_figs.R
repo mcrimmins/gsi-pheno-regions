@@ -553,7 +553,11 @@ if (do("nf_roadmap")) {
   f <- file.path(cfg$out_dir, "ml", "importance.csv")
   if (file.exists(f)) { x <- utils::read.csv(f, stringsAsFactors = FALSE); x <- do.call(rbind, lapply(split(x, x$outcome), function(d) utils::head(d[order(-d$dev_increase), ], 10)))
     utils::write.csv(x, file.path(tab_dir, "nf_ml_importance.csv"), row.names = FALSE) }
-  log_msg("wrote roadmap tables (intensity, ml)")
+  cp_tab(file.path(cfg$out_dir, "ml", "targeted_validation.csv"), "nf_ml_targeted_validation.csv")
+  cp_tab(file.path(cfg$out_dir, "ml", "final_skill.csv"), "nf_ml_final_skill.csv")
+  cp_tab(file.path(cfg$out_dir, "holdout", "canopy.csv"), "nf_holdout_canopy.csv", c(eco_l2_code = "character"))
+  cp_tab(file.path(cfg$out_dir, "holdout", "decision.csv"), "nf_holdout_decision.csv")
+  log_msg("wrote roadmap tables (intensity, ml, hold-out)")
 }
 
 log_msg("=== done | ", fig_dir, " | log: ", log_file)

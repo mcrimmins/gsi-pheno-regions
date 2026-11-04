@@ -1182,5 +1182,15 @@ outcomes; no satellite phenology; onsets / ends by our own rules.
   (API-agnostic: evals / watchlist). Skill = 1 - dev ratio on validation; bootstrap over eco-years; grouped
   permutation importance. `final` refits on 2009-2020 and scores 2021-2024 (phase 4 only). NF_XGB_STUB=1 =
   GLM stand-in for testing (workspace has no xgboost). -> ml/skill.csv, skill_eco.csv, importance.csv, rows.csv.
-  90 nf_roadmap tables; page section "Intensity measures and machine learning". + tables nf_seasonal_summary / nf_seasonal_results; page section
+  90 nf_roadmap tables; page section "Intensity measures and machine learning".
+  RESULTS (Nov 4, P720): 12: canopy (deciduous tree) 6 FDR hits, all fewer: 8.1 fod_all 0.806, 8.4 fod_all 0.724 /
+  cplus 0.598 / viirs 0.501 / size 0.798, 8.3 size 0.911 (per 10 pt); canopy p < 0.05 14 fewer vs 6 more; green nothing;
+  index weak. 11: validation skill fod_all +0.0071 [-0.012, +0.026], lightning +0.017, cplus -0.013, viirs -0.36,
+  mtbs -0.04 / -0.05; by eco timber 6.2 +0.14, 8.2 +0.11, 8.1 +0.09, 8.4 -0.09.
+- PHASE 4 (Nov 4, Mike "let's do the next steps"; config npn_fire: holdout + ml: targeted, fixed before any hold-out
+  run): `npn_fire/scripts/13_nf_holdout.R` canopy vs fod_all in 8.1 / 8.3 / 8.4 and vs size in 8.3 / 8.4 on 2021-2024,
+  12's week sets and exploration-year climatology, one-sided LR p (halved), Fisher < 0.05; 4! year permutations as a
+  check only. 11 `final`: all-NPN and targeted (weather + deciduous_tree c01-c03, timber, 8.1-8.5) refit on 2009-2020,
+  scored on 2021-2024 with eco-year bootstrap; decision = 90 % interval above 0. Run ONCE. Tested on 2017-2020
+  (exploration years) only; Claude never ran it on the hold-out. + tables nf_seasonal_summary / nf_seasonal_results; page section
   "Do fire seasons change at the phenology dates?".

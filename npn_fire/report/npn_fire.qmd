@@ -720,12 +720,41 @@ if (!is.null(IS)) knitr::kable(data.frame(Measure = IS$family, `Fire record` = g
   to fire; throwing every NPN measure at a general model does not help. The held-out years will test the
   targeted results once.
 
+## The one-time check on the held-out years (roadmap phase 4)
+
+The years 2021&ndash;2024 were not used by the intensity tests or the machine learning. These tests were
+written down on November 4, before any of them was run on those years, and each is run once:
+
+1. **Canopy fullness and fire numbers:** deciduous-tree canopy anomaly against timber-fuel fires in the Mixed
+   Wood Plains, Southeastern USA Plains and Ozark/Ouachita-Appalachian Forests (8.1, 8.3, 8.4); the same model
+   as the intensity tests; the three one-sided results combined (Fisher's method); confirmed if p < 0.05.
+2. **Canopy fullness and fire size:** the same, against the share of fires reaching 10 acres, in 8.3 and 8.4.
+3. **Machine learning, all NPN measures:** weather plus every NPN measure against weather only, refitted on
+   2009&ndash;2020 and scored on 2021&ndash;2024; confirmed if the 90 % interval of the skill is above zero.
+4. **Machine learning, targeted:** weather plus only the deciduous-tree initial growth, young leaves and canopy
+   measures, for eastern timber fires (8.1&ndash;8.5); same rule.
+
+The eastern leaf-out result (step 5) already used these years, so it cannot be confirmed here.
+
+```{r tbl-holdout}
+#| tbl-cap: "Hold-out tests (2021-2024): decisions."
+HD <- tab("nf_holdout_decision.csv"); HF <- tab("nf_ml_final_skill.csv")
+d <- NULL
+if (!is.null(HD)) d <- rbind(d, data.frame(Test = paste("canopy:", ifelse(HD$outcome == "size", "fire size", "fire numbers")), Result = paste0(HD$fewer, " of ", HD$ecoregions,
+  " ecoregions fewer; combined p = ", HD$combined_p), Decision = HD$decision))
+if (!is.null(HF)) d <- rbind(d, data.frame(Test = paste("machine learning,", HF$model, "(", gsub("_", " ", HF$outcome), ")"),
+  Result = paste0("skill ", HF$skill, " (", HF$skill_lo, " to ", HF$skill_hi, ")"), Decision = HF$decision))
+if (!is.null(d)) knitr::kable(d, row.names = FALSE)
+```
+
+Results of the hold-out check will be summarized here after the run.
+
 ## Next steps
 
 1. Done: year to year (step 3), the thinning test and the exploratory search (step 4).
 2. Done: the temperature test of the eastern leaf-out result (step 5).
-3. Running: intensity tests and machine learning (roadmap phases 2&ndash;3), then one check on the held-out
-   years 2021&ndash;2024 (phase 4).
+3. Done: intensity tests and machine learning (roadmap phases 2&ndash;3). Running: the one-time check on the
+   held-out years 2021&ndash;2024 (phase 4).
 4. The 7- and 30-day date rules as a check (the other fire records are covered in step 4).
 
 ## Decisions
@@ -738,6 +767,7 @@ if (!is.null(IS)) knitr::kable(data.frame(Measure = IS$family, `Fire record` = g
 | Nov 1 | LANDFIRE fuel groups as the fuel layer; FPA-FOD all sizes and 10 acres and up; VIIRS from the fire study's CONUS-wide screen |
 | Nov 1 | Mesquites, paloverdes and Joshua tree counted as shrubs; shrubs matched to shrub and grass-shrub fuels; inventory rules fixed before testing |
 | Nov 1 | Seasonal test design (step 2) approved and fixed before testing: negative binomial with year and dryness, eight weeks either side, placebo dates, expected directions set in advance |
+| Nov 4 | Hold-out tests (phase 4) fixed before running: canopy vs fire numbers (8.1, 8.3, 8.4) and fire size (8.3, 8.4), Fisher p < 0.05; machine learning all-NPN and targeted (eastern timber, deciduous-tree leaf-out and canopy), skill interval above zero |
 | Nov 3 | Roadmap: intensity measures and machine learning (xgboost); 2021&ndash;2024 held out; fire records all, lightning, 10 acres and up, VIIRS, MTBS; fire size given an ignition |
 | Nov 3 | Confirmatory test (step 5): deciduous-tree leaf-out status in 8.1&ndash;8.4 given the 8-week temperature anomaly; whole-year shuffles; Fisher-combined one-sided p < 0.05 decides; set before its result |
 | Nov 3 | Exploratory search (step 4): other fire records (lightning, human, large fires, area, VIIRS), season size, in-season progress; false-discovery rate within each family; whole-year shuffles for p < 0.05 |

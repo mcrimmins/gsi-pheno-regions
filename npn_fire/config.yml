@@ -249,6 +249,17 @@ default:
       nthread: 8
       bootstrap_B: 500
       seed: 20261104
+      # phase 4 targeted model (fixed 4 Nov before the hold-out was scored)
+      targeted: {outcome: fod_all, group: deciduous_tree, classes: [1, 2, 3], fuel: timber, ecoregions: ["8.1", "8.2", "8.3", "8.4", "8.5"]}
+    # 13 hold-out tests (roadmap phase 4; Mike 4 Nov; fixed before any hold-out result was seen). Run ONCE.
+    # Decisions: canopy tests = Fisher one-sided p < alpha; ML (11 final) = hold-out skill interval above 0 for
+    # fod_all, all-NPN and targeted models. The step 5 leaf-out result saw these years: consistency check only.
+    holdout:
+      group: deciduous_tree
+      alpha: 0.05
+      tests:
+        canopy_fires: {outcome: fod_all, ecoregions: ["8.1", "8.3", "8.4"]}
+        canopy_size: {outcome: size, ecoregions: ["8.3", "8.4"]}
 
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
