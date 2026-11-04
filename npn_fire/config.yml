@@ -212,6 +212,18 @@ default:
       alpha: 0.05
       seed: 20261104
 
+    # Roadmap (Mike, 3 Nov 2026; project doc claude/gsi-npn-fire-roadmap.md): intensity phenometrics and
+    # machine learning. Exploration on 2009-2020 only; 2021-2024 held out and used once to confirm.
+    roadmap:
+      explore_years: [2009, 2020]
+      holdout_years: [2021, 2024]
+      outcomes: [fod_all, fod_all_lightning, fod_cplus, viirs_px, mtbs_fires, mtbs_km2]
+      fire_size_given_ignition: true      # weekly share of FPA-FOD fires reaching 10 acres (fod_cplus / fod_all)
+      ml_package: xgboost
+    # 10 weekly status / intensity tables (roadmap phase 1)
+    weekly:
+      workers: 8
+
   # Level II ecoregions (02): same EPA / CEC source as the NPN study; cached once under
   # <data_root>/_shared/raw/ecoregions/l2/ (the ecofuel study uses the same cache)
   ecoregions:
