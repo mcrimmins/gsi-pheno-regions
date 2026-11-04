@@ -1,0 +1,7 @@
+"family","group","eco_l2_code","outcome","years","weeks","fires","ratio_per_10","p","p_param","expected_direction","otype","q"
+"canopy","deciduous_tree","8.1","fod_all",10,52,17192,0.806,0.005,3.02e-06,TRUE,"counts",0.0925
+"canopy","deciduous_tree","8.3","size",9,52,37513,0.911,0.008,0.00127,TRUE,"size",0.08
+"canopy","deciduous_tree","8.4","fod_all",9,49,27672,0.724,0.004,9.48e-07,TRUE,"counts",0.0925
+"canopy","deciduous_tree","8.4","fod_cplus",9,49,7838,0.598,0.001,4.96e-08,TRUE,"counts",0.0388
+"canopy","deciduous_tree","8.4","viirs_px",9,49,14606,0.501,0.00105,1.64e-06,TRUE,"counts",0.0388
+"canopy","deciduous_tree","8.4","size",9,49,27672,0.798,0.001,2.69e-10,TRUE,"size",0.02
